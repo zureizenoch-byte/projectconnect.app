@@ -62,7 +62,7 @@ export default async function Home() {
             WebkitMaskImage: 'radial-gradient(120% 100% at 50% 0%, #000 42%, rgba(0,0,0,.55) 72%, transparent 100%)',
             maskImage: 'radial-gradient(120% 100% at 50% 0%, #000 42%, rgba(0,0,0,.55) 72%, transparent 100%)',
           }}>
-            <img src="/hero-chapter-meetup.jpg" alt=""
+            <img src="/hero-chapter-meetup.png" alt=""
               style={{ display: 'block', width: '100%', aspectRatio: '21 / 9',
                 objectFit: 'cover', filter: 'saturate(.85) contrast(1.02)',
                 background: 'linear-gradient(150deg,#1a2148,#3352cf)' }} />
