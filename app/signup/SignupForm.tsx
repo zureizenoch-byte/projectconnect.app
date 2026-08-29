@@ -27,8 +27,8 @@ export function SignupForm() {
             <label key={value} className="surf"
               style={{
                 padding: 16, cursor: 'pointer', boxShadow: 'none',
-                borderColor: role === value ? 'var(--blue-700)' : 'var(--line)',
-                background: role === value ? 'var(--blue-100)' : '#fff',
+                borderColor: role === value ? 'var(--gold-700)' : 'var(--line)',
+                background: role === value ? 'var(--gold-100)' : '#fff',
               }}>
               <input type="radio" name="role" value={value} checked={role === value}
                 onChange={() => setRole(value)} style={{ marginRight: 8 }} />

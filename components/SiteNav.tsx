@@ -10,24 +10,28 @@ export function SiteNav({ profile }: { profile: Profile | null }) {
   return (
     <nav className="nav">
       <div className="nav-in">
-        <a href={profile ? '/dashboard' : '/'} style={{ fontFamily: 'var(--font-heading)', fontSize: 20 }}>
-          Project&nbsp;Connect
+        <a className="brand" href={profile ? '/dashboard' : '/'}>
+          <img src="/pc-mark-2026.png" alt="" />
+          <span>Project<span style={{ color: 'var(--gold-700)' }}>Connect</span></span>
         </a>
-        <div className="row" style={{ gap: 18, marginLeft: 8 }}>
+        <div className="navpill" style={{ marginLeft: 'auto' }}>
           {links.map(([label, href]) => <a key={href} href={href}>{label}</a>)}
         </div>
-        <div className="row" style={{ marginLeft: 'auto', gap: 10 }}>
+        <div className="row" style={{ gap: 8 }}>
           {profile ? (
             <>
-              <a href="/profile" className="small mute">{profile.full_name ?? profile.email}</a>
+              <a className="btn btn-quiet" style={{ minHeight: 38, padding: '0 14px', fontSize: 14 }} href="/profile">
+                Profile
+              </a>
               <form action={signOut}>
-                <button className="btn btn-out" type="submit">Sign out</button>
+                <button className="btn btn-out" type="submit"
+                  style={{ minHeight: 38, padding: '0 16px', fontSize: 14 }}>Sign out</button>
               </form>
             </>
           ) : (
             <>
-              <a className="btn btn-out" href="/login">Log in</a>
-              <a className="btn btn-primary" href="/signup">Join</a>
+              <a className="btn btn-quiet" style={{ minHeight: 38, padding: '0 14px', fontSize: 14 }} href="/login">Log in</a>
+              <a className="btn btn-dark" style={{ minHeight: 38, padding: '0 18px', fontSize: 14 }} href="/signup">Join</a>
             </>
           )}
         </div>

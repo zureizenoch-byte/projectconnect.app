@@ -24,7 +24,7 @@ export default async function DashboardPage() {
       .order('created_at', { ascending: false }).limit(20),
   ]);
 
-  const upcoming = (seats ?? [])
+  const upcoming: any[] = (seats ?? [])
     .filter((s: any) => s.events && new Date(s.events.starts_at) > new Date())
     .sort((a: any, b: any) => +new Date(a.events.starts_at) - +new Date(b.events.starts_at));
   const next = upcoming[0];
@@ -70,7 +70,7 @@ export default async function DashboardPage() {
           <p style={{ fontFamily: 'var(--font-heading)', fontSize: 40, margin: '10px 0 0' }}>{strength}%</p>
           <div style={{ height: 8, borderRadius: 99, background: 'var(--gold-100)', marginTop: 12, overflow: 'hidden' }}>
             <span style={{ display: 'block', width: strength + '%', height: '100%',
-              background: 'linear-gradient(90deg,var(--blue-500),var(--blue-700))' }} />
+              background: 'linear-gradient(90deg,var(--gold),var(--gold-700))' }} />
           </div>
           <p className="small mute" style={{ marginTop: 10 }}>
             {strength < 100 ? 'Fill in more groups under Your experience to sharpen matching.' : 'Fully mapped.'}
@@ -106,7 +106,7 @@ export default async function DashboardPage() {
           {(posts ?? []).map((p: any) => (
             <article key={p.id} className="surf" style={{ padding: 20 }}>
               <div className="row">
-                <span style={{ width: 44, height: 44, borderRadius: '50%', background: 'var(--blue-100)',
+                <span style={{ width: 44, height: 44, borderRadius: '50%', background: 'var(--gold-100)',
                   backgroundImage: p.profiles?.photo_url ? 'url(' + p.profiles.photo_url + ')' : undefined,
                   backgroundSize: 'cover' }} />
                 <div>

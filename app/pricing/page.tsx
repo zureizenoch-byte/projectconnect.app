@@ -34,7 +34,7 @@ export default async function PricingPage() {
               style={{
                 padding: 24, position: 'relative',
                 borderColor: popular ? 'var(--gold)' : 'var(--line)',
-                boxShadow: popular ? '0 10px 30px -14px rgba(185,138,46,.5)' : 'var(--shadow)',
+                boxShadow: popular ? '0 14px 34px -14px rgba(51,82,207,.5)' : 'var(--sh)',
               }}>
               {popular && (
                 <span className="pill pill-wait" style={{ position: 'absolute', top: -12, left: 24 }}>Most popular</span>

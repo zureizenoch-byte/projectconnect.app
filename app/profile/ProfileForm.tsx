@@ -33,7 +33,7 @@ export function ProfileForm({ profile, tags }: { profile: Profile; tags: Tag[] }
 
       <p className="eyebrow">Photo</p>
       <div className="row" style={{ margin: '14px 0 26px' }}>
-        <span style={{ width: 96, height: 96, borderRadius: '50%', background: 'var(--blue-100)',
+        <span style={{ width: 96, height: 96, borderRadius: '50%', background: 'var(--gold-100)',
           backgroundImage: profile.photo_url ? 'url(' + profile.photo_url + ')' : undefined,
           backgroundSize: 'cover', flex: 'none' }} />
         <PhotoUpload />

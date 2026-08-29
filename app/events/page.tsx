@@ -54,7 +54,7 @@ export default async function EventsPage({ searchParams }: { searchParams: { cit
             <article key={e.id} className="surf" style={{ padding: 22 }}>
               <div className="row" style={{ alignItems: 'flex-start', gap: 20 }}>
                 <div style={{ width: 66, height: 66, borderRadius: 14, flex: 'none', display: 'grid',
-                  placeItems: 'center', background: 'linear-gradient(160deg,var(--gold-100),var(--blue-100))',
+                  placeItems: 'center', background: 'linear-gradient(160deg,var(--gold-100),var(--gold-100))',
                   border: '1px solid var(--gold-200)', color: 'var(--gold-700)', fontFamily: 'var(--font-heading)' }}>
                   <span style={{ fontSize: 11, letterSpacing: '.1em', textTransform: 'uppercase' }}>
                     {d.toLocaleDateString('en-CA', { month: 'short' })}
