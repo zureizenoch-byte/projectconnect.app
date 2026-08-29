@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useFormState, useFormStatus } from 'react-dom';
 import { useState } from 'react';
 import { signUp, type ActionState } from '@/app/actions/auth';
 import { CITIES } from '@/lib/options';
@@ -12,7 +12,7 @@ const JOIN_AS: [string, string, string][] = [
 ];
 
 export function SignupForm() {
-  const [state, action, pending] = useActionState<ActionState, FormData>(signUp, {});
+  const [state, action] = useFormState<ActionState, FormData>(signUp, {});
   const [role, setRole] = useState('member');
   const [pw, setPw] = useState('');
   const [pw2, setPw2] = useState('');
@@ -94,9 +94,17 @@ export function SignupForm() {
       {state.fieldErrors?.agree && <p className="err">{state.fieldErrors.agree}</p>}
       {state.error && <p className="err">{state.error}</p>}
 
-      <button className="btn btn-primary" type="submit" disabled={pending || mismatch}>
-        {pending ? 'Creating your account…' : 'Create account'}
-      </button>
+      <Submit label="Create account" busy="Creating your account…" disabled={mismatch} />
     </form>
+  );
+}
+
+function Submit({ label, busy, disabled }: { label: string; busy: string; disabled?: boolean }) {
+  const { pending } = useFormStatus();
+  return (
+    <button className="btn btn-primary" type="submit" disabled={pending || disabled}
+      style={{ minHeight: 50, padding: '0 26px', fontSize: 16 }}>
+      {pending ? busy : label}
+    </button>
   );
 }
