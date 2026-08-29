@@ -104,20 +104,26 @@ export default async function DashboardPage() {
         <div className="grid" style={{ gap: 14 }}>
           <PostForm />
           {(posts ?? []).map((p: any) => (
-            <article key={p.id} className="surf" style={{ padding: 20 }}>
+            <article key={p.id} className="surf lift" style={{ padding: 24 }}>
               <div className="row">
-                <span style={{ width: 44, height: 44, borderRadius: '50%', background: 'var(--gold-100)',
+                <span style={{ width: 72, height: 72, borderRadius: '50%', flex: 'none',
+                  background: 'linear-gradient(145deg,#ccd6f8,#3352cf)',
                   backgroundImage: p.profiles?.photo_url ? 'url(' + p.profiles.photo_url + ')' : undefined,
                   backgroundSize: 'cover' }} />
-                <div>
-                  <strong>{p.profiles?.full_name ?? 'Member'}</strong>
-                  <p className="small mute" style={{ margin: 0 }}>{p.profiles?.role_level}</p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  <span style={{ fontWeight: 600, fontSize: 19 }}>{p.profiles?.full_name ?? 'Member'}</span>
+                  <span className="mute" style={{ fontSize: 15 }}>{p.profiles?.role_level}</span>
                 </div>
-                <span className="small mute" style={{ marginLeft: 'auto' }}>
-                  {new Date(p.created_at).toLocaleDateString('en-CA', { dateStyle: 'medium' })}
+                <span className="pill pill-wait" style={{ marginLeft: 'auto' }}>
+                  {profile.city ?? 'Chapter'}
                 </span>
               </div>
-              <p style={{ marginTop: 12, whiteSpace: 'pre-wrap' }}>{p.body}</p>
+              <p style={{ fontSize: 15.5, lineHeight: 1.7, margin: '16px 0 0', whiteSpace: 'pre-wrap' }}>{p.body}</p>
+              <footer className="row" style={{ gap: 6, marginTop: 18, paddingTop: 14, borderTop: '1px solid var(--line)' }}>
+                <span className="mute small" style={{ marginRight: 'auto' }}>
+                  {new Date(p.created_at).toLocaleDateString('en-CA', { dateStyle: 'medium' })}
+                </span>
+              </footer>
             </article>
           ))}
           {!posts?.length && <p className="mute">No posts in your chapter yet.</p>}
