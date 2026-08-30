@@ -50,6 +50,13 @@ export default async function DashboardPage() {
   ]);
 
   const authorMap = new Map<string, any>((authors ?? []).map((a: any) => [a.id, a]));
+  // always trust the session for your own rows, even if the lookup is blocked
+  authorMap.set(user.id, {
+    id: user.id,
+    full_name: profile.full_name ?? authorMap.get(user.id)?.full_name ?? null,
+    photo_url: profile.photo_url ?? authorMap.get(user.id)?.photo_url ?? null,
+    role_level: profile.role_level ?? authorMap.get(user.id)?.role_level ?? null,
+  });
   const commenterIds = Array.from(new Set((comments ?? []).map((c: any) => c.author_id)))
     .filter((id: any) => !authorMap.has(id));
   if (commenterIds.length) {
