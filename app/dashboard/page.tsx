@@ -21,7 +21,7 @@ export default async function DashboardPage() {
       .order('created_at', { ascending: false }),
     supabase.from('profile_tags').select('category').eq('profile_id', user.id),
     supabase.from('posts')
-      .select('id,body,created_at,author_id,chapter_id,profiles(full_name,photo_url,role_level),post_likes(profile_id),post_comments(id,body,created_at,author_id,profiles(full_name))')
+      .select('id,body,created_at,author_id,chapter_id')
       .order('created_at', { ascending: false }).limit(50),
   ]);
 
@@ -109,11 +109,11 @@ export default async function DashboardPage() {
               <div className="row">
                 <span style={{ width: 72, height: 72, borderRadius: '50%', flex: 'none',
                   background: 'linear-gradient(145deg,#ccd6f8,#3352cf)',
-                  backgroundImage: p.profiles?.photo_url ? 'url(' + p.profiles.photo_url + ')' : undefined,
+                  backgroundImage: authorMap.get(p.author_id)?.photo_url ? 'url(' + authorMap.get(p.author_id).photo_url + ')' : undefined,
                   backgroundSize: 'cover' }} />
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                  <span style={{ fontWeight: 600, fontSize: 19 }}>{p.profiles?.full_name ?? 'Member'}</span>
-                  <span className="mute" style={{ fontSize: 15 }}>{p.profiles?.role_level}</span>
+                  <span style={{ fontWeight: 600, fontSize: 19 }}>{authorMap.get(p.author_id)?.full_name ?? 'Member'}</span>
+                  <span className="mute" style={{ fontSize: 15 }}>{authorMap.get(p.author_id)?.role_level}</span>
                 </div>
                 <span className="pill pill-wait" style={{ marginLeft: 'auto' }}>
                   {profile.city ?? 'Chapter'}
@@ -128,9 +128,12 @@ export default async function DashboardPage() {
               </footer>
               <PostEngagement
                 postId={p.id}
-                likeCount={(p.post_likes ?? []).length}
-                liked={(p.post_likes ?? []).some((l: any) => l.profile_id === user.id)}
-                comments={(p.post_comments ?? []).sort((a: any, b: any) => +new Date(a.created_at) - +new Date(b.created_at))}
+                likeCount={(likes ?? []).filter((l: any) => l.post_id === p.id).length}
+                liked={(likes ?? []).some((l: any) => l.post_id === p.id && l.profile_id === user.id)}
+                comments={(comments ?? [])
+                  .filter((c: any) => c.post_id === p.id)
+                  .sort((a: any, b: any) => +new Date(a.created_at) - +new Date(b.created_at))
+                  .map((c: any) => ({ ...c, commenter: authorMap.get(c.author_id) }))}
                 userId={user.id}
                 isAdmin={profile.role === 'admin'}
               />

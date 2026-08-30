@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react';
 import { toggleLike, addComment, deleteComment } from '@/app/actions/feed';
 
-type Comment = { id: string; body: string; created_at: string; author_id: string; profiles?: { full_name?: string } };
+type Comment = { id: string; body: string; created_at: string; author_id: string; commenter?: { full_name?: string } };
 
 export function PostEngagement({
   postId, likeCount, liked, comments, userId, isAdmin,
@@ -97,7 +97,7 @@ export function PostEngagement({
                 <span style={{ width: 34, height: 34, borderRadius: '50%', flex: 'none',
                   background: 'linear-gradient(145deg,#ccd6f8,#3352cf)' }} />
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <span style={{ fontWeight: 600, fontSize: 14.5 }}>{c.profiles?.full_name ?? 'Member'}</span>
+                  <span style={{ fontWeight: 600, fontSize: 14.5 }}>{c.commenter?.full_name ?? 'Member'}</span>
                   <span className="mute small" style={{ marginLeft: 8 }}>
                     {new Date(c.created_at).toLocaleDateString('en-CA', { dateStyle: 'medium' })}
                   </span>

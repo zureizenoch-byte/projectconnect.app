@@ -20,7 +20,7 @@ export default async function AdminPage() {
         .select('id,full_name,email,role,lead_chapter_id,chapters:lead_chapter_id(city)')
         .in('role', ['chapter_lead', 'speaker']),
       supabase.from('post_reports')
-        .select('id,reason,created_at,posts(body,profiles(full_name))')
+        .select('id,reason,created_at,post_id,posts(body)')
         .eq('resolved', false).order('created_at'),
       supabase.from('chapters').select('id,city'),
       supabase.from('venues').select('id,name,address,capacity,notes,active,chapter_id').order('name'),

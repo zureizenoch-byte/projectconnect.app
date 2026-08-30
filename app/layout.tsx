@@ -41,6 +41,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             </div>
             <div>
               <p className="eyebrow">Legal</p>
+              <p className="small mute" style={{ opacity: .5 }}>build 7</p>
               <p className="small"><a href="/legal/privacy">Privacy Policy</a></p>
               <p className="small"><a href="/legal/terms">Terms of Service</a></p>
             </div>

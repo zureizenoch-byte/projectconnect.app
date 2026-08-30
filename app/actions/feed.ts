@@ -58,7 +58,7 @@ export async function addComment(postId: string, body: string) {
   const supabase = createClient();
   const { data, error } = await supabase.from('post_comments')
     .insert({ post_id: postId, author_id: user.id, body: text.slice(0, 2000) })
-    .select('id,body,created_at,author_id,profiles(full_name)').single();
+    .select('id,body,created_at,author_id').single();
   if (error) return { error: error.message };
   revalidatePath('/dashboard');
   return { ok: true, comment: data };

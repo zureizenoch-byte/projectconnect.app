@@ -138,7 +138,7 @@ export function AdminControls({ requests, pendingEvents, leads, reports, chapter
             {reports.map((r: any) => (
               <tr key={r.id}>
                 <td style={{ maxWidth: 420 }}>
-                  <span className="mute small">{r.posts?.profiles?.full_name}</span><br />{r.posts?.body?.slice(0, 200)}
+{r.posts?.body?.slice(0, 200)}
                 </td>
                 <td className="mute small">{r.reason}</td>
                 <td style={{ textAlign: 'right' }}>
