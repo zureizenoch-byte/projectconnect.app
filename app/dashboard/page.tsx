@@ -28,25 +28,34 @@ export default async function DashboardPage() {
   const postIds = (posts ?? []).map((p: any) => p.id);
   const authorIds = Array.from(new Set((posts ?? []).map((p: any) => p.author_id)));
 
-  const [{ data: authors }, { data: likes }, { data: comments }] = await Promise.all([
+  const safe = async (fn: () => any): Promise<any[]> => {
+    try {
+      const res = await fn();
+      return res?.data ?? [];
+    } catch {
+      return [];
+    }
+  };
+
+  const [authors, likes, comments] = await Promise.all([
     authorIds.length
-      ? supabase.from('profiles').select('id,full_name,photo_url,role_level').in('id', authorIds)
-      : Promise.resolve({ data: [] as any[] }),
+      ? safe(() => supabase.from('profiles').select('id,full_name,photo_url,role_level').in('id', authorIds))
+      : Promise.resolve([] as any[]),
     postIds.length
-      ? supabase.from('post_likes').select('post_id,profile_id').in('post_id', postIds)
-      : Promise.resolve({ data: [] as any[] }),
+      ? safe(() => supabase.from('post_likes').select('post_id,profile_id').in('post_id', postIds))
+      : Promise.resolve([] as any[]),
     postIds.length
-      ? supabase.from('post_comments').select('id,post_id,body,created_at,author_id').in('post_id', postIds)
-      : Promise.resolve({ data: [] as any[] }),
+      ? safe(() => supabase.from('post_comments').select('id,post_id,body,created_at,author_id').in('post_id', postIds))
+      : Promise.resolve([] as any[]),
   ]);
 
   const authorMap = new Map<string, any>((authors ?? []).map((a: any) => [a.id, a]));
   const commenterIds = Array.from(new Set((comments ?? []).map((c: any) => c.author_id)))
     .filter((id: any) => !authorMap.has(id));
   if (commenterIds.length) {
-    const { data: extra } = await supabase.from('profiles')
-      .select('id,full_name,photo_url,role_level').in('id', commenterIds);
-    for (const a of extra ?? []) authorMap.set(a.id, a);
+    const extra = await safe(() => supabase.from('profiles')
+      .select('id,full_name,photo_url,role_level').in('id', commenterIds));
+    for (const a of extra) authorMap.set(a.id, a);
   }
 
   const upcoming: any[] = (seats ?? [])
@@ -133,7 +142,7 @@ export default async function DashboardPage() {
               <div className="row">
                 <span style={{ width: 72, height: 72, borderRadius: '50%', flex: 'none',
                   background: 'linear-gradient(145deg,#ccd6f8,#3352cf)',
-                  backgroundImage: authorMap.get(p.author_id)?.photo_url ? 'url(' + authorMap.get(p.author_id).photo_url + ')' : undefined,
+                  backgroundImage: authorMap.get(p.author_id)?.photo_url ? 'url(' + authorMap.get(p.author_id)?.photo_url + ')' : undefined,
                   backgroundSize: 'cover' }} />
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                   <span style={{ fontWeight: 600, fontSize: 19 }}>{authorMap.get(p.author_id)?.full_name ?? 'Member'}</span>
