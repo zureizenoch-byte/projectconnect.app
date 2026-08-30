@@ -4,6 +4,8 @@ import { isPaid } from '@/lib/tiers';
 import { mapsUrl } from '@/lib/matching';
 import { TAG_CATEGORIES } from '@/lib/types';
 import { PostForm } from './PostForm';
+import { PostActions } from './PostActions';
+import { PostEngagement } from './PostEngagement';
 
 export const metadata = { title: 'Dashboard — Project Connect' };
 
@@ -12,16 +14,15 @@ export default async function DashboardPage() {
   const supabase = createClient();
   const paid = isPaid(subscription.tier, subscription.status, subscription.current_period_end);
 
-  const [{ data: seats }, { data: tags }, { data: posts }] = await Promise.all([
+  const [{ data: seats }, { data: tags }, { data: posts, error: postsError }] = await Promise.all([
     supabase.from('event_seats')
       .select('id,status,table_no,events(id,title,kind,starts_at,seat_cap,venues(name,address))')
       .eq('profile_id', user.id).neq('status', 'cancelled')
       .order('created_at', { ascending: false }),
     supabase.from('profile_tags').select('category').eq('profile_id', user.id),
     supabase.from('posts')
-      .select('id,body,created_at,profiles(full_name,photo_url,role_level)')
-      .eq('chapter_id', profile.chapter_id ?? '00000000-0000-0000-0000-000000000000')
-      .order('created_at', { ascending: false }).limit(20),
+      .select('id,body,created_at,author_id,chapter_id,profiles(full_name,photo_url,role_level),post_likes(profile_id),post_comments(id,body,created_at,author_id,profiles(full_name))')
+      .order('created_at', { ascending: false }).limit(50),
   ]);
 
   const upcoming: any[] = (seats ?? [])
@@ -104,7 +105,7 @@ export default async function DashboardPage() {
         <div className="grid" style={{ gap: 14 }}>
           <PostForm />
           {(posts ?? []).map((p: any) => (
-            <article key={p.id} className="surf lift" style={{ padding: 24 }}>
+            <article key={p.id} id={'post-' + p.id} className="surf lift" style={{ padding: 24 }}>
               <div className="row">
                 <span style={{ width: 72, height: 72, borderRadius: '50%', flex: 'none',
                   background: 'linear-gradient(145deg,#ccd6f8,#3352cf)',
@@ -123,10 +124,25 @@ export default async function DashboardPage() {
                 <span className="mute small" style={{ marginRight: 'auto' }}>
                   {new Date(p.created_at).toLocaleDateString('en-CA', { dateStyle: 'medium' })}
                 </span>
+                {(p.author_id === user.id || profile.role === 'admin') && <PostActions postId={p.id} />}
               </footer>
+              <PostEngagement
+                postId={p.id}
+                likeCount={(p.post_likes ?? []).length}
+                liked={(p.post_likes ?? []).some((l: any) => l.profile_id === user.id)}
+                comments={(p.post_comments ?? []).sort((a: any, b: any) => +new Date(a.created_at) - +new Date(b.created_at))}
+                userId={user.id}
+                isAdmin={profile.role === 'admin'}
+              />
             </article>
           ))}
-          {!posts?.length && <p className="mute">No posts in your chapter yet.</p>}
+          {postsError && (
+            <div className="surf" style={{ padding: 18, borderColor: 'var(--err)' }}>
+              <strong style={{ color: 'var(--err)' }}>Feed could not load</strong>
+              <p className="small mute" style={{ marginTop: 6, whiteSpace: 'pre-wrap' }}>{postsError.message}</p>
+            </div>
+          )}
+          {!postsError && !posts?.length && <p className="mute">No posts yet. Write the first one above.</p>}
         </div>
 
         <aside className="surf" style={{ padding: 22, position: 'sticky', top: 84 }}>

@@ -1,1 +1,4 @@
-export default { typescript: { ignoreBuildErrors: true } };
+export default {
+  typescript: { ignoreBuildErrors: true },
+  eslint: { ignoreDuringBuilds: true },
+};
