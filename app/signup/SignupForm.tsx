@@ -17,6 +17,7 @@ export function SignupForm() {
   const [pw, setPw] = useState('');
   const [pw2, setPw2] = useState('');
   const mismatch = pw2.length > 0 && pw !== pw2;
+  const pwOk = pw.length >= 8 && /[a-zA-Z]/.test(pw) && /[0-9]/.test(pw);
 
   if (state.checkEmail) {
     return (
@@ -69,9 +70,12 @@ export function SignupForm() {
       </label>
 
       <label className="fld"><span>Password</span>
-        <input name="password" type="password" required minLength={10} autoComplete="new-password"
+        <input name="password" type="password" required minLength={8} autoComplete="new-password"
           value={pw} onChange={(e) => setPw(e.target.value)} />
-        <span className="hint">At least 10 characters.</span>
+        <span className="hint" style={pwOk || pw.length === 0 ? undefined : { color: 'var(--err)' }}>
+          At least 8 characters, using both letters and numbers.
+        </span>
+        {state.fieldErrors?.password && <span className="err">{state.fieldErrors.password}</span>}
       </label>
 
       <label className="fld"><span>Retype password</span>
@@ -109,7 +113,7 @@ export function SignupForm() {
       {state.fieldErrors?.agree && <p className="err">{state.fieldErrors.agree}</p>}
       {state.error && <p className="err">{state.error}</p>}
 
-      <Submit label="Create account" busy="Creating your account…" disabled={mismatch} />
+      <Submit label="Create account" busy="Creating your account…" disabled={mismatch || !pwOk} />
     </form>
   );
 }

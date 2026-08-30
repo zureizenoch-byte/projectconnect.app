@@ -9,7 +9,10 @@ import { CURRENT_PRIVACY_VERSION, CURRENT_TERMS_VERSION } from '@/lib/legal';
 
 const SignupSchema = z.object({
   email: z.string().email(),
-  password: z.string().min(10, 'Use at least 10 characters'),
+  password: z.string()
+    .min(8, 'Use at least 8 characters')
+    .regex(/[a-zA-Z]/, 'Include at least one letter')
+    .regex(/[0-9]/, 'Include at least one number'),
   confirm: z.string(),
   full_name: z.string().min(2),
   pronouns: z.string().optional(),
