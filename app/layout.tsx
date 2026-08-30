@@ -7,6 +7,11 @@ export const metadata: Metadata = {
   title: 'Project Connect',
   description: 'Matched small-group meetups for PM, Product, Agile, QA, Data, Cyber, Cloud and Delivery professionals.',
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'https://projectconnect.app'),
+  icons: {
+    icon: [{ url: '/favicon.png', type: 'image/png' }],
+    shortcut: ['/favicon.png'],
+    apple: [{ url: '/favicon.png' }],
+  },
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
