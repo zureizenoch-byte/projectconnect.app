@@ -52,7 +52,7 @@ export async function toggleLike(postId: string) {
 }
 
 export async function addComment(postId: string, body: string) {
-  const { user } = await requireSession();
+  const { user, profile } = await requireSession();
   const text = body.trim();
   if (!text) return { error: 'Write something first' };
   const supabase = createClient();
@@ -61,7 +61,10 @@ export async function addComment(postId: string, body: string) {
     .select('id,body,created_at,author_id').single();
   if (error) return { error: error.message };
   revalidatePath('/dashboard');
-  return { ok: true, comment: data };
+  return {
+    ok: true,
+    comment: { ...data, commenter: { full_name: profile.full_name, photo_url: profile.photo_url } },
+  };
 }
 
 export async function deleteComment(commentId: string) {

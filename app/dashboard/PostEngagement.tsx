@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react';
 import { toggleLike, addComment, deleteComment } from '@/app/actions/feed';
 
-type Comment = { id: string; body: string; created_at: string; author_id: string; commenter?: { full_name?: string } };
+type Comment = { id: string; body: string; created_at: string; author_id: string; commenter?: { full_name?: string | null; photo_url?: string | null } };
 
 export function PostEngagement({
   postId, likeCount, liked, comments, userId, isAdmin,
@@ -48,7 +48,7 @@ export function PostEngagement({
             stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
             <path d="M7 10v12M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88Z" />
           </svg>
-          {count > 0 ? count : ''} Like
+          {count === 0 ? 'Like' : count + (count === 1 ? ' like' : ' likes')}
         </button>
 
         <button style={open ? active : btn} onClick={() => setOpen(!open)}>
@@ -56,7 +56,7 @@ export function PostEngagement({
             strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
           </svg>
-          {list.length > 0 ? list.length : ''} Comment
+          {list.length === 0 ? 'Comment' : list.length + (list.length === 1 ? ' comment' : ' comments')}
         </button>
 
         <button style={btn} onClick={share}>
@@ -95,7 +95,9 @@ export function PostEngagement({
               <div key={c.id} style={{ display: 'flex', gap: 10, alignItems: 'flex-start',
                 border: '1px solid var(--line)', borderRadius: 12, padding: '11px 13px' }}>
                 <span style={{ width: 34, height: 34, borderRadius: '50%', flex: 'none',
-                  background: 'linear-gradient(145deg,#ccd6f8,#3352cf)' }} />
+                  background: 'linear-gradient(145deg,#ccd6f8,#3352cf)',
+                  backgroundImage: c.commenter?.photo_url ? 'url(' + c.commenter.photo_url + ')' : undefined,
+                  backgroundSize: 'cover' }} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <span style={{ fontWeight: 600, fontSize: 14.5 }}>{c.commenter?.full_name ?? 'Member'}</span>
                   <span className="mute small" style={{ marginLeft: 8 }}>
