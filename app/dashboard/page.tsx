@@ -25,6 +25,30 @@ export default async function DashboardPage() {
       .order('created_at', { ascending: false }).limit(50),
   ]);
 
+  const postIds = (posts ?? []).map((p: any) => p.id);
+  const authorIds = Array.from(new Set((posts ?? []).map((p: any) => p.author_id)));
+
+  const [{ data: authors }, { data: likes }, { data: comments }] = await Promise.all([
+    authorIds.length
+      ? supabase.from('profiles').select('id,full_name,photo_url,role_level').in('id', authorIds)
+      : Promise.resolve({ data: [] as any[] }),
+    postIds.length
+      ? supabase.from('post_likes').select('post_id,profile_id').in('post_id', postIds)
+      : Promise.resolve({ data: [] as any[] }),
+    postIds.length
+      ? supabase.from('post_comments').select('id,post_id,body,created_at,author_id').in('post_id', postIds)
+      : Promise.resolve({ data: [] as any[] }),
+  ]);
+
+  const authorMap = new Map<string, any>((authors ?? []).map((a: any) => [a.id, a]));
+  const commenterIds = Array.from(new Set((comments ?? []).map((c: any) => c.author_id)))
+    .filter((id: any) => !authorMap.has(id));
+  if (commenterIds.length) {
+    const { data: extra } = await supabase.from('profiles')
+      .select('id,full_name,photo_url,role_level').in('id', commenterIds);
+    for (const a of extra ?? []) authorMap.set(a.id, a);
+  }
+
   const upcoming: any[] = (seats ?? [])
     .filter((s: any) => s.events && new Date(s.events.starts_at) > new Date())
     .sort((a: any, b: any) => +new Date(a.events.starts_at) - +new Date(b.events.starts_at));
