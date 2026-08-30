@@ -19,7 +19,18 @@ const SignupSchema = z.object({
   agree: z.literal('on', { errorMap: () => ({ message: 'You must agree to the Terms and Privacy Policy' }) }),
 }).refine((d) => d.password === d.confirm, { path: ['confirm'], message: 'Passwords do not match' });
 
-export type ActionState = { error?: string; fieldErrors?: Record<string, string>; ok?: boolean };
+export type ActionState = { error?: string; fieldErrors?: Record<string, string>; ok?: boolean; checkEmail?: string };
+
+/** Prefer the real request host over a stale env var, so email links never point at a dead domain. */
+function siteUrl() {
+  const env = process.env.NEXT_PUBLIC_SITE_URL;
+  const host = headers().get('x-forwarded-host') ?? headers().get('host');
+  if (host && !host.startsWith('localhost')) {
+    const proto = headers().get('x-forwarded-proto') ?? 'https';
+    return proto + '://' + host;
+  }
+  return env ?? 'http://localhost:3000';
+}
 
 export async function signUp(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const parsed = SignupSchema.safeParse(Object.fromEntries(formData));
@@ -35,7 +46,7 @@ export async function signUp(_prev: ActionState, formData: FormData): Promise<Ac
     email: d.email,
     password: d.password,
     options: {
-      emailRedirectTo: (process.env.NEXT_PUBLIC_SITE_URL ?? '') + '/auth/callback',
+      emailRedirectTo: siteUrl() + '/auth/callback',
       data: {
         full_name: d.full_name,
         pronouns: d.pronouns ?? null,
@@ -56,6 +67,11 @@ export async function signUp(_prev: ActionState, formData: FormData): Promise<Ac
       { profile_id: data.user.id, doc: 'privacy', version: CURRENT_PRIVACY_VERSION, user_agent: ua, ip },
       { profile_id: data.user.id, doc: 'terms', version: CURRENT_TERMS_VERSION, user_agent: ua, ip },
     ]);
+  }
+
+  // Confirm-email on: no session yet, so tell the user instead of bouncing them
+  if (!data.session) {
+    return { ok: true, checkEmail: d.email };
   }
 
   revalidatePath('/', 'layout');

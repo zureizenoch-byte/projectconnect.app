@@ -18,6 +18,21 @@ export function SignupForm() {
   const [pw2, setPw2] = useState('');
   const mismatch = pw2.length > 0 && pw !== pw2;
 
+  if (state.checkEmail) {
+    return (
+      <div>
+        <h2 style={{ fontSize: 26 }}>Check your email</h2>
+        <p className="mute" style={{ marginTop: 12 }}>
+          We sent a confirmation link to <strong>{state.checkEmail}</strong>. Open it to finish
+          creating your account, then you'll be taken to your profile.
+        </p>
+        <p className="hint">
+          Wrong address, or no email after a few minutes? <a href="/signup">Start again</a>.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <form action={action}>
       <fieldset style={{ border: 0, padding: 0, margin: '0 0 26px' }}>
