@@ -8,11 +8,25 @@ import { TAG_CATEGORIES } from '@/lib/types';
 
 const blankToUndefined = (v: unknown) => (v === '' || v === null ? undefined : v);
 const optNum = (min: number, max: number) =>
-  z.preprocess(blankToUndefined, z.coerce.number().int().min(min).max(max).optional());
+  z.preprocess((v) => {
+    const cleaned = blankToUndefined(v);
+    if (cleaned === undefined) return undefined;
+    const n = Number(cleaned);
+    if (!Number.isFinite(n) || n < min || n > max) return undefined;
+    return Math.trunc(n);
+  }, z.number().int().optional());
 const optStr = (max: number) =>
-  z.preprocess(blankToUndefined, z.string().max(max).optional());
+  z.preprocess((v) => {
+    const cleaned = blankToUndefined(v);
+    return cleaned === undefined ? undefined : String(cleaned).slice(0, max);
+  }, z.string().optional());
 const optUrl = () =>
-  z.preprocess(blankToUndefined, z.string().url().optional());
+  z.preprocess((v) => {
+    const cleaned = blankToUndefined(v);
+    if (cleaned === undefined) return undefined;
+    const s = String(cleaned).trim();
+    return /^https?:\/\//i.test(s) ? s : undefined;
+  }, z.string().optional());
 
 const ProfileSchema = z.object({
   pronouns: optStr(40),
