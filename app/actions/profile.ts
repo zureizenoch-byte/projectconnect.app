@@ -6,40 +6,53 @@ import { createClient } from '@/lib/supabase/server';
 import { requireSession } from '@/lib/auth';
 import { TAG_CATEGORIES } from '@/lib/types';
 
+const blankToUndefined = (v: unknown) => (v === '' || v === null ? undefined : v);
+const optNum = (min: number, max: number) =>
+  z.preprocess(blankToUndefined, z.coerce.number().int().min(min).max(max).optional());
+const optStr = (max: number) =>
+  z.preprocess(blankToUndefined, z.string().max(max).optional());
+const optUrl = () =>
+  z.preprocess(blankToUndefined, z.string().url().optional());
+
 const ProfileSchema = z.object({
-  pronouns: z.string().max(40).optional(),
-  full_name: z.string().min(2).max(120),
-  intro: z.string().max(400).optional(),
-  role_level: z.string().max(60).optional(),
-  employer: z.string().max(120).optional(),
-  employer_visible: z.coerce.boolean().optional(),
-  city: z.string().max(60).optional(),
-  years_experience: z.coerce.number().int().min(0).max(60).optional(),
-  budget_owned: z.string().max(60).optional(),
-  linkedin_url: z.string().url().optional().or(z.literal('')),
-  website_url: z.string().url().optional().or(z.literal('')),
-  open_to_mentoring: z.coerce.boolean().optional(),
-  seeking_mentor: z.coerce.boolean().optional(),
-  is_student: z.coerce.boolean().optional(),
-  is_immigrant: z.coerce.boolean().optional(),
-  institution: z.string().max(160).optional(),
-  programme: z.string().max(160).optional(),
-  graduation_year: z.coerce.number().int().min(1970).max(2040).optional(),
-  arrival_year: z.coerce.number().int().min(1950).max(2040).optional(),
-  home_country: z.string().max(80).optional(),
-  credential_recognition: z.string().max(60).optional(),
-  work_authorization: z.string().max(80).optional(),
+  pronouns: optStr(40),
+  full_name: optStr(120),
+  intro: optStr(400),
+  role_level: optStr(60),
+  employer: optStr(120),
+  city: optStr(60),
+  years_experience: optNum(0, 60),
+  budget_owned: optStr(60),
+  linkedin_url: optUrl(),
+  website_url: optUrl(),
+  institution: optStr(160),
+  programme: optStr(160),
+  graduation_year: optNum(1970, 2040),
+  arrival_year: optNum(1950, 2040),
+  home_country: optStr(80),
+  credential_recognition: optStr(60),
+  work_authorization: optStr(80),
 });
+
+const CHECKBOXES = ['employer_visible', 'open_to_mentoring', 'seeking_mentor', 'is_student', 'is_immigrant'] as const;
 
 export async function saveProfile(formData: FormData) {
   const { user } = await requireSession();
   const raw = Object.fromEntries(formData);
-  const parsed = ProfileSchema.partial().safeParse(raw);
-  if (!parsed.success) return { error: parsed.error.issues[0].message };
+  const parsed = ProfileSchema.safeParse(raw);
+  if (!parsed.success) {
+    const issue = parsed.error.issues[0];
+    return { error: String(issue.path[0] ?? 'field') + ': ' + issue.message };
+  }
 
   const supabase = createClient();
   const patch: Record<string, unknown> = { ...parsed.data, updated_at: new Date().toISOString() };
-  for (const k of ['linkedin_url', 'website_url']) if (patch[k] === '') patch[k] = null;
+
+  // unchecked boxes are absent from FormData — write them as false, not undefined
+  for (const k of CHECKBOXES) patch[k] = formData.get(k) === 'on';
+
+  // never overwrite a saved value with undefined
+  for (const k of Object.keys(patch)) if (patch[k] === undefined) delete patch[k];
 
   const { error } = await supabase.from('profiles').update(patch).eq('id', user.id);
   if (error) return { error: error.message };
