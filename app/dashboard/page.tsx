@@ -20,7 +20,7 @@ export default async function DashboardPage() {
     supabase.from('profile_tags').select('category').eq('profile_id', user.id),
     supabase.from('posts')
       .select('id,body,created_at,profiles(full_name,photo_url,role_level)')
-      .eq('chapter_id', profile.chapter_id ?? '')
+      .eq('chapter_id', profile.chapter_id ?? '00000000-0000-0000-0000-000000000000')
       .order('created_at', { ascending: false }).limit(20),
   ]);
 
