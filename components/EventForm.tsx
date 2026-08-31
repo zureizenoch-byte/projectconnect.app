@@ -14,6 +14,10 @@ export function EventForm({ kind, chapters, venues }: {
   const [chapterId, setChapterId] = useState(chapters[0]?.id ?? '');
   const [venue, setVenue] = useState<{ venueId: string | null; name: string; address: string }>(
     { venueId: null, name: '', address: '' });
+  const [title, setTitle] = useState('');
+  const [startsAt, setStartsAt] = useState('');
+
+  const ready = title.trim().length > 0 && startsAt.length > 0;
 
   const chapterVenues = venues.filter((v) => v.chapter_id === chapterId);
   const cityName = chapters.find((c) => c.id === chapterId)?.city ?? '';
@@ -40,6 +44,7 @@ export function EventForm({ kind, chapters, venues }: {
           if (!res?.error) {
             form.reset();
             setVenue({ venueId: null, name: '', address: '' });
+            setTitle(''); setStartsAt('');
           }
         });
       }}>
@@ -47,7 +52,8 @@ export function EventForm({ kind, chapters, venues }: {
 
       <div className="grid g2">
         <label className="fld"><span>Title</span>
-          <input name="title" required maxLength={200} />
+          <input name="title" required maxLength={200}
+            value={title} onChange={(e) => setTitle(e.target.value)} />
         </label>
         <label className="fld"><span>Chapter</span>
           <select name="chapter_id" value={chapterId}
@@ -59,7 +65,13 @@ export function EventForm({ kind, chapters, venues }: {
           </select>
         </label>
         <label className="fld"><span>Date and time</span>
-          <input name="starts_at" type="datetime-local" required />
+          <input name="starts_at" type="datetime-local" required
+            value={startsAt} onChange={(e) => setStartsAt(e.target.value)} />
+          {startsAt && (
+            <span className="hint" style={{ color: 'var(--ok)' }}>
+              {new Date(startsAt).toLocaleString('en-CA', { dateStyle: 'full', timeStyle: 'short' })}
+            </span>
+          )}
         </label>
         <label className="fld"><span>Seats (12–15)</span>
           <input name="seat_cap" type="number" min={12} max={15} defaultValue={15} />
@@ -106,10 +118,31 @@ export function EventForm({ kind, chapters, venues }: {
       </label>
 
       {msg && <p className="hint" style={{ color: msg.startsWith('Submitted') ? 'var(--ok)' : 'var(--err)' }}>{msg}</p>}
-      <button className="btn btn-primary" type="submit" disabled={pending}>
-        {pending ? 'Submitting…' : kind === 'talk' ? 'Submit talk' : 'Create meetup'}
-      </button>
-      <p className="hint">Chapter Leads create; an admin approves before it publishes.</p>
+
+      <div style={{
+        display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap',
+        marginTop: 22, paddingTop: 20, borderTop: '1px solid var(--line)',
+      }}>
+        <button className="btn btn-primary" type="submit" disabled={pending || !ready}
+          style={{ minHeight: 48, padding: '0 26px', fontSize: 15.5 }}>
+          {pending ? 'Submitting…' : kind === 'talk' ? 'Submit talk' : 'Create meetup'}
+        </button>
+
+        {ready && (
+          <button type="button" className="btn btn-quiet" disabled={pending}
+            onClick={() => {
+              setTitle(''); setStartsAt('');
+              setVenue({ venueId: null, name: '', address: '' });
+              setMsg(null);
+            }}>Clear</button>
+        )}
+
+        <span className="mute" style={{ fontSize: 14, marginLeft: 'auto' }}>
+          {ready
+            ? (kind === 'talk' ? 'Goes to an admin for approval.' : 'Goes to an admin for approval.')
+            : 'Add a title and a date to continue.'}
+        </span>
+      </div>
     </form>
   );
 }
