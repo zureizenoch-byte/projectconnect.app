@@ -4,6 +4,7 @@ import { isPaid } from '@/lib/tiers';
 import { ProfileForm } from './ProfileForm';
 import { PrivacyForm } from './PrivacyForm';
 import { AccessRequestForm } from './AccessRequestForm';
+import { AccountSecurity } from './AccountSecurity';
 
 export const metadata = { title: 'Profile — Project Connect' };
 
@@ -35,6 +36,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: { we
       <ProfileForm profile={profile} tags={tags ?? []} />
       <PrivacyForm settings={privacy ?? null} />
       <AccessRequestForm profile={profile} paid={paid} requests={requests ?? []} />
+      <AccountSecurity email={profile.email} />
     </main>
   );
 }
