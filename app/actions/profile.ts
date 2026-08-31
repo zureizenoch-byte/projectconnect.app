@@ -138,9 +138,10 @@ export async function updateAccessRequest(formData: FormData) {
   if (!existing) return { error: 'Application not found' };
   if (existing.status !== 'pending') return { error: 'This application has already been decided.' };
 
-  const { error } = await supabase.from('access_requests')
-    .update({ note }).eq('id', id).eq('profile_id', user.id);
+  const { data: updated, error } = await supabase.from('access_requests')
+    .update({ note }).eq('id', id).eq('profile_id', user.id).select('id');
   if (error) return { error: error.message };
+  if (!updated?.length) return { error: 'Could not save — your application may have just been decided.' };
 
   revalidatePath('/profile');
   return { ok: true };

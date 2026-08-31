@@ -7,7 +7,7 @@ import { requireSession } from '@/lib/auth';
 
 export type AccountState = { error?: string; ok?: string };
 
-const PASSWORD_RULE = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8}$/;
+const PASSWORD_RULE = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,20}$/;
 
 export async function changePassword(_prev: AccountState, formData: FormData): Promise<AccountState> {
   const { profile } = await requireSession();
@@ -17,7 +17,7 @@ export async function changePassword(_prev: AccountState, formData: FormData): P
 
   if (next !== confirm) return { error: 'The new passwords do not match.' };
   if (!PASSWORD_RULE.test(next)) {
-    return { error: 'Password must be exactly 8 characters, letters and numbers only, with at least one of each.' };
+    return { error: 'Password must be 8 to 20 characters, letters and numbers only, with at least one of each.' };
   }
   if (next === current) return { error: 'Choose a password you have not used here before.' };
 

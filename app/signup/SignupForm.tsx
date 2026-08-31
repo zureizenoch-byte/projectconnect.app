@@ -70,7 +70,7 @@ export function SignupForm() {
       </label>
 
       <label className="fld"><span>Password</span>
-        <input name="password" type="password" required minLength={8} autoComplete="new-password"
+        <input name="password" type="password" required minLength={8} maxLength={20} autoComplete="new-password"
           value={pw} onChange={(e) => setPw(e.target.value)} />
         <span className="hint" style={pwOk || pw.length === 0 ? undefined : { color: 'var(--err)' }}>
           At least 8 characters, using both letters and numbers.

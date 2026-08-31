@@ -11,6 +11,8 @@ const SignupSchema = z.object({
   email: z.string().email(),
   password: z.string()
     .min(8, 'Use at least 8 characters')
+    .max(20, 'Use no more than 20 characters')
+    .regex(/^[A-Za-z0-9]+$/, 'Letters and numbers only')
     .regex(/[a-zA-Z]/, 'Include at least one letter')
     .regex(/[0-9]/, 'Include at least one number'),
   confirm: z.string(),

@@ -18,13 +18,13 @@ function ChangePassword() {
   const [next, setNext] = useState('');
   const [confirm, setConfirm] = useState('');
   const mismatch = confirm.length > 0 && next !== confirm;
-  const valid = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8}$/.test(next);
+  const valid = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,20}$/.test(next);
 
   return (
     <form action={action} className="surf" style={{ padding: 'clamp(22px,3vw,34px)', marginTop: 22 }}>
       <h2 style={{ fontSize: 24 }}>Change password</h2>
       <p className="mute small" style={{ marginTop: 6 }}>
-        Exactly 8 characters, letters and numbers only, with at least one of each.
+        Between 8 and 20 characters, letters and numbers only, with at least one of each.
       </p>
 
       <div style={{ maxWidth: 420, marginTop: 20 }}>
@@ -34,17 +34,17 @@ function ChangePassword() {
         </label>
         <label className="fld">
           <span>New password</span>
-          <input name="new_password" type="password" required maxLength={8} autoComplete="new-password"
+          <input name="new_password" type="password" required maxLength={20} autoComplete="new-password"
             value={next} onChange={(e) => setNext(e.target.value)} />
           {next.length > 0 && (
             <span className="hint" style={{ color: valid ? 'var(--ok)' : 'var(--mute)' }}>
-              {valid ? 'Meets the requirements' : '8 characters, letters and numbers'}
+              {valid ? 'Meets the requirements' : '8 to 20 characters, letters and numbers'}
             </span>
           )}
         </label>
         <label className="fld">
           <span>Retype new password</span>
-          <input name="confirm_password" type="password" required maxLength={8} autoComplete="new-password"
+          <input name="confirm_password" type="password" required maxLength={20} autoComplete="new-password"
             value={confirm} onChange={(e) => setConfirm(e.target.value)}
             style={mismatch ? { borderColor: 'var(--err)' } : undefined} />
           {mismatch && <span className="err">Passwords do not match</span>}
