@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { saveProfile, uploadPhoto } from '@/app/actions/profile';
+import { saveProfile, uploadPhoto, removePhoto } from '@/app/actions/profile';
 import { ChipGroup } from '@/components/ChipGroup';
+import { Avatar } from '@/components/Avatar';
 import {
   CITIES, ROLE_LEVELS, DOMAINS, TRANSFORMATION_TYPES, METHODS, INDUSTRIES,
   CERTIFICATIONS, TOOLS, LANGUAGES, BUDGETS, WORK_AUTH, CREDENTIAL_RECOGNITION,
@@ -12,6 +13,7 @@ import type { Profile } from '@/lib/types';
 type Tag = { category: string; value: string; is_custom: boolean };
 
 export function ProfileForm({ profile, tags }: { profile: Profile; tags: Tag[] }) {
+  const [photo, setPhoto] = useState<string | null>(profile.photo_url);
   const [pending, start] = useTransition();
   const [msg, setMsg] = useState<string | null>(null);
   const [isStudent, setIsStudent] = useState(profile.is_student);
@@ -33,10 +35,8 @@ export function ProfileForm({ profile, tags }: { profile: Profile; tags: Tag[] }
 
       <p className="eyebrow">Photo</p>
       <div className="row" style={{ margin: '14px 0 26px' }}>
-        <span style={{ width: 96, height: 96, borderRadius: '50%', background: 'var(--gold-100)',
-          backgroundImage: profile.photo_url ? 'url(' + profile.photo_url + ')' : undefined,
-          backgroundSize: 'cover', flex: 'none' }} />
-        <PhotoUpload />
+        <Avatar src={photo} name={profile.full_name} email={profile.email} size={96} />
+        <PhotoUpload current={photo} onChange={setPhoto} />
       </div>
 
       <div className="grid g2">
@@ -181,23 +181,39 @@ export function ProfileForm({ profile, tags }: { profile: Profile; tags: Tag[] }
   );
 }
 
-function PhotoUpload() {
+function PhotoUpload({ current, onChange }: { current: string | null; onChange: (url: string | null) => void }) {
   const [pending, start] = useTransition();
   const [msg, setMsg] = useState<string | null>(null);
+  const [isError, setIsError] = useState(false);
+
   return (
     <div>
-      <input type="file" accept="image/*" onChange={(e) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-        const fd = new FormData();
-        fd.set('photo', file);
-        start(async () => {
-          const res = await uploadPhoto(fd);
-          setMsg(res?.error ?? 'Photo updated.');
-        });
-      }} />
+      <label className="btn btn-out" style={{ cursor: 'pointer' }}>
+        {current ? 'Change photo' : 'Upload a photo'}
+        <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" hidden
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (!file) return;
+            const fd = new FormData();
+            fd.set('photo', file);
+            start(async () => {
+              const res = await uploadPhoto(fd);
+              if (res?.error) { setIsError(true); setMsg(res.error); }
+              else { setIsError(false); setMsg('Photo updated.'); onChange(res.url ?? null); }
+            });
+            e.target.value = '';
+          }} />
+      </label>
+      {current && (
+        <button type="button" className="btn btn-quiet" disabled={pending}
+          onClick={() => start(async () => {
+            const res = await removePhoto();
+            if (res?.error) { setIsError(true); setMsg(res.error); }
+            else { setIsError(false); setMsg('Photo removed.'); onChange(null); }
+          })}>Remove</button>
+      )}
       {pending && <p className="hint">Uploading…</p>}
-      {msg && <p className="hint">{msg}</p>}
+      {msg && <p className={isError ? 'err' : 'hint'} style={!isError ? { color: 'var(--ok)' } : undefined}>{msg}</p>}
     </div>
   );
 }

@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { requireSession } from '@/lib/auth';
 import { TAG_CATEGORIES } from '@/lib/types';
 
@@ -107,21 +107,57 @@ export async function savePrivacy(formData: FormData) {
   return { ok: true };
 }
 
+const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+
 export async function uploadPhoto(formData: FormData) {
   const { user } = await requireSession();
   const file = formData.get('photo') as File | null;
-  if (!file || file.size === 0) return { error: 'Choose an image first' };
-  if (file.size > 5_000_000) return { error: 'Images must be under 5MB' };
 
-  const supabase = createClient();
-  const ext = file.name.split('.').pop() ?? 'jpg';
-  const path = user.id + '/avatar.' + ext;
-  const { error } = await supabase.storage.from('avatars').upload(path, file, { upsert: true });
-  if (error) return { error: error.message };
+  if (!file || file.size === 0) return { error: 'Choose an image first.' };
+  if (!IMAGE_TYPES.includes(file.type)) return { error: 'Use a JPG, PNG, WebP or GIF image.' };
+  if (file.size > 5_000_000) return { error: 'Images must be under 5MB.' };
 
-  const { data } = supabase.storage.from('avatars').getPublicUrl(path);
-  await supabase.from('profiles').update({ photo_url: data.publicUrl }).eq('id', user.id);
+  // service role: storage policies cannot silently swallow the write
+  const admin = createAdminClient();
+  const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '');
+  const path = user.id + '/avatar.' + (ext || 'jpg');
+
+  const { error: uploadError } = await admin.storage
+    .from('avatars')
+    .upload(path, file, { upsert: true, contentType: file.type, cacheControl: '3600' });
+
+  if (uploadError) {
+    if (/bucket/i.test(uploadError.message)) {
+      return { error: 'Storage is not set up: create a public bucket named "avatars" in Supabase.' };
+    }
+    return { error: 'Upload failed: ' + uploadError.message };
+  }
+
+  const { data } = admin.storage.from('avatars').getPublicUrl(path);
+  if (!data?.publicUrl) return { error: 'Uploaded, but no public URL came back. Is the bucket public?' };
+
+  // cache-bust so the new photo appears immediately instead of the old one
+  const url = data.publicUrl + '?v=' + Date.now();
+
+  const { error: saveError } = await admin.from('profiles')
+    .update({ photo_url: url }).eq('id', user.id);
+  if (saveError) return { error: 'Saved the image but could not update your profile: ' + saveError.message };
+
   revalidatePath('/profile');
+  revalidatePath('/dashboard');
+  return { ok: true, url };
+}
+
+export async function removePhoto() {
+  const { user } = await requireSession();
+  const admin = createAdminClient();
+  await admin.storage.from('avatars').remove([
+    user.id + '/avatar.jpg', user.id + '/avatar.jpeg',
+    user.id + '/avatar.png', user.id + '/avatar.webp', user.id + '/avatar.gif',
+  ]);
+  await admin.from('profiles').update({ photo_url: null }).eq('id', user.id);
+  revalidatePath('/profile');
+  revalidatePath('/dashboard');
   return { ok: true };
 }
 

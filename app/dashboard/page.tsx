@@ -4,6 +4,7 @@ import { isPaid } from '@/lib/tiers';
 import { mapsUrl } from '@/lib/matching';
 import { TAG_CATEGORIES } from '@/lib/types';
 import { PostForm } from './PostForm';
+import { Avatar } from '@/components/Avatar';
 import { PostActions } from './PostActions';
 import { PostEngagement } from './PostEngagement';
 
@@ -147,10 +148,7 @@ export default async function DashboardPage() {
           {(posts ?? []).map((p: any) => (
             <article key={p.id} id={'post-' + p.id} className="surf lift" style={{ padding: 24 }}>
               <div className="row">
-                <span style={{ width: 72, height: 72, borderRadius: '50%', flex: 'none',
-                  background: 'linear-gradient(145deg,#ccd6f8,#3352cf)',
-                  backgroundImage: authorMap.get(p.author_id)?.photo_url ? 'url(' + authorMap.get(p.author_id)?.photo_url + ')' : undefined,
-                  backgroundSize: 'cover' }} />
+                <Avatar src={authorMap.get(p.author_id)?.photo_url} name={authorMap.get(p.author_id)?.full_name} size={72} />
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                   <span style={{ fontWeight: 600, fontSize: 19 }}>{authorMap.get(p.author_id)?.full_name ?? 'Member'}</span>
                   <span className="mute" style={{ fontSize: 15 }}>{authorMap.get(p.author_id)?.role_level}</span>

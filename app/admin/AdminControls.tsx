@@ -18,7 +18,7 @@ export function AdminControls({ requests, pendingEvents, leads, reports, chapter
       <h2 id="access-requests" style={{ marginTop: 30, scrollMarginTop: 80 }}>Access requests</h2>
       <div className="surf" style={{ marginTop: 14, overflow: 'hidden' }}>
         <table className="table">
-          <thead><tr><th>Person</th><th>Requesting</th><th>Chapter</th><th>Note</th><th style={{ textAlign: 'right' }}>Decision</th></tr></thead>
+          <thead><tr><th>Person</th><th>Requesting</th><th>Chapter</th><th>Introduction</th><th style={{ textAlign: 'right' }}>Decision</th></tr></thead>
           <tbody>
             {requests.map((r: any) => (
               <tr key={r.id}>
