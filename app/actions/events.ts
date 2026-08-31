@@ -106,9 +106,30 @@ export async function createEvent(formData: FormData) {
 
   const seatCap = Math.min(15, Math.max(12, Number(formData.get('seat_cap') ?? 15)));
   const supabase = createClient();
+  const chapterId = String(formData.get('chapter_id'));
+
+  // "Add a new venue" creates the venue first, so it can be reused next time
+  let venueId: string | null = String(formData.get('venue_id') || '') || null;
+  if (venueId === '__new') {
+    const name = String(formData.get('new_venue_name') ?? '').trim().slice(0, 160);
+    const address = String(formData.get('new_venue_address') ?? '').trim().slice(0, 300);
+    if (!name || !address) return { error: 'Give the new venue a name and an address.' };
+
+    const admin = createAdminClient();
+    const { data: venue, error: venueError } = await admin.from('venues').insert({
+      chapter_id: chapterId,
+      name,
+      address,
+      maps_query: address,
+      capacity: seatCap,
+    }).select('id').single();
+    if (venueError) return { error: 'Could not save the venue: ' + venueError.message };
+    venueId = venue.id;
+  }
+
   const { error } = await supabase.from('events').insert({
-    chapter_id: String(formData.get('chapter_id')),
-    venue_id: String(formData.get('venue_id') || '') || null,
+    chapter_id: chapterId,
+    venue_id: venueId,
     host_id: kind === 'talk' ? profile.id : null,
     created_by: profile.id,
     kind,

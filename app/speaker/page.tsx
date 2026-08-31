@@ -17,7 +17,7 @@ export default async function SpeakerPage() {
       .select('id,title,status,starts_at,seat_cap,chapters(city),event_seats(id,status,table_no,profiles(full_name,role_level,intro))')
       .eq('host_id', profile.id).order('starts_at', { ascending: false }),
     supabase.from('chapters').select('id,city').eq('active', true),
-    supabase.from('venues').select('id,name,chapter_id').eq('active', true),
+    supabase.from('venues').select('id,name,chapter_id,address').eq('active', true),
   ]);
 
   const now = Date.now();

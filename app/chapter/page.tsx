@@ -20,7 +20,7 @@ export default async function ChapterPage() {
       .select('id,title,kind,status,starts_at,seat_cap,venues(name,address),event_seats(id,status,table_no,checked_in,profiles(full_name,role_level))')
       .eq('chapter_id', chapterId ?? '').order('starts_at'),
     supabase.from('chapters').select('id,city').eq('active', true),
-    supabase.from('venues').select('id,name,chapter_id').eq('active', true),
+    supabase.from('venues').select('id,name,chapter_id,address').eq('active', true),
     supabase.from('profiles').select('id').eq('chapter_id', chapterId ?? ''),
   ]);
 
