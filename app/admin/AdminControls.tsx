@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { decideAccessRequest, revokeRole, grantRole, setEventStatus, saveVenue, resolveReport } from '@/app/actions/admin';
+import { decideAccessRequest, revokeRole, grantRole, setAccountRole, setEventStatus, saveVenue, resolveReport } from '@/app/actions/admin';
 
-export function AdminControls({ requests, pendingEvents, leads, reports, chapters, venues, log, currentAdminId }: any) {
+export function AdminControls({ requests, pendingEvents, leads, reports, chapters, venues, log, everyone = [], currentAdminId }: any) {
   const [pending, start] = useTransition();
   const [msg, setMsg] = useState<string | null>(null);
   const run = (fn: () => Promise<any>) => start(async () => {
@@ -157,6 +157,54 @@ export function AdminControls({ requests, pendingEvents, leads, reports, chapter
                 <td>{v.active ? <span className="pill pill-ok">Active</span> : <span className="pill pill-off">Off</span>}</td>
               </tr>
             ))}
+          </tbody>
+        </table>
+      </div>
+
+      <h2 style={{ marginTop: 30 }}>All accounts</h2>
+      <p className="mute small" style={{ marginTop: 6 }}>
+        Change anyone's role here. Grants and revocations are written to the audit log below.
+      </p>
+      <div className="surf" style={{ marginTop: 14, overflow: 'hidden' }}>
+        <table className="table">
+          <thead><tr><th>Person</th><th>City</th><th>Role</th><th style={{ textAlign: 'right' }}>Change to</th></tr></thead>
+          <tbody>
+            {everyone.map((p: any) => (
+              <tr key={p.id}>
+                <td>{p.full_name || '—'}<br /><span className="mute small">{p.email}</span></td>
+                <td className="mute">{p.city ?? '—'}</td>
+                <td>
+                  <span className={'pill ' + (p.role === 'admin' ? 'pill-ok' : p.role === 'member' ? 'pill-off' : 'pill-wait')}>
+                    {p.role.replace('_', ' ')}
+                  </span>
+                </td>
+                <td style={{ textAlign: 'right' }}>
+                  {p.id === currentAdminId ? (
+                    <span className="mute small">You</span>
+                  ) : (
+                    <select defaultValue={p.role} disabled={pending}
+                      style={{ minHeight: 36, padding: '4px 10px', border: '1px solid var(--line)',
+                        borderRadius: 10, background: '#fff', font: 'inherit', fontSize: 14 }}
+                      onChange={(e) => {
+                        const next = e.target.value;
+                        if (next === p.role) return;
+                        if (!confirm('Set ' + (p.full_name || p.email) + ' to ' + next.replace('_', ' ') + '?')) {
+                          e.target.value = p.role;
+                          return;
+                        }
+                        run(() => setAccountRole(p.id, next));
+                      }}>
+                      <option value="member">Member</option>
+                      <option value="student">Student</option>
+                      <option value="speaker">Speaker</option>
+                      <option value="chapter_lead">Chapter Lead</option>
+                      <option value="admin">Admin</option>
+                    </select>
+                  )}
+                </td>
+              </tr>
+            ))}
+            {!everyone.length && <tr><td colSpan={4} className="mute">No accounts yet.</td></tr>}
           </tbody>
         </table>
       </div>

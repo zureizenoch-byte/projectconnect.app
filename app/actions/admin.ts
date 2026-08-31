@@ -2,11 +2,83 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
-import { requireRole } from '@/lib/auth';
+import { requireRole, requireSession } from '@/lib/auth';
 
 async function log(actorId: string, action: string, target: string, meta?: unknown) {
   const admin = createAdminClient();
   await admin.from('audit_log').insert({ actor_id: actorId, action, target, meta: meta ?? null });
+}
+
+/**
+ * Set a role reliably: write the grant first so the governance trigger is satisfied,
+ * then the role. Service-role client, so RLS never silently drops the write.
+ */
+async function applyRole(profileId: string, role: string, chapterId?: string | null) {
+  const admin = createAdminClient();
+
+  if (role === 'member' || role === 'student') {
+    await admin.from('role_grants')
+      .update({ revoked_at: new Date().toISOString() })
+      .eq('profile_id', profileId).is('revoked_at', null);
+  } else {
+    const { data: existing } = await admin.from('role_grants')
+      .select('id').eq('profile_id', profileId).eq('role', role).is('revoked_at', null).maybeSingle();
+    if (!existing) {
+      const { error } = await admin.from('role_grants')
+        .insert({ profile_id: profileId, role, chapter_id: chapterId ?? null });
+      if (error) return { error: error.message };
+    }
+  }
+
+  const patch: Record<string, unknown> = { role };
+  if (role === 'chapter_lead') patch.lead_chapter_id = chapterId ?? null;
+  const { error } = await admin.from('profiles').update(patch).eq('id', profileId);
+  if (error) return { error: error.message };
+  return { ok: true };
+}
+
+/** First-run bootstrap: only works while no admin exists anywhere. */
+export async function claimAdmin() {
+  const { user } = await requireSession();
+  const admin = createAdminClient();
+
+  const { count } = await admin
+    .from('profiles').select('id', { count: 'exact', head: true }).eq('role', 'admin');
+  if ((count ?? 0) > 0) return { error: 'An admin already exists. Ask them to grant you access.' };
+
+  const res = await applyRole(user.id, 'admin');
+  if (res.error) return res;
+
+  await log(user.id, 'access.bootstrap', user.id, { role: 'admin' });
+  revalidatePath('/', 'layout');
+  return { ok: true };
+}
+
+/** Set any account's role from the admin console. */
+export async function setAccountRole(profileId: string, role: string) {
+  const { profile } = await requireRole('admin');
+  if (profileId === profile.id && role !== 'admin') {
+    return { error: 'You cannot remove your own admin access.' };
+  }
+  const valid = ['member', 'student', 'speaker', 'chapter_lead', 'admin'];
+  if (!valid.includes(role)) return { error: 'Unknown role' };
+
+  const admin = createAdminClient();
+  if (role === 'admin') {
+    const { count } = await admin.from('profiles')
+      .select('id', { count: 'exact', head: true }).eq('role', 'admin');
+    if ((count ?? 0) >= 2) return { error: 'Only two admin accounts are allowed. Demote one first.' };
+  }
+
+  const { data: target } = await admin.from('profiles')
+    .select('chapter_id').eq('id', profileId).single();
+
+  const res = await applyRole(profileId, role, target?.chapter_id);
+  if (res.error) return res;
+
+  await log(profile.id, 'access.set_role', profileId, { role });
+  revalidatePath('/admin');
+  return { ok: true };
 }
 
 /** Approval goes through the database function, which writes the grant and the role together. */

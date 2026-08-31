@@ -28,6 +28,11 @@ export default async function AdminPage() {
         .order('created_at', { ascending: false }).limit(20),
     ]);
 
+  const { data: everyone } = await supabase
+    .from('profiles')
+    .select('id,email,full_name,role,city,speaker_approved')
+    .order('created_at');
+
   return (
     <main className="wrap">
       <h1>Admin</h1>
@@ -42,6 +47,7 @@ export default async function AdminPage() {
         chapters={chapters ?? []}
         venues={venues ?? []}
         log={log ?? []}
+        everyone={everyone ?? []}
         currentAdminId={me.id}
       />
     </main>
