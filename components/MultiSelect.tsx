@@ -39,7 +39,7 @@ export function MultiSelect({
   }, [options, picked, query, allowOther]);
 
   const add = (v: string) => {
-    setPicked((p) => [...p, v]);
+    setPicked((p) => (p.includes(v) ? p : [...p, v]));
     setQuery('');
   };
   const remove = (v: string) => setPicked((p) => p.filter((x) => x !== v));
@@ -60,20 +60,47 @@ export function MultiSelect({
             if (e.key === 'Escape') setOpen(false);
           }}
           style={{
-            display: 'flex', alignItems: 'center', gap: 10,
-            minHeight: 46, padding: '10px 14px', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap',
+            minHeight: 46, padding: picked.length ? '8px 12px' : '10px 14px', cursor: 'pointer',
             background: '#fff', border: '1px solid ' + (open ? 'var(--gold)' : 'var(--line)'),
             borderRadius: 12, fontSize: 16,
             boxShadow: open ? '0 0 0 3px rgba(51,82,207,.18)' : undefined,
             transition: 'border-color .16s ease, box-shadow .16s ease',
           }}>
-          <span className={picked.length ? undefined : 'mute'} style={{ flex: 1 }}>
-            {picked.length
-              ? picked.length + ' selected'
-              : (placeholder ?? 'Select ' + label.toLowerCase())}
-          </span>
+          {picked.length === 0 && (
+            <span className="mute" style={{ flex: 1 }}>
+              {placeholder ?? 'Select ' + label.toLowerCase()}
+            </span>
+          )}
+
+          {picked.map((v) => (
+            <span key={v} style={{
+              display: 'inline-flex', alignItems: 'center', gap: 7,
+              padding: '5px 6px 5px 12px', borderRadius: 999,
+              background: 'var(--gold-100)', border: '1px solid var(--gold-200)',
+              color: 'var(--gold-700)', fontSize: 14.5, fontWeight: 500,
+              animation: 'chipIn .16s ease',
+            }}>
+              {v === 'Other' ? 'Other' : v}
+              <button type="button" aria-label={'Remove ' + v}
+                onClick={(e) => { e.stopPropagation(); remove(v); }}
+                style={{
+                  display: 'grid', placeItems: 'center', width: 19, height: 19,
+                  border: 0, borderRadius: '50%', cursor: 'pointer',
+                  background: 'rgba(32,53,138,.12)', color: 'var(--gold-700)',
+                  font: 'inherit', fontSize: 13, lineHeight: 1,
+                }}>×</button>
+            </span>
+          ))}
+
+          {picked.length > 0 && (
+            <span className="mute" style={{ fontSize: 14.5, marginLeft: 2 }}>
+              + Add more
+            </span>
+          )}
+
           <span aria-hidden style={{
-            transform: open ? 'rotate(180deg)' : 'none',
+            marginLeft: 'auto', transform: open ? 'rotate(180deg)' : 'none',
             transition: 'transform .16s ease', color: 'var(--mute)', fontSize: 12,
           }}>▼</span>
         </div>
@@ -89,13 +116,19 @@ export function MultiSelect({
                 autoFocus
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Type to filter…"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && available.length) { e.preventDefault(); add(available[0]); }
+                  if (e.key === 'Escape') setOpen(false);
+                  if (e.key === 'Backspace' && !query && picked.length) remove(picked[picked.length - 1]);
+                }}
+                placeholder="Type to filter, Enter to add…"
                 style={{
                   width: '100%', minHeight: 38, padding: '8px 12px', font: 'inherit', fontSize: 15,
                   border: '1px solid var(--line)', borderRadius: 9,
                 }} />
             </div>
-            <div role="listbox" style={{ maxHeight: 260, overflowY: 'auto' }}>
+
+            <div role="listbox" style={{ maxHeight: 250, overflowY: 'auto' }}>
               {available.length === 0 ? (
                 <p className="mute small" style={{ padding: '14px 16px', margin: 0 }}>
                   {query ? 'Nothing matches “' + query + '”' : 'Everything is selected'}
@@ -114,31 +147,20 @@ export function MultiSelect({
                 </button>
               ))}
             </div>
+
+            <div className="row" style={{
+              justifyContent: 'space-between', padding: '10px 14px',
+              borderTop: '1px solid var(--line)', background: '#fcfcff',
+            }}>
+              <span className="mute" style={{ fontSize: 13.5 }}>
+                {picked.length} selected
+              </span>
+              <button type="button" className="btn btn-out" onClick={() => setOpen(false)}
+                style={{ minHeight: 34, padding: '0 14px', fontSize: 13.5 }}>Done</button>
+            </div>
           </div>
         )}
       </div>
-
-      {picked.length > 0 && (
-        <div className="chips" style={{ marginTop: 12 }}>
-          {picked.map((v) => (
-            <span key={v} style={{
-              display: 'inline-flex', alignItems: 'center', gap: 8,
-              padding: '7px 8px 7px 14px', borderRadius: 999,
-              background: 'var(--gold-100)', border: '1px solid var(--gold-200)',
-              color: 'var(--gold-700)', fontSize: 15, fontWeight: 500,
-            }}>
-              {v === 'Other' ? 'Other' : v}
-              <button type="button" aria-label={'Remove ' + v} onClick={() => remove(v)}
-                style={{
-                  display: 'grid', placeItems: 'center', width: 20, height: 20,
-                  border: 0, borderRadius: '50%', cursor: 'pointer',
-                  background: 'rgba(32,53,138,.12)', color: 'var(--gold-700)',
-                  font: 'inherit', fontSize: 13, lineHeight: 1,
-                }}>×</button>
-            </span>
-          ))}
-        </div>
-      )}
 
       {picked.map((v) => <input key={v} type="hidden" name={'tag:' + category} value={v} />)}
 
