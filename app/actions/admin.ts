@@ -1,7 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { createAdminClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { requireRole } from '@/lib/auth';
 
 async function log(actorId: string, action: string, target: string, meta?: unknown) {
@@ -9,41 +9,58 @@ async function log(actorId: string, action: string, target: string, meta?: unkno
   await admin.from('audit_log').insert({ actor_id: actorId, action, target, meta: meta ?? null });
 }
 
+/** Approval goes through the database function, which writes the grant and the role together. */
 export async function decideAccessRequest(requestId: string, approve: boolean) {
-  const { profile } = await requireRole('admin');
-  const admin = createAdminClient();
-
-  const { data: req } = await admin.from('access_requests').select('*').eq('id', requestId).single();
-  if (!req) return { error: 'Request not found' };
-
-  await admin.from('access_requests').update({
-    status: approve ? 'approved' : 'rejected',
-    decided_by: profile.id,
-    decided_at: new Date().toISOString(),
-  }).eq('id', requestId);
-
-  if (approve) {
-    if (req.kind === 'speaker') {
-      await admin.from('profiles')
-        .update({ role: 'speaker', speaker_approved: true }).eq('id', req.profile_id);
-    } else {
-      // Chapter Lead access is a role plus the chapter it applies to.
-      await admin.from('profiles')
-        .update({ role: 'chapter_lead', lead_chapter_id: req.chapter_id }).eq('id', req.profile_id);
-    }
-  }
-
-  await log(profile.id, approve ? 'access.approve' : 'access.reject', req.profile_id, { kind: req.kind });
+  await requireRole('admin');
+  const supabase = createClient();
+  const { error } = await supabase.rpc('approve_access_request', {
+    req_id: requestId, approve,
+  });
+  if (error) return { error: error.message };
   revalidatePath('/admin');
   return { ok: true };
 }
 
-export async function revokeLead(profileId: string) {
+/** Revoke any elevated role — speaker, chapter_lead or admin. */
+export async function revokeRole(profileId: string, role: 'speaker' | 'chapter_lead' | 'admin') {
   const { profile } = await requireRole('admin');
+  if (profileId === profile.id) {
+    return { error: 'You cannot revoke your own admin access.' };
+  }
+  const supabase = createClient();
+  const { error } = await supabase.rpc('revoke_role', {
+    target_profile: profileId, target_role: role,
+  });
+  if (error) return { error: error.message };
+  revalidatePath('/admin');
+  return { ok: true };
+}
+
+/** Grant a role directly, without waiting for the person to apply. */
+export async function grantRole(formData: FormData) {
+  const { profile } = await requireRole('admin');
+  const email = String(formData.get('email') ?? '').trim().toLowerCase();
+  const role = String(formData.get('role') ?? '');
+  if (!email) return { error: 'Enter an email address' };
+  if (!['speaker', 'chapter_lead', 'admin'].includes(role)) return { error: 'Pick a role' };
+
   const admin = createAdminClient();
-  await admin.from('profiles')
-    .update({ role: 'member', lead_chapter_id: null }).eq('id', profileId);
-  await log(profile.id, 'access.revoke_lead', profileId);
+  const { data: target } = await admin.from('profiles')
+    .select('id,chapter_id').ilike('email', email).maybeSingle();
+  if (!target) return { error: 'No account with that email. They need to sign up first.' };
+
+  await admin.from('role_grants').insert({
+    profile_id: target.id,
+    role,
+    chapter_id: role === 'chapter_lead' ? target.chapter_id : null,
+    granted_by: profile.id,
+  });
+  const patch: Record<string, unknown> = { role };
+  if (role === 'chapter_lead') patch.lead_chapter_id = target.chapter_id;
+  const { error } = await admin.from('profiles').update(patch).eq('id', target.id);
+  if (error) return { error: error.message };
+
+  await log(profile.id, 'access.grant', target.id, { role, email });
   revalidatePath('/admin');
   return { ok: true };
 }

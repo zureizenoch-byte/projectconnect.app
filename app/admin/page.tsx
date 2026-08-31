@@ -5,7 +5,7 @@ import { AdminControls } from './AdminControls';
 export const metadata = { title: 'Admin — Project Connect' };
 
 export default async function AdminPage() {
-  await requireRole('admin');
+  const { profile: me } = await requireRole('admin');
   const supabase = createClient();
 
   const [{ data: requests }, { data: pendingEvents }, { data: leads }, { data: reports }, { data: chapters }, { data: venues }, { data: log }] =
@@ -18,7 +18,7 @@ export default async function AdminPage() {
         .in('status', ['pending', 'draft']).order('starts_at'),
       supabase.from('profiles')
         .select('id,full_name,email,role,lead_chapter_id,chapters:lead_chapter_id(city)')
-        .in('role', ['chapter_lead', 'speaker']),
+        .in('role', ['chapter_lead', 'speaker', 'admin']),
       supabase.from('post_reports')
         .select('id,reason,created_at,post_id,posts(body)')
         .eq('resolved', false).order('created_at'),
@@ -42,6 +42,7 @@ export default async function AdminPage() {
         chapters={chapters ?? []}
         venues={venues ?? []}
         log={log ?? []}
+        currentAdminId={me.id}
       />
     </main>
   );

@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { decideAccessRequest, revokeLead, setEventStatus, saveVenue, resolveReport } from '@/app/actions/admin';
+import { decideAccessRequest, revokeRole, grantRole, setEventStatus, saveVenue, resolveReport } from '@/app/actions/admin';
 
-export function AdminControls({ requests, pendingEvents, leads, reports, chapters, venues, log }: any) {
+export function AdminControls({ requests, pendingEvents, leads, reports, chapters, venues, log, currentAdminId }: any) {
   const [pending, start] = useTransition();
   const [msg, setMsg] = useState<string | null>(null);
   const run = (fn: () => Promise<any>) => start(async () => {
@@ -70,6 +70,31 @@ export function AdminControls({ requests, pendingEvents, leads, reports, chapter
       </div>
 
       <h2 style={{ marginTop: 30 }}>Granted access</h2>
+      <form className="surf" style={{ padding: 20, marginTop: 14 }}
+        onSubmit={(e) => {
+          e.preventDefault();
+          const fd = new FormData(e.currentTarget);
+          const form = e.currentTarget;
+          run(async () => { const r = await grantRole(fd); if (!r?.error) form.reset(); return r; });
+        }}>
+        <p className="eyebrow">Grant a role directly</p>
+        <div className="row" style={{ alignItems: 'flex-end', marginTop: 12 }}>
+          <label className="fld" style={{ flex: '1 1 280px', marginBottom: 0 }}>
+            <span>Member email</span>
+            <input name="email" type="email" required placeholder="them@example.com" />
+          </label>
+          <label className="fld" style={{ flex: '0 1 200px', marginBottom: 0 }}>
+            <span>Role</span>
+            <select name="role" defaultValue="speaker">
+              <option value="speaker">Speaker</option>
+              <option value="chapter_lead">Chapter Lead</option>
+              <option value="admin">Admin</option>
+            </select>
+          </label>
+          <button className="btn btn-primary" type="submit" disabled={pending}>Grant</button>
+        </div>
+        <p className="hint">They must already have an account. Grants are logged and can be revoked below.</p>
+      </form>
       <div className="surf" style={{ marginTop: 14, overflow: 'hidden' }}>
         <table className="table">
           <thead><tr><th>Person</th><th>Role</th><th>Chapter</th><th style={{ textAlign: 'right' }}>Action</th></tr></thead>
@@ -77,12 +102,18 @@ export function AdminControls({ requests, pendingEvents, leads, reports, chapter
             {leads.map((p: any) => (
               <tr key={p.id}>
                 <td>{p.full_name}<br /><span className="mute small">{p.email}</span></td>
-                <td>{p.role === 'chapter_lead' ? 'Chapter Lead' : 'Speaker'}</td>
+                <td>{p.role === 'chapter_lead' ? 'Chapter Lead' : p.role === 'admin' ? 'Admin' : 'Speaker'}</td>
                 <td className="mute">{p.chapters?.city ?? '—'}</td>
                 <td style={{ textAlign: 'right' }}>
-                  {p.role === 'chapter_lead' && (
+                  {p.id === currentAdminId ? (
+                    <span className="mute small">You</span>
+                  ) : (
                     <button className="btn btn-out" style={{ minHeight: 34, padding: '0 12px', fontSize: 13.5 }}
-                      disabled={pending} onClick={() => run(() => revokeLead(p.id))}>Revoke</button>
+                      disabled={pending}
+                      onClick={() => {
+                        if (!confirm('Remove ' + p.role.replace('_', ' ') + ' access from ' + (p.full_name ?? p.email) + '?')) return;
+                        run(() => revokeRole(p.id, p.role));
+                      }}>Revoke</button>
                   )}
                 </td>
               </tr>
