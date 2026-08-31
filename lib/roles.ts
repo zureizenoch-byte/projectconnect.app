@@ -82,7 +82,7 @@ const SPEAKER: Capabilities = {
 
 const ADMIN: Capabilities = {
   label: 'Admin',
-  blurb: 'Full console: approvals, grants, venues, events, reports. Capped at two accounts.',
+  blurb: 'Full console: approvals, grants, venues, events, reports.',
   eventsPerCycle: Infinity,
   attendTalks: true,
   hostTalks: true,
@@ -92,8 +92,6 @@ const ADMIN: Capabilities = {
   adminConsole: true,
   selfService: false,
 };
-
-export const MAX_ADMINS = 2;
 
 /** The account types a person may pick at signup. */
 export const SELF_SERVICE_TYPES: { value: string; label: string; note: string }[] = [

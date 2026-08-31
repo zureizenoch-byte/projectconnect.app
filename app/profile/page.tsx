@@ -14,7 +14,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: { we
   const [{ data: tags }, { data: privacy }, { data: requests }] = await Promise.all([
     supabase.from('profile_tags').select('category,value,is_custom').eq('profile_id', user.id),
     supabase.from('privacy_settings').select('*').eq('profile_id', user.id).maybeSingle(),
-    supabase.from('access_requests').select('id,kind,status,created_at').eq('profile_id', user.id),
+    supabase.from('access_requests').select('id,kind,status,note,created_at,decided_at').eq('profile_id', user.id),
   ]);
 
   const paid = isPaid(subscription.tier, subscription.status, subscription.current_period_end);

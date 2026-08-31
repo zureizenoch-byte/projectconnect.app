@@ -125,6 +125,38 @@ export async function uploadPhoto(formData: FormData) {
   return { ok: true };
 }
 
+/** Amend a pending application — only your own, and only while it is still pending. */
+export async function updateAccessRequest(formData: FormData) {
+  const { user } = await requireSession();
+  const id = String(formData.get('id') ?? '');
+  const note = String(formData.get('note') ?? '').slice(0, 1000);
+  if (!id) return { error: 'Missing application' };
+
+  const supabase = createClient();
+  const { data: existing } = await supabase
+    .from('access_requests').select('id,status').eq('id', id).eq('profile_id', user.id).maybeSingle();
+  if (!existing) return { error: 'Application not found' };
+  if (existing.status !== 'pending') return { error: 'This application has already been decided.' };
+
+  const { error } = await supabase.from('access_requests')
+    .update({ note }).eq('id', id).eq('profile_id', user.id);
+  if (error) return { error: error.message };
+
+  revalidatePath('/profile');
+  return { ok: true };
+}
+
+/** Withdraw a pending application. */
+export async function withdrawAccessRequest(id: string) {
+  const { user } = await requireSession();
+  const supabase = createClient();
+  const { error } = await supabase.from('access_requests')
+    .delete().eq('id', id).eq('profile_id', user.id).eq('status', 'pending');
+  if (error) return { error: error.message };
+  revalidatePath('/profile');
+  return { ok: true };
+}
+
 export async function applyForAccess(formData: FormData) {
   const { user, profile, subscription } = await requireSession();
   const kind = String(formData.get('kind'));

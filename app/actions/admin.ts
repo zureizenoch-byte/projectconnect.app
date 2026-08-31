@@ -64,12 +64,6 @@ export async function setAccountRole(profileId: string, role: string) {
   if (!valid.includes(role)) return { error: 'Unknown role' };
 
   const admin = createAdminClient();
-  if (role === 'admin') {
-    const { count } = await admin.from('profiles')
-      .select('id', { count: 'exact', head: true }).eq('role', 'admin');
-    if ((count ?? 0) >= 2) return { error: 'Only two admin accounts are allowed. Demote one first.' };
-  }
-
   const { data: target } = await admin.from('profiles')
     .select('chapter_id').eq('id', profileId).single();
 
