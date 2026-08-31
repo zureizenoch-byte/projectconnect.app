@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react';
 import { saveProfile, uploadPhoto, removePhoto } from '@/app/actions/profile';
 import { ChipGroup } from '@/components/ChipGroup';
+import { MultiSelect } from '@/components/MultiSelect';
 import { Avatar } from '@/components/Avatar';
 import {
   CITIES, ROLE_LEVELS, DOMAINS, TRANSFORMATION_TYPES, METHODS, INDUSTRIES,
@@ -90,7 +91,7 @@ export function ProfileForm({ profile, tags }: { profile: Profile; tags: Tag[] }
         Click to add. Pick as many as apply — every group has an "Other, please specify" write-in.
       </p>
 
-      <ChipGroup category="domain" label="Your domains" options={DOMAINS}
+      <MultiSelect category="domain" label="Your domains" options={DOMAINS}
         initial={picked('domain')} initialCustom={customOf('domain')} />
       <ChipGroup category="transformation_type" label="Transformation types delivered" options={TRANSFORMATION_TYPES}
         initial={picked('transformation_type')} initialCustom={customOf('transformation_type')} />
@@ -98,11 +99,11 @@ export function ProfileForm({ profile, tags }: { profile: Profile; tags: Tag[] }
         initial={picked('method')} initialCustom={customOf('method')} />
       <ChipGroup category="industry" label="Industries" options={INDUSTRIES}
         initial={picked('industry')} initialCustom={customOf('industry')} />
-      <ChipGroup category="certification" label="Certifications" options={CERTIFICATIONS}
+      <MultiSelect category="certification" label="Certifications" options={CERTIFICATIONS}
         initial={picked('certification')} initialCustom={customOf('certification')} />
-      <ChipGroup category="tool" label="Platforms and tooling" options={TOOLS}
+      <MultiSelect category="tool" label="Platforms and tooling" options={TOOLS}
         initial={picked('tool')} initialCustom={customOf('tool')} />
-      <ChipGroup category="language" label="Languages" options={LANGUAGES}
+      <MultiSelect category="language" label="Languages" options={LANGUAGES}
         initial={picked('language')} initialCustom={customOf('language')} />
 
       <hr style={{ border: 0, borderTop: '1px solid var(--line)', margin: '10px 0 26px' }} />
