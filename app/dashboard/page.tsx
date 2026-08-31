@@ -158,9 +158,11 @@ export default async function DashboardPage() {
                   </a>
                   <span className="mute" style={{ fontSize: 15 }}>{authorMap.get(p.author_id)?.role_level}</span>
                 </div>
-                <span className="pill pill-wait" style={{ marginLeft: 'auto' }}>
-                  {profile.city ?? 'Chapter'}
-                </span>
+                {authorMap.get(p.author_id)?.city && (
+                  <span className="pill pill-wait" style={{ marginLeft: 'auto' }}>
+                    {authorMap.get(p.author_id).city}
+                  </span>
+                )}
               </div>
               <p style={{ fontSize: 15.5, lineHeight: 1.7, margin: '16px 0 0', whiteSpace: 'pre-wrap' }}>{p.body}</p>
               <footer className="row" style={{ gap: 6, marginTop: 18, paddingTop: 14, borderTop: '1px solid var(--line)' }}>
