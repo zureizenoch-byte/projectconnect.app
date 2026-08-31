@@ -148,9 +148,14 @@ export default async function DashboardPage() {
           {(posts ?? []).map((p: any) => (
             <article key={p.id} id={'post-' + p.id} className="surf lift" style={{ padding: 24 }}>
               <div className="row">
-                <Avatar src={authorMap.get(p.author_id)?.photo_url} name={authorMap.get(p.author_id)?.full_name} size={72} />
+                <a href={'/members/' + p.author_id} aria-label="View profile">
+                  <Avatar src={authorMap.get(p.author_id)?.photo_url} name={authorMap.get(p.author_id)?.full_name} size={72} />
+                </a>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                  <span style={{ fontWeight: 600, fontSize: 19 }}>{authorMap.get(p.author_id)?.full_name ?? 'Member'}</span>
+                  <a href={'/members/' + p.author_id}
+                    style={{ fontWeight: 600, fontSize: 19, color: 'var(--ink)' }}>
+                    {authorMap.get(p.author_id)?.full_name ?? 'Member'}
+                  </a>
                   <span className="mute" style={{ fontSize: 15 }}>{authorMap.get(p.author_id)?.role_level}</span>
                 </div>
                 <span className="pill pill-wait" style={{ marginLeft: 'auto' }}>
