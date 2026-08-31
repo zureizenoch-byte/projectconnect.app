@@ -1,5 +1,6 @@
 'use client';
 import { useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import { applyForAccess, updateAccessRequest, withdrawAccessRequest } from '@/app/actions/profile';
 import { canApplyForLead } from '@/lib/permissions';
 import type { Profile } from '@/lib/types';
@@ -55,6 +56,7 @@ export function AccessRequestForm({
 }
 
 function AccessCard({ title, note, kind, request, granted, grantedLabel, allowed, pending, start, setMsg }: any) {
+  const router = useRouter();
   const [editing, setEditing] = useState(false);
   const isPending = request?.status === 'pending';
   const wasRejected = request?.status === 'rejected';
@@ -82,13 +84,13 @@ function AccessCard({ title, note, kind, request, granted, grantedLabel, allowed
               start(async () => {
                 const res = await updateAccessRequest(fd);
                 setMsg(res?.error ?? 'Saved — your admin sees the update.');
-                if (!res?.error) setEditing(false);
+                if (!res?.error) { setEditing(false); router.refresh(); }
               });
             }}>
               <input type="hidden" name="id" value={request.id} />
               <label className="fld" style={{ marginTop: 10, marginBottom: 12 }}>
                 <span>Your application</span>
-                <textarea name="note" rows={4} defaultValue={request.note ?? ''}
+                <textarea name="note" rows={4} key={request.note ?? ''} defaultValue={request.note ?? ''}
                   placeholder="What you'd speak on, and the experience behind it." />
               </label>
               <div className="row" style={{ gap: 8 }}>
@@ -117,6 +119,7 @@ function AccessCard({ title, note, kind, request, granted, grantedLabel, allowed
                     start(async () => {
                       const res = await withdrawAccessRequest(request.id);
                       setMsg(res?.error ?? 'Application withdrawn.');
+                      if (!res?.error) router.refresh();
                     });
                   }}>Withdraw</button>
               </div>
@@ -130,6 +133,7 @@ function AccessCard({ title, note, kind, request, granted, grantedLabel, allowed
           start(async () => {
             const res = await applyForAccess(fd);
             setMsg(res?.error ?? 'Application sent to the admin team.');
+            if (!res?.error) router.refresh();
           });
         }}>
           <input type="hidden" name="kind" value={kind} />
