@@ -103,6 +103,21 @@ export async function signOut() {
   redirect('/');
 }
 
+/** Resend the signup confirmation email. */
+export async function resendConfirmation(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const email = String(formData.get('email') ?? '').trim();
+  if (!email) return { error: 'Enter your email address.' };
+
+  const supabase = createClient();
+  const { error } = await supabase.auth.resend({
+    type: 'signup',
+    email,
+    options: { emailRedirectTo: siteUrl() + '/auth/callback' },
+  });
+  if (error) return { error: error.message };
+  return { ok: true, checkEmail: email };
+}
+
 export async function requestPasswordReset(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const email = String(formData.get('email') ?? '');
   const supabase = createClient();

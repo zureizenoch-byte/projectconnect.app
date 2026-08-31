@@ -2,7 +2,7 @@
 
 import { useFormState, useFormStatus } from 'react-dom';
 import { useState } from 'react';
-import { signUp, type ActionState } from '@/app/actions/auth';
+import { signUp, resendConfirmation, type ActionState } from '@/app/actions/auth';
 import { CITIES } from '@/lib/options';
 
 const JOIN_AS: [string, string, string][] = [
@@ -19,20 +19,7 @@ export function SignupForm() {
   const mismatch = pw2.length > 0 && pw !== pw2;
   const pwOk = pw.length >= 8 && /[a-zA-Z]/.test(pw) && /[0-9]/.test(pw);
 
-  if (state.checkEmail) {
-    return (
-      <div>
-        <h2 style={{ fontSize: 26 }}>Check your email</h2>
-        <p className="mute" style={{ marginTop: 12 }}>
-          We sent a confirmation link to <strong>{state.checkEmail}</strong>. Open it to finish
-          creating your account, then you'll be taken to your profile.
-        </p>
-        <p className="hint">
-          Wrong address, or no email after a few minutes? <a href="/signup">Start again</a>.
-        </p>
-      </div>
-    );
-  }
+  if (state.checkEmail) return <CheckEmail email={state.checkEmail} />;
 
   return (
     <form action={action}>
@@ -124,6 +111,60 @@ function Submit({ label, busy, disabled }: { label: string; busy: string; disabl
     <button className="btn btn-primary" type="submit" disabled={pending || disabled}
       style={{ minHeight: 50, padding: '0 26px', fontSize: 16 }}>
       {pending ? busy : label}
+    </button>
+  );
+}
+
+function CheckEmail({ email }: { email: string }) {
+  const [resendState, resendAction] = useFormState<ActionState, FormData>(resendConfirmation, {});
+
+  return (
+    <div style={{ textAlign: 'center', padding: '8px 0 4px' }}>
+      <span aria-hidden style={{
+        display: 'grid', placeItems: 'center', width: 72, height: 72, margin: '0 auto',
+        borderRadius: '50%', background: 'var(--gold-100)', border: '1px solid var(--gold-200)',
+        fontSize: 30,
+      }}>✉</span>
+
+      <h2 style={{ fontSize: 30, marginTop: 20 }}>Check your email</h2>
+      <p style={{ fontSize: 17, lineHeight: 1.65, margin: '14px auto 0', maxWidth: '44ch' }}>
+        We sent a confirmation link to <strong>{email}</strong>. Open it to activate your
+        account — you'll land straight on your profile to finish setting it up.
+      </p>
+
+      <div style={{
+        margin: '24px auto 0', maxWidth: 420, padding: '16px 20px', textAlign: 'left',
+        border: '1px solid var(--line)', borderRadius: 14, background: '#fcfcff',
+      }}>
+        <p className="mute" style={{ margin: 0, fontSize: 14.5, lineHeight: 1.7 }}>
+          Nothing after a couple of minutes? Check your spam folder — confirmation
+          mail sometimes lands there the first time.
+        </p>
+      </div>
+
+      <form action={resendAction} style={{ marginTop: 20 }}>
+        <input type="hidden" name="email" value={email} />
+        <ResendButton />
+      </form>
+
+      {resendState.error && <p className="err">{resendState.error}</p>}
+      {resendState.ok && (
+        <p className="hint" style={{ color: 'var(--ok)' }}>Sent again. Give it a minute.</p>
+      )}
+
+      <p className="hint" style={{ marginTop: 18 }}>
+        Wrong address? <a href="/signup">Start again</a> · Already confirmed?{' '}
+        <a href="/login">Log in</a>
+      </p>
+    </div>
+  );
+}
+
+function ResendButton() {
+  const { pending } = useFormStatus();
+  return (
+    <button className="btn btn-out" type="submit" disabled={pending}>
+      {pending ? 'Sending…' : 'Resend the email'}
     </button>
   );
 }
