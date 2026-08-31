@@ -160,27 +160,22 @@ export default async function DashboardPage() {
                     style={{ fontWeight: 600, fontSize: 19, color: 'var(--ink)', textDecoration: 'none' }}>
                     {authorMap.get(p.author_id)?.full_name ?? 'Member'}
                   </a>
-                  <div style={{
-                    display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginTop: 3,
-                  }}>
-                    {authorMap.get(p.author_id)?.role_level && (
-                      <span className="mute" style={{ fontSize: 15 }}>
-                        {authorMap.get(p.author_id).role_level}
-                      </span>
-                    )}
-                    {authorMap.get(p.author_id)?.role_level && authorMap.get(p.author_id)?.city && (
-                      <span className="mute" style={{ fontSize: 15, opacity: .5 }}>·</span>
-                    )}
-                    {authorMap.get(p.author_id)?.city && (
-                      <span className="mute" style={{ fontSize: 15 }}>
-                        {authorMap.get(p.author_id).city}
-                      </span>
-                    )}
-                  </div>
+                  {authorMap.get(p.author_id)?.role_level && (
+                    <p className="mute" style={{ fontSize: 15, margin: '3px 0 0' }}>
+                      {authorMap.get(p.author_id).role_level}
+                    </p>
+                  )}
                 </div>
-                <span className="mute" style={{ fontSize: 13.5, whiteSpace: 'nowrap', alignSelf: 'flex-start' }}>
-                  {new Date(p.created_at).toLocaleDateString('en-CA', { month: 'short', day: 'numeric' })}
-                </span>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
+                  {authorMap.get(p.author_id)?.city && (
+                    <span className="pill pill-wait" style={{ whiteSpace: 'nowrap' }}>
+                      {authorMap.get(p.author_id).city}
+                    </span>
+                  )}
+                  <span className="mute" style={{ fontSize: 13.5, whiteSpace: 'nowrap' }}>
+                    {new Date(p.created_at).toLocaleDateString('en-CA', { month: 'short', day: 'numeric' })}
+                  </span>
+                </div>
               </div>
               <p style={{ fontSize: 16.5, lineHeight: 1.7, margin: '18px 0 0', whiteSpace: 'pre-wrap' }}>{p.body}</p>
               <footer className="row" style={{ gap: 6, marginTop: 18, paddingTop: 14, borderTop: '1px solid var(--line)' }}>
