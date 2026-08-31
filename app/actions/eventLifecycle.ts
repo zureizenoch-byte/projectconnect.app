@@ -177,3 +177,45 @@ export async function restoreEvent(formData: FormData) {
   revalidatePath('/chapter');
   return { ok: 'Back on the calendar.' };
 }
+
+/**
+ * Permanently remove an event. Admins only — Chapter Leads cancel instead,
+ * so the record and its history survive.
+ */
+export async function deleteEvent(formData: FormData) {
+  const { profile } = await requireSession();
+  if (!isAdmin(profile)) return { error: 'Admins only. Cancel it instead to keep the record.' };
+
+  const eventId = String(formData.get('event_id') ?? '');
+  const note = String(formData.get('note') ?? '').slice(0, 500);
+  const db = createAdminClient();
+
+  const { data: ev } = await db.from('events')
+    .select('id,title,starts_at').eq('id', eventId).maybeSingle();
+  if (!ev) return { error: 'Event not found' };
+
+  // tell people before the seats disappear
+  await db.rpc('notify_event_attendees', {
+    ev_id: eventId,
+    n_kind: 'event.cancelled',
+    n_title: ev.title + ' has been removed',
+    n_body: note || 'This event is no longer going ahead. Your seat has been released.',
+    actor: profile.id,
+  });
+
+  await db.from('audit_log').insert({
+    actor_id: profile.id, action: 'event.delete', target: eventId,
+    meta: { title: ev.title, starts_at: ev.starts_at, note: note || null },
+  });
+
+  // seats, changes and reports cascade with the event row
+  const { error } = await db.from('events').delete().eq('id', eventId);
+  if (error) return { error: 'Delete failed: ' + error.message };
+
+  revalidatePath('/events');
+  revalidatePath('/chapter');
+  revalidatePath('/speaker');
+  revalidatePath('/admin');
+  revalidatePath('/dashboard');
+  return { ok: 'Event deleted, and everyone holding a seat has been told.' };
+}

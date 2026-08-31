@@ -47,9 +47,13 @@ export function SiteNav({ profile, inboxCount = 0, unreadCount = 0, alertCount =
                   position: 'relative', display: 'grid', placeItems: 'center',
                   width: 38, height: 38, borderRadius: 11,
                   border: '1px solid var(--line)', background: '#fff',
-                  fontSize: 16, color: 'var(--ink)', textDecoration: 'none',
+                  color: 'var(--ink)', textDecoration: 'none',
                 }}>
-                <span aria-hidden>🔔</span>
+                <svg aria-hidden width="19" height="19" viewBox="0 0 24 24" fill="#fff"
+                  stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
+                  <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                </svg>
                 {alertCount > 0 && (
                   <span style={{
                     position: 'absolute', top: -6, right: -6,

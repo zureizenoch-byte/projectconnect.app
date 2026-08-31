@@ -73,7 +73,8 @@ export default async function ChapterPage() {
               <div style={{ marginLeft: 'auto', display: 'grid', gap: 10, justifyItems: 'end' }}>
                 <MatchButton eventId={e.id} />
                 <EventLifecycle eventId={e.id} title={e.title} status={e.status}
-                  startsAt={e.starts_at} seatCount={(e.event_seats ?? []).length} />
+                  startsAt={e.starts_at} seatCount={(e.event_seats ?? []).length}
+                  canDelete={profile.role === 'admin'} />
               </div>
             </div>
             <table className="table" style={{ marginTop: 16 }}>

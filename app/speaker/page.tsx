@@ -98,7 +98,8 @@ export default async function SpeakerPage() {
                   )}
                 </div>
                 <EventLifecycle eventId={t.id} title={t.title} status={t.status}
-                  startsAt={t.starts_at} seatCount={(t.event_seats ?? []).length} />
+                  startsAt={t.starts_at} seatCount={(t.event_seats ?? []).length}
+                  canDelete={profile.role === 'admin'} />
               </div>
               <table className="table" style={{ marginTop: 16 }}>
                 <thead>
