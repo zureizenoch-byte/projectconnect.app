@@ -1,5 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/server';
 
+
 export type InboxCounts = {
   accessRequests: number;
   pendingEvents: number;

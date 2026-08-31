@@ -69,7 +69,34 @@ export async function getConversations(userId: string): Promise<ConversationSumm
     .sort((a, b) => +new Date(b.lastAt) - +new Date(a.lastAt));
 }
 
+/**
+ * Cheap unread count: three small queries, no profile joins.
+ * The full conversation list is only built on the Messages page itself.
+ */
 export async function getUnreadCount(userId: string) {
-  const list = await getConversations(userId);
-  return list.filter((c) => c.unread).length;
+  const db = createAdminClient();
+
+  const { data: mine } = await db.from('conversation_participants')
+    .select('conversation_id,last_read_at').eq('profile_id', userId).eq('archived', false);
+  if (!mine?.length) return 0;
+
+  const ids = mine.map((r: any) => r.conversation_id);
+  const readAt = new Map(mine.map((r: any) => [r.conversation_id, r.last_read_at]));
+
+  const { data: recent } = await db.from('messages')
+    .select('conversation_id,created_at,sender_id')
+    .in('conversation_id', ids)
+    .neq('sender_id', userId)
+    .order('created_at', { ascending: false })
+    .limit(200);
+
+  const seenConv = new Set<string>();
+  let unread = 0;
+  for (const msg of recent ?? []) {
+    if (seenConv.has(msg.conversation_id)) continue;
+    seenConv.add(msg.conversation_id);
+    const seen = readAt.get(msg.conversation_id);
+    if (!seen || new Date(msg.created_at) > new Date(seen)) unread++;
+  }
+  return unread;
 }

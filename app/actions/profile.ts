@@ -68,8 +68,7 @@ export async function saveProfile(formData: FormData) {
   // never overwrite a saved value with undefined
   for (const k of Object.keys(patch)) if (patch[k] === undefined) delete patch[k];
 
-  const { error } = await supabase.from('profiles').update(patch).eq('id', user.id);
-  if (error) return { error: error.message };
+  const updatePromise = supabase.from('profiles').update(patch).eq('id', user.id);
 
   // tag groups arrive as repeated fields: tag:domain=Delivery Management
   const rows: { profile_id: string; category: string; value: string; is_custom: boolean }[] = [];
@@ -83,11 +82,26 @@ export async function saveProfile(formData: FormData) {
     if (custom) rows.push({ profile_id: user.id, category, value: custom, is_custom: true });
   }
 
-  await supabase.from('profile_tags').delete().eq('profile_id', user.id);
-  if (rows.length) await supabase.from('profile_tags').insert(rows);
+  const [{ error }, { data: current }] = await Promise.all([
+    updatePromise,
+    supabase.from('profile_tags').select('id,category,value').eq('profile_id', user.id),
+  ]);
+  if (error) return { error: error.message };
+
+  // diff instead of delete-all-then-reinsert: usually zero or one write
+  const key = (c: string, v: string) => c + '\u0000' + v;
+  const currentMap = new Map((current ?? []).map((t: any) => [key(t.category, t.value), t.id]));
+  const wanted = new Set(rows.map((r) => key(r.category, r.value)));
+
+  const toRemove = [...currentMap.entries()].filter(([k]) => !wanted.has(k)).map(([, id]) => id);
+  const toAdd = rows.filter((r) => !currentMap.has(key(r.category, r.value)));
+
+  await Promise.all([
+    toRemove.length ? supabase.from('profile_tags').delete().in('id', toRemove) : null,
+    toAdd.length ? supabase.from('profile_tags').insert(toAdd) : null,
+  ].filter(Boolean) as Promise<unknown>[]);
 
   revalidatePath('/profile');
-  revalidatePath('/dashboard');
   return { ok: true };
 }
 

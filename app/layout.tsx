@@ -18,8 +18,10 @@ export const metadata: Metadata = {
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const session = await getSession();
-  const inbox = session?.profile.role === 'admin' ? await getInboxCounts() : null;
-  const unread = session ? await getUnreadCount(session.user.id) : 0;
+  const [inbox, unread] = await Promise.all([
+    session?.profile.role === 'admin' ? getInboxCounts() : Promise.resolve(null),
+    session ? getUnreadCount(session.user.id) : Promise.resolve(0),
+  ]);
   return (
     <html lang="en">
       <body>
