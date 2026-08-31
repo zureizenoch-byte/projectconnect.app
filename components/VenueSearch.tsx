@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
-import { loadGoogleMaps, hasGoogleKey } from '@/lib/googleMaps';
+import { loadGoogleMaps } from '@/lib/googleMaps';
 
 type Suggestion = {
   key: string;
@@ -33,13 +33,20 @@ export function VenueSearch({
   const sessionToken = useRef<any>(null);
 
   useEffect(() => {
-    loadGoogleMaps().then((ok) => {
-      setGoogleReady(ok);
-      if (ok) {
+    let cancelled = false;
+    loadGoogleMaps()
+      .then((ok) => {
+        if (cancelled || !ok) return;
         const g = (window as any).google;
-        sessionToken.current = new g.maps.places.AutocompleteSessionToken();
-      }
-    });
+        // the new Places classes are required; fall back quietly if absent
+        if (!g?.maps?.places?.AutocompleteSuggestion) return;
+        try {
+          sessionToken.current = new g.maps.places.AutocompleteSessionToken();
+          setGoogleReady(true);
+        } catch { /* keep the fallback */ }
+      })
+      .catch(() => { /* keep the fallback */ });
+    return () => { cancelled = true; };
   }, []);
 
   useEffect(() => {

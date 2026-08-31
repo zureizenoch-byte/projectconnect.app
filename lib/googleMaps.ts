@@ -20,7 +20,7 @@ export function loadGoogleMaps(): Promise<boolean> {
       script.src = 'https://maps.googleapis.com/maps/api/js?key=' + key
         + '&libraries=places&loading=async&v=weekly';
       script.onload = () => resolve();
-      script.onerror = () => reject(new Error('Google Maps failed to load'));
+      script.onerror = () => { loading = null; reject(new Error('Google Maps failed to load')); };
       document.head.appendChild(script);
     });
   }

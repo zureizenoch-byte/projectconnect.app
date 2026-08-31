@@ -12,17 +12,46 @@ export default async function SpeakerPage() {
   if (!canHostTalks(profile)) redirect('/profile');
 
   const supabase = createClient();
-  const [{ data: talks }, { data: chapters }, { data: venues }] = await Promise.all([
-    supabase.from('events')
-      .select('id,title,status,starts_at,seat_cap,chapters(city),event_seats(id,status,table_no,profiles(full_name,role_level,intro))')
-      .eq('host_id', profile.id).order('starts_at', { ascending: false }),
-    supabase.from('chapters').select('id,city').eq('active', true),
-    supabase.from('venues').select('id,name,chapter_id,address').eq('active', true),
+
+  const safe = async (fn: () => any): Promise<any[]> => {
+    try { return (await fn())?.data ?? []; } catch { return []; }
+  };
+
+  // no nested embeds: each table is read plainly and stitched together below
+  const [rawTalks, chapters, venues] = await Promise.all([
+    safe(() => supabase.from('events')
+      .select('id,title,status,starts_at,seat_cap,chapter_id')
+      .eq('host_id', profile.id).order('starts_at', { ascending: false })),
+    safe(() => supabase.from('chapters').select('id,city').eq('active', true)),
+    safe(() => supabase.from('venues').select('id,name,chapter_id,address').eq('active', true)),
   ]);
 
+  const talkIds = rawTalks.map((t: any) => t.id);
+  const seats = talkIds.length
+    ? await safe(() => supabase.from('event_seats')
+        .select('id,event_id,status,table_no,profile_id').in('event_id', talkIds))
+    : [];
+
+  const attendeeIds = Array.from(new Set(seats.map((s: any) => s.profile_id)));
+  const people = attendeeIds.length
+    ? await safe(() => supabase.from('profiles')
+        .select('id,full_name,role_level,intro').in('id', attendeeIds))
+    : [];
+
+  const personById = new Map(people.map((p: any) => [p.id, p]));
+  const cityById = new Map(chapters.map((c: any) => [c.id, c.city]));
+
+  const talks = rawTalks.map((t: any) => ({
+    ...t,
+    chapters: { city: cityById.get(t.chapter_id) ?? null },
+    event_seats: seats
+      .filter((s: any) => s.event_id === t.id)
+      .map((s: any) => ({ ...s, profiles: personById.get(s.profile_id) ?? null })),
+  }));
+
   const now = Date.now();
-  const upcoming = (talks ?? []).filter((t: any) => +new Date(t.starts_at) >= now);
-  const past = (talks ?? []).filter((t: any) => +new Date(t.starts_at) < now);
+  const upcoming = talks.filter((t: any) => +new Date(t.starts_at) >= now);
+  const past = talks.filter((t: any) => +new Date(t.starts_at) < now);
   const requests = upcoming.reduce((n: number, t: any) =>
     n + (t.event_seats ?? []).filter((s: any) => s.status === 'requested').length, 0);
 
@@ -85,7 +114,7 @@ export default async function SpeakerPage() {
       </div>
 
       <h2 style={{ marginTop: 34 }}>Schedule a talk</h2>
-      <EventForm kind="talk" chapters={chapters ?? []} venues={venues ?? []} />
+      <EventForm kind="talk" chapters={chapters} venues={venues} />
 
       <h2 style={{ marginTop: 34 }}>Past talks</h2>
       <div className="surf" style={{ marginTop: 16, overflow: 'hidden' }}>
