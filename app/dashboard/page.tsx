@@ -93,9 +93,7 @@ export default async function DashboardPage() {
               {profile.full_name || 'Your profile'}
             </p>
             <p className="mute" style={{ margin: '4px 0 0', fontSize: 15 }}>
-              {profile.role_level ? profile.role_level + ' · ' : ''}
-              {paid ? subscription.tier.replace('_', ' ') : 'Free'} member
-              {profile.city ? ' · ' + profile.city : ''}
+              {[profile.role_level, profile.city].filter(Boolean).join(' · ')}
             </p>
           </div>
         </a>
