@@ -86,18 +86,19 @@ export default async function DashboardPage() {
         <h1>Dashboard</h1>
 
         <a href={'/members/' + user.id}
-          style={{ display: 'flex', gap: 14, alignItems: 'center', color: 'inherit', textDecoration: 'none' }}>
-          <div style={{ textAlign: 'right', minWidth: 0 }}>
-            <p style={{ margin: 0, fontSize: 19, fontWeight: 600 }}>
-              {profile.full_name || 'Your profile'}
-            </p>
-            <p className="mute" style={{ margin: '3px 0 0', fontSize: 15 }}>
-              {profile.role_level ? profile.role_level + ' · ' : ''}
-              {paid ? subscription.tier.replace('_', ' ') : 'Free'} member
-              {profile.city ? ' · ' + profile.city : ''}
-            </p>
-          </div>
+          style={{
+            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10,
+            color: 'inherit', textDecoration: 'none',
+          }}>
           <Avatar src={profile.photo_url} name={profile.full_name} email={profile.email} size={104} />
+          <p style={{ margin: 0, fontSize: 20, fontWeight: 600, textAlign: 'center' }}>
+            {profile.full_name || 'Your profile'}
+          </p>
+          <p className="mute" style={{ margin: 0, fontSize: 15, textAlign: 'center' }}>
+            {profile.role_level ? profile.role_level + ' · ' : ''}
+            {paid ? subscription.tier.replace('_', ' ') : 'Free'} member
+            {profile.city ? ' · ' + profile.city : ''}
+          </p>
         </a>
       </div>
 
