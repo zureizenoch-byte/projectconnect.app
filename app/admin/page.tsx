@@ -20,7 +20,7 @@ export default async function AdminPage() {
         .select('id,title,kind,starts_at,status,chapter_id,created_by')
         .in('status', ['pending', 'draft']).order('starts_at'),
       supabase.from('profiles')
-        .select('id,full_name,email,role,lead_chapter_id')
+        .select('id,full_name,email,role,lead_chapter_id,speaker_approved,city')
         .in('role', ['chapter_lead', 'speaker', 'admin']),
       supabase.from('post_reports')
         .select('id,reason,created_at,post_id')
@@ -56,9 +56,14 @@ export default async function AdminPage() {
     profiles: byId.get(e.created_by) ?? null,
     chapters: { city: cityOf.get(e.chapter_id) ?? null },
   }));
+  const { data: grants } = await supabase
+    .from('role_grants').select('profile_id,role,granted_at').is('revoked_at', null);
+  const grantedAt = new Map((grants ?? []).map((g: any) => [g.profile_id + ':' + g.role, g.granted_at]));
+
   const leadRows = (leads ?? []).map((p: any) => ({
     ...p,
-    chapters: { city: cityOf.get(p.lead_chapter_id) ?? null },
+    chapters: { city: cityOf.get(p.lead_chapter_id) ?? p.city ?? null },
+    granted_at: grantedAt.get(p.id + ':' + p.role) ?? null,
   }));
   const reportRows = (reports ?? []).map((r: any) => {
     const post = postById.get(r.post_id);

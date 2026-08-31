@@ -103,13 +103,33 @@ export function AdminControls({ requests, pendingEvents, leads, reports, chapter
       </form>
       <div className="surf" style={{ marginTop: 14, overflow: 'hidden' }}>
         <table className="table">
-          <thead><tr><th>Person</th><th>Role</th><th>Chapter</th><th style={{ textAlign: 'right' }}>Action</th></tr></thead>
+          <thead><tr><th>Person</th><th>Role</th><th>Chapter</th><th>Since</th><th style={{ textAlign: 'right' }}>Action</th></tr></thead>
           <tbody>
             {leads.map((p: any) => (
               <tr key={p.id}>
-                <td>{p.full_name}<br /><span className="mute small">{p.email}</span></td>
-                <td>{p.role === 'chapter_lead' ? 'Chapter Lead' : p.role === 'admin' ? 'Admin' : 'Speaker'}</td>
+                <td>
+                  <a href={'/members/' + p.id} style={{ color: 'var(--ink)', fontWeight: 500 }}>
+                    {p.full_name || '—'}
+                  </a>
+                  <br /><span className="mute small">{p.email}</span>
+                </td>
+                <td>
+                  {p.role === 'chapter_lead' ? 'Chapter Lead' : p.role === 'admin' ? 'Admin' : 'Speaker'}
+                  {p.role === 'speaker' && (
+                    <>
+                      {' '}
+                      <span className={'pill ' + (p.speaker_approved ? 'pill-ok' : 'pill-off')}>
+                        {p.speaker_approved ? 'can host' : 'not active'}
+                      </span>
+                    </>
+                  )}
+                </td>
                 <td className="mute">{p.chapters?.city ?? '—'}</td>
+                <td className="mute small">
+                  {p.granted_at
+                    ? new Date(p.granted_at).toLocaleDateString('en-CA', { dateStyle: 'medium' })
+                    : '—'}
+                </td>
                 <td style={{ textAlign: 'right' }}>
                   {p.id === currentAdminId ? (
                     <span className="mute small">You</span>
@@ -124,7 +144,7 @@ export function AdminControls({ requests, pendingEvents, leads, reports, chapter
                 </td>
               </tr>
             ))}
-            {!leads.length && <tr><td colSpan={4} className="mute">No granted roles yet.</td></tr>}
+            {!leads.length && <tr><td colSpan={5} className="mute">No granted roles yet.</td></tr>}
           </tbody>
         </table>
       </div>

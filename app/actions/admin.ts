@@ -30,8 +30,11 @@ async function applyRole(profileId: string, role: string, chapterId?: string | n
     }
   }
 
-  const patch: Record<string, unknown> = { role };
-  if (role === 'chapter_lead') patch.lead_chapter_id = chapterId ?? null;
+  const patch: Record<string, unknown> = {
+    role,
+    speaker_approved: role === 'speaker',
+    lead_chapter_id: role === 'chapter_lead' ? (chapterId ?? null) : null,
+  };
   const { error } = await admin.from('profiles').update(patch).eq('id', profileId);
   if (error) return { error: error.message };
   return { ok: true };
