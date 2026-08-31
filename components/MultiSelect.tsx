@@ -19,17 +19,25 @@ export function MultiSelect({
   const [picked, setPicked] = useState<string[]>(initial);
   const [custom, setCustom] = useState(initialCustom);
   const [open, setOpen] = useState(false);
+  const [peeking, setPeeking] = useState(false);
   const [query, setQuery] = useState('');
   const boxRef = useRef<HTMLDivElement>(null);
+  const peekTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const otherOn = picked.includes('Other') || custom.length > 0;
 
   useEffect(() => {
     const onDown = (e: MouseEvent) => {
-      if (boxRef.current && !boxRef.current.contains(e.target as Node)) setOpen(false);
+      if (boxRef.current && !boxRef.current.contains(e.target as Node)) {
+        setOpen(false);
+        setPeeking(false);
+      }
     };
     document.addEventListener('mousedown', onDown);
-    return () => document.removeEventListener('mousedown', onDown);
+    return () => {
+      document.removeEventListener('mousedown', onDown);
+      if (peekTimer.current) clearTimeout(peekTimer.current);
+    };
   }, []);
 
   const available = useMemo(() => {
@@ -38,9 +46,14 @@ export function MultiSelect({
     return all.filter((o) => !picked.includes(o) && (!q || o.toLowerCase().includes(q)));
   }, [options, picked, query, allowOther]);
 
+  // Briefly hide the panel so the new chip is visible landing in the field,
+  // then bring the list back so more can be picked.
   const add = (v: string) => {
     setPicked((p) => (p.includes(v) ? p : [...p, v]));
     setQuery('');
+    setPeeking(true);
+    if (peekTimer.current) clearTimeout(peekTimer.current);
+    peekTimer.current = setTimeout(() => setPeeking(false), 650);
   };
   const remove = (v: string) => setPicked((p) => p.filter((x) => x !== v));
 
@@ -54,9 +67,11 @@ export function MultiSelect({
           aria-expanded={open}
           aria-haspopup="listbox"
           tabIndex={0}
-          onClick={() => setOpen(true)}
+          onClick={() => { setOpen(true); setPeeking(false); }}
           onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown') { e.preventDefault(); setOpen(true); }
+            if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown') {
+              e.preventDefault(); setOpen(true); setPeeking(false);
+            }
             if (e.key === 'Escape') setOpen(false);
           }}
           style={{
@@ -73,13 +88,18 @@ export function MultiSelect({
             </span>
           )}
 
-          {picked.map((v) => (
+          {picked.map((v, i) => {
+            const isNewest = peeking && i === picked.length - 1;
+            return (
             <span key={v} style={{
               display: 'inline-flex', alignItems: 'center', gap: 7,
               padding: '5px 6px 5px 12px', borderRadius: 999,
-              background: 'var(--gold-100)', border: '1px solid var(--gold-200)',
-              color: 'var(--gold-700)', fontSize: 14.5, fontWeight: 500,
-              animation: 'chipIn .16s ease',
+              background: isNewest ? 'var(--gold-700)' : 'var(--gold-100)',
+              border: '1px solid ' + (isNewest ? 'var(--gold-700)' : 'var(--gold-200)'),
+              color: isNewest ? '#fff' : 'var(--gold-700)',
+              fontSize: 14.5, fontWeight: 500,
+              animation: 'chipIn .2s ease',
+              transition: 'background .35s ease, color .35s ease, border-color .35s ease',
             }}>
               {v === 'Other' ? 'Other' : v}
               <button type="button" aria-label={'Remove ' + v}
@@ -87,15 +107,17 @@ export function MultiSelect({
                 style={{
                   display: 'grid', placeItems: 'center', width: 19, height: 19,
                   border: 0, borderRadius: '50%', cursor: 'pointer',
-                  background: 'rgba(32,53,138,.12)', color: 'var(--gold-700)',
+                  background: isNewest ? 'rgba(255,255,255,.25)' : 'rgba(32,53,138,.12)',
+                  color: isNewest ? '#fff' : 'var(--gold-700)',
                   font: 'inherit', fontSize: 13, lineHeight: 1,
                 }}>×</button>
             </span>
-          ))}
+            );
+          })}
 
           {picked.length > 0 && (
             <span className="mute" style={{ fontSize: 14.5, marginLeft: 2 }}>
-              + Add more
+              {peeking ? 'Added' : '+ Add more'}
             </span>
           )}
 
@@ -105,7 +127,7 @@ export function MultiSelect({
           }}>▼</span>
         </div>
 
-        {open && (
+        {open && !peeking && (
           <div style={{
             position: 'absolute', zIndex: 40, left: 0, right: 0, top: 'calc(100% + 6px)',
             background: '#fff', border: '1px solid var(--line)', borderRadius: 12,
