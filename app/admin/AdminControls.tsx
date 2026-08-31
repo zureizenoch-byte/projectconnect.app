@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { decideAccessRequest, revokeRole, grantRole, setAccountRole, setEventStatus, saveVenue, resolveReport } from '@/app/actions/admin';
+import { decideAccessRequest, revokeRole, grantRole, setAccountRole, setEventStatus, saveVenue, resolveReport, resolveMessageReport } from '@/app/actions/admin';
 
-export function AdminControls({ requests, pendingEvents, leads, reports, chapters, venues, log, everyone = [], currentAdminId }: any) {
+export function AdminControls({ requests, pendingEvents, leads, reports, chapters, venues, log, everyone = [], messageReports = [], currentAdminId }: any) {
   const [pending, start] = useTransition();
   const [msg, setMsg] = useState<string | null>(null);
   const run = (fn: () => Promise<any>) => start(async () => {
@@ -231,6 +231,41 @@ export function AdminControls({ requests, pendingEvents, leads, reports, chapter
               </tr>
             ))}
             {!everyone.length && <tr><td colSpan={4} className="mute">No accounts yet.</td></tr>}
+          </tbody>
+        </table>
+      </div>
+
+      <h2 id="message-reports" style={{ marginTop: 30, scrollMarginTop: 80 }}>Reported messages</h2>
+      <div className="surf" style={{ marginTop: 14, overflow: 'hidden' }}>
+        <table className="table">
+          <thead><tr><th>Reported</th><th>Reason</th><th>Message</th><th style={{ textAlign: 'right' }}>Action</th></tr></thead>
+          <tbody>
+            {messageReports.map((r: any) => (
+              <tr key={r.id}>
+                <td>
+                  <a href={'/members/' + r.reported_id} style={{ color: 'var(--ink)', fontWeight: 500 }}>
+                    {r.reported?.full_name || 'Member'}
+                  </a>
+                  <br /><span className="mute small">reported by {r.reporter?.full_name || 'a member'}</span>
+                </td>
+                <td>
+                  <span className="pill pill-wait">{r.reason}</span>
+                  {r.detail && <><br /><span className="mute small">{r.detail}</span></>}
+                </td>
+                <td className="mute small" style={{ maxWidth: 320 }}>
+                  {r.message?.body?.slice(0, 200) ?? 'Whole conversation'}
+                  <br />
+                  <span style={{ opacity: .75 }}>
+                    {new Date(r.created_at).toLocaleDateString('en-CA', { dateStyle: 'medium' })}
+                  </span>
+                </td>
+                <td style={{ textAlign: 'right' }}>
+                  <button className="btn btn-out" style={{ minHeight: 34, padding: '0 12px', fontSize: 13.5 }}
+                    disabled={pending} onClick={() => run(() => resolveMessageReport(r.id))}>Resolve</button>
+                </td>
+              </tr>
+            ))}
+            {!messageReports.length && <tr><td colSpan={4} className="mute">No open message reports.</td></tr>}
           </tbody>
         </table>
       </div>

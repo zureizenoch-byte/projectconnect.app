@@ -31,6 +31,11 @@ export default async function AdminPage() {
         .order('created_at', { ascending: false }).limit(20),
     ]);
 
+  const { data: msgReports } = await supabase
+    .from('message_reports')
+    .select('id,reason,detail,created_at,reporter_id,reported_id,message_id,conversation_id')
+    .eq('resolved', false).order('created_at');
+
   const { data: everyone } = await supabase
     .from('profiles')
     .select('id,email,full_name,role,city,speaker_approved')
@@ -71,6 +76,19 @@ export default async function AdminPage() {
   });
   const logRows = (log ?? []).map((l: any) => ({ ...l, profiles: byId.get(l.actor_id) ?? null }));
 
+  const { data: reportedMsgs } = (msgReports ?? []).filter((r: any) => r.message_id).length
+    ? await supabase.from('messages').select('id,body')
+        .in('id', (msgReports ?? []).filter((r: any) => r.message_id).map((r: any) => r.message_id))
+    : { data: [] as any[] };
+  const msgById = new Map((reportedMsgs ?? []).map((m: any) => [m.id, m]));
+
+  const messageReportRows = (msgReports ?? []).map((r: any) => ({
+    ...r,
+    reporter: byId.get(r.reporter_id) ?? null,
+    reported: byId.get(r.reported_id) ?? null,
+    message: r.message_id ? msgById.get(r.message_id) ?? null : null,
+  }));
+
   return (
     <main className="wrap">
       <h1>Admin</h1>
@@ -108,6 +126,12 @@ export default async function AdminPage() {
                   {inbox.pendingEvents} {inbox.pendingEvents === 1 ? 'event' : 'events'} to approve
                 </a>
               )}
+              {inbox.messageReports > 0 && (
+                <a className="btn btn-out" href="#message-reports"
+                  style={{ minHeight: 40, padding: '0 16px', fontSize: 14.5 }}>
+                  {inbox.messageReports} reported {inbox.messageReports === 1 ? 'message' : 'messages'}
+                </a>
+              )}
               {inbox.openReports > 0 && (
                 <a className="btn btn-out" href="#reports"
                   style={{ minHeight: 40, padding: '0 16px', fontSize: 14.5 }}>
@@ -126,6 +150,7 @@ export default async function AdminPage() {
         chapters={chapters ?? []}
         venues={venues ?? []}
         log={logRows}
+        messageReports={messageReportRows}
         everyone={everyone ?? []}
         currentAdminId={me.id}
       />

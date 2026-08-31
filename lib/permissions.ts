@@ -19,6 +19,7 @@ export function navFor(p: Profile) {
   const base: [string, string][] = [
     ['Dashboard', '/dashboard'],
     ['Events', '/events'],
+    ['Messages', '/messages'],
     ['Venues', '/venues'],
   ];
   if (canHostTalks(p)) base.push(['Speaker', '/speaker']);

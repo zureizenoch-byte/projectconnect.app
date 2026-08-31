@@ -3,6 +3,7 @@ import './globals.css';
 import { SiteNav } from '@/components/SiteNav';
 import { getSession } from '@/lib/auth';
 import { getInboxCounts } from '@/lib/inbox';
+import { getUnreadCount } from '@/lib/messages';
 
 export const metadata: Metadata = {
   title: 'Project Connect',
@@ -18,10 +19,11 @@ export const metadata: Metadata = {
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const session = await getSession();
   const inbox = session?.profile.role === 'admin' ? await getInboxCounts() : null;
+  const unread = session ? await getUnreadCount(session.user.id) : 0;
   return (
     <html lang="en">
       <body>
-        <SiteNav profile={session?.profile ?? null} inboxCount={inbox?.total ?? 0} />
+        <SiteNav profile={session?.profile ?? null} inboxCount={inbox?.total ?? 0} unreadCount={unread} />
         {children}
         <footer style={{ borderTop: '1px solid var(--line)', background: '#fff', marginTop: 48 }}>
           <div className="wrap grid g3" style={{ paddingBlock: 40 }}>
@@ -38,6 +40,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               <p className="eyebrow">Product</p>
               <p className="small"><a href="/dashboard">Dashboard</a></p>
               <p className="small"><a href="/events">Events</a></p>
+              <p className="small"><a href="/messages">Messages</a></p>
               <p className="small"><a href="/venues">Venues</a></p>
             </div>
             <div>

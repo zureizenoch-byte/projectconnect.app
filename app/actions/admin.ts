@@ -184,6 +184,23 @@ export async function saveVenue(formData: FormData) {
   return { ok: true };
 }
 
+export async function resolveMessageReport(reportId: string, alsoSuspend = false) {
+  const { profile } = await requireRole('admin');
+  const admin = createAdminClient();
+
+  const { data: rep } = await admin.from('message_reports')
+    .select('id,reported_id').eq('id', reportId).maybeSingle();
+  if (!rep) return { error: 'Report not found' };
+
+  await admin.from('message_reports').update({
+    resolved: true, resolved_by: profile.id, resolved_at: new Date().toISOString(),
+  }).eq('id', reportId);
+
+  await log(profile.id, 'message_report.resolve', reportId, { suspended: alsoSuspend });
+  revalidatePath('/admin');
+  return { ok: true };
+}
+
 export async function resolveReport(reportId: string) {
   const { profile } = await requireRole('admin');
   const admin = createAdminClient();

@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import { requireSession } from '@/lib/auth';
 import { createAdminClient } from '@/lib/supabase/server';
 import { Avatar } from '@/components/Avatar';
+import { MessageButton } from '@/components/MessageButton';
 
 export const dynamic = 'force-dynamic';
 
@@ -94,8 +95,8 @@ export default async function MemberProfile({ params }: { params: { id: string }
             )}
             <div className="row" style={{ gap: 10, marginTop: 18 }}>
               {isSelf && <a className="btn btn-primary" href="/profile">Edit my profile</a>}
-              {!isSelf && allowContact && person.email && (
-                <a className="btn btn-out" href={'mailto:' + person.email}>Get in touch</a>
+              {!isSelf && allowContact && (
+                <MessageButton otherId={person.id} />
               )}
               {person.linkedin_url && (
                 <a className="btn btn-out" href={person.linkedin_url} target="_blank" rel="noopener noreferrer">

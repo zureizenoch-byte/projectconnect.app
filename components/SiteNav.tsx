@@ -2,7 +2,8 @@ import { navFor } from '@/lib/permissions';
 import { signOut } from '@/app/actions/auth';
 import type { Profile } from '@/lib/types';
 
-export function SiteNav({ profile, inboxCount = 0 }: { profile: Profile | null; inboxCount?: number }) {
+export function SiteNav({ profile, inboxCount = 0, unreadCount = 0 }:
+  { profile: Profile | null; inboxCount?: number; unreadCount?: number }) {
   const links: [string, string][] = profile
     ? navFor(profile)
     : [['Events', '/events'], ['Venues', '/venues'], ['Pricing', '/pricing']];
@@ -18,6 +19,14 @@ export function SiteNav({ profile, inboxCount = 0 }: { profile: Profile | null; 
           {links.map(([label, href]) => (
             <a key={href} href={href} style={{ position: 'relative' }}>
               {label}
+              {label === 'Messages' && unreadCount > 0 && (
+                <span aria-label={unreadCount + ' unread messages'} style={{
+                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                  minWidth: 19, height: 19, marginLeft: 7, padding: '0 5px',
+                  borderRadius: 999, background: 'var(--gold-700)', color: '#fff',
+                  fontSize: 11.5, fontWeight: 700, lineHeight: 1,
+                }}>{unreadCount}</span>
+              )}
               {label === 'Admin' && inboxCount > 0 && (
                 <span aria-label={inboxCount + ' items need attention'} style={{
                   display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
