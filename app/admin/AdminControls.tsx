@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useTransition } from 'react';
+import { VenueForm } from './VenueForm';
+import { VenueRow } from './VenueRow';
 import { decideAccessRequest, revokeRole, grantRole, setAccountRole, setEventStatus, saveVenue, setVenueActive, deleteVenue, resolveReport, resolveMessageReport } from '@/app/actions/admin';
 
 export function AdminControls({ requests, pendingEvents, leads, reports, chapters, venues, log, everyone = [], messageReports = [], currentAdminId }: any) {
@@ -150,27 +152,8 @@ export function AdminControls({ requests, pendingEvents, leads, reports, chapter
       </div>
 
       <h2 style={{ marginTop: 30 }}>Venues</h2>
-      <form className="surf" style={{ padding: 24, marginTop: 14 }}
-        onSubmit={(e) => {
-          e.preventDefault();
-          const fd = new FormData(e.currentTarget);
-          const form = e.currentTarget;
-          run(async () => { const r = await saveVenue(fd); if (!r?.error) form.reset(); return r; });
-        }}>
-        <div className="grid g2">
-          <label className="fld"><span>Name</span><input name="name" required /></label>
-          <label className="fld"><span>Chapter</span>
-            <select name="chapter_id">{chapters.map((c: any) => <option key={c.id} value={c.id}>{c.city}</option>)}</select>
-          </label>
-          <label className="fld"><span>Address</span><input name="address" required /></label>
-          <label className="fld"><span>Capacity</span><input name="capacity" type="number" min={1} max={15} defaultValue={15} /></label>
-        </div>
-        <label className="fld"><span>Notes</span><input name="notes" placeholder="Step-free access, projector…" /></label>
-        <label className="row" style={{ gap: 10, marginBottom: 16 }}>
-          <input type="checkbox" name="active" defaultChecked /><span>Active</span>
-        </label>
-        <button className="btn btn-primary" type="submit" disabled={pending}>Add venue</button>
-      </form>
+      <VenueForm chapters={chapters} />
+
       <div className="surf" style={{ marginTop: 14, overflow: 'hidden' }}>
         <table className="table">
           <thead>
@@ -180,33 +163,7 @@ export function AdminControls({ requests, pendingEvents, leads, reports, chapter
             </tr>
           </thead>
           <tbody>
-            {venues.map((v: any) => (
-              <tr key={v.id} style={{ opacity: v.active ? 1 : .6 }}>
-                <td>{v.name}</td>
-                <td className="mute small">{v.address}</td>
-                <td className="mute">{v.capacity}</td>
-                <td>
-                  {v.active
-                    ? <span className="pill pill-ok">Active</span>
-                    : <span className="pill pill-off">Retired</span>}
-                </td>
-                <td>
-                  <div className="row" style={{ justifyContent: 'flex-end', gap: 6 }}>
-                    <button className="btn btn-out" disabled={pending}
-                      style={{ minHeight: 34, padding: '0 12px', fontSize: 13.5 }}
-                      onClick={() => run(() => setVenueActive(v.id, !v.active))}>
-                      {v.active ? 'Retire' : 'Restore'}
-                    </button>
-                    <button className="btn btn-quiet" disabled={pending}
-                      style={{ minHeight: 34, padding: '0 12px', fontSize: 13.5, color: 'var(--err)' }}
-                      onClick={() => {
-                        if (!confirm('Permanently delete ' + v.name + '? This cannot be undone.')) return;
-                        run(() => deleteVenue(v.id));
-                      }}>Delete</button>
-                  </div>
-                </td>
-              </tr>
-            ))}
+            {venues.map((v: any) => <VenueRow key={v.id} venue={v} />)}
             {!venues.length && <tr><td colSpan={5} className="mute">No venues yet.</td></tr>}
           </tbody>
         </table>

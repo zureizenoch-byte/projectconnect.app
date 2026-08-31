@@ -216,20 +216,42 @@ export async function setVenueActive(venueId: string, active: boolean) {
   return { ok: true };
 }
 
-/** Permanently delete a venue. Refused when any event still references it. */
-export async function deleteVenue(venueId: string) {
+/** How many events reference a venue — used to warn before deleting. */
+export async function venueUsage(venueId: string) {
+  await requireRole('admin');
+  const admin = createAdminClient();
+  const { count } = await admin.from('events')
+    .select('id', { count: 'exact', head: true }).eq('venue_id', venueId);
+  return { count: count ?? 0 };
+}
+
+/**
+ * Delete a venue. With force, any events pointing at it are detached first
+ * (their venue becomes "to be confirmed") rather than being deleted.
+ */
+export async function deleteVenue(venueId: string, force = false) {
   const { profile } = await requireRole('admin');
   const admin = createAdminClient();
 
   const { count } = await admin.from('events')
     .select('id', { count: 'exact', head: true }).eq('venue_id', venueId);
+
   if ((count ?? 0) > 0) {
-    return { error: (count ?? 0) + ' event(s) use this venue. Retire it instead to keep their history.' };
+    if (!force) {
+      return {
+        error: (count ?? 0) + ' event(s) use this venue.',
+        usedBy: count ?? 0,
+      };
+    }
+    const { error: detachError } = await admin.from('events')
+      .update({ venue_id: null }).eq('venue_id', venueId);
+    if (detachError) return { error: 'Could not detach events: ' + detachError.message };
   }
 
   const { error } = await admin.from('venues').delete().eq('id', venueId);
-  if (error) return { error: error.message };
-  await log(profile.id, 'venue.delete', venueId);
+  if (error) return { error: 'Delete failed: ' + error.message };
+
+  await log(profile.id, 'venue.delete', venueId, { detached: count ?? 0 });
   revalidatePath('/admin');
   revalidatePath('/venues');
   return { ok: true };
