@@ -2,7 +2,7 @@ import { navFor } from '@/lib/permissions';
 import { signOut } from '@/app/actions/auth';
 import type { Profile } from '@/lib/types';
 
-export function SiteNav({ profile }: { profile: Profile | null }) {
+export function SiteNav({ profile, inboxCount = 0 }: { profile: Profile | null; inboxCount?: number }) {
   const links: [string, string][] = profile
     ? navFor(profile)
     : [['Events', '/events'], ['Venues', '/venues'], ['Pricing', '/pricing']];
@@ -15,7 +15,19 @@ export function SiteNav({ profile }: { profile: Profile | null }) {
           <span>Project<span style={{ color: 'var(--gold-700)' }}>Connect</span></span>
         </a>
         <div className="navpill" style={{ marginLeft: 'auto' }}>
-          {links.map(([label, href]) => <a key={href} href={href}>{label}</a>)}
+          {links.map(([label, href]) => (
+            <a key={href} href={href} style={{ position: 'relative' }}>
+              {label}
+              {label === 'Admin' && inboxCount > 0 && (
+                <span aria-label={inboxCount + ' items need attention'} style={{
+                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                  minWidth: 19, height: 19, marginLeft: 7, padding: '0 5px',
+                  borderRadius: 999, background: 'var(--err)', color: '#fff',
+                  fontSize: 11.5, fontWeight: 700, lineHeight: 1,
+                }}>{inboxCount}</span>
+              )}
+            </a>
+          ))}
         </div>
         <div className="row" style={{ gap: 8 }}>
           {profile ? (

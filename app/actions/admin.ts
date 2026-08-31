@@ -77,13 +77,28 @@ export async function setAccountRole(profileId: string, role: string) {
 
 /** Approval goes through the database function, which writes the grant and the role together. */
 export async function decideAccessRequest(requestId: string, approve: boolean) {
-  await requireRole('admin');
-  const supabase = createClient();
-  const { error } = await supabase.rpc('approve_access_request', {
-    req_id: requestId, approve,
-  });
-  if (error) return { error: error.message };
+  const { profile } = await requireRole('admin');
+  const admin = createAdminClient();
+
+  const { data: req } = await admin.from('access_requests').select('*').eq('id', requestId).maybeSingle();
+  if (!req) return { error: 'Request not found' };
+  if (req.status !== 'pending') return { error: 'This request has already been decided.' };
+
+  const { error: decideError } = await admin.from('access_requests').update({
+    status: approve ? 'approved' : 'rejected',
+    decided_by: profile.id,
+    decided_at: new Date().toISOString(),
+  }).eq('id', requestId);
+  if (decideError) return { error: decideError.message };
+
+  if (approve) {
+    const res = await applyRole(req.profile_id, req.kind, req.chapter_id);
+    if (res.error) return res;
+  }
+
+  await log(profile.id, approve ? 'access.approve' : 'access.reject', req.profile_id, { kind: req.kind });
   revalidatePath('/admin');
+  revalidatePath('/profile');
   return { ok: true };
 }
 
@@ -93,11 +108,10 @@ export async function revokeRole(profileId: string, role: 'speaker' | 'chapter_l
   if (profileId === profile.id) {
     return { error: 'You cannot revoke your own admin access.' };
   }
-  const supabase = createClient();
-  const { error } = await supabase.rpc('revoke_role', {
-    target_profile: profileId, target_role: role,
-  });
-  if (error) return { error: error.message };
+  const res = await applyRole(profileId, 'member');
+  if (res.error) return res;
+
+  await log(profile.id, 'access.revoke', profileId, { role });
   revalidatePath('/admin');
   return { ok: true };
 }

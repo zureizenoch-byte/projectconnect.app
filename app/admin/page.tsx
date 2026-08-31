@@ -1,30 +1,33 @@
 import { requireRole } from '@/lib/auth';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import { AdminControls } from './AdminControls';
+import { getInboxCounts } from '@/lib/inbox';
 
 export const metadata = { title: 'Admin — Project Connect' };
 
 export default async function AdminPage() {
   const { profile: me } = await requireRole('admin');
-  const supabase = createClient();
+  // Page is gated by requireRole('admin'); read past RLS so nothing can be hidden from the queue.
+  const supabase = createAdminClient();
+  const inbox = await getInboxCounts();
 
   const [{ data: requests }, { data: pendingEvents }, { data: leads }, { data: reports }, { data: chapters }, { data: venues }, { data: log }] =
     await Promise.all([
       supabase.from('access_requests')
-        .select('id,kind,status,note,created_at,chapters(city),profiles(full_name,email)')
+        .select('id,kind,status,note,created_at,chapter_id,profile_id')
         .eq('status', 'pending').order('created_at'),
       supabase.from('events')
-        .select('id,title,kind,starts_at,status,chapters(city),profiles:created_by(full_name)')
+        .select('id,title,kind,starts_at,status,chapter_id,created_by')
         .in('status', ['pending', 'draft']).order('starts_at'),
       supabase.from('profiles')
-        .select('id,full_name,email,role,lead_chapter_id,chapters:lead_chapter_id(city)')
+        .select('id,full_name,email,role,lead_chapter_id')
         .in('role', ['chapter_lead', 'speaker', 'admin']),
       supabase.from('post_reports')
-        .select('id,reason,created_at,post_id,posts(body)')
+        .select('id,reason,created_at,post_id')
         .eq('resolved', false).order('created_at'),
       supabase.from('chapters').select('id,city'),
       supabase.from('venues').select('id,name,address,capacity,notes,active,chapter_id').order('name'),
-      supabase.from('audit_log').select('id,action,target,created_at,profiles:actor_id(full_name)')
+      supabase.from('audit_log').select('id,action,target,created_at,actor_id')
         .order('created_at', { ascending: false }).limit(20),
     ]);
 
@@ -33,20 +36,91 @@ export default async function AdminPage() {
     .select('id,email,full_name,role,city,speaker_approved')
     .order('created_at');
 
+  // resolve names and cities from the account list rather than SQL joins
+  const byId = new Map((everyone ?? []).map((p: any) => [p.id, p]));
+  const cityOf = new Map((chapters ?? []).map((c: any) => [c.id, c.city]));
+
+  const { data: reportedPosts } = (reports ?? []).length
+    ? await supabase.from('posts').select('id,body,author_id')
+        .in('id', (reports ?? []).map((r: any) => r.post_id))
+    : { data: [] as any[] };
+  const postById = new Map((reportedPosts ?? []).map((p: any) => [p.id, p]));
+
+  const requestRows = (requests ?? []).map((r: any) => ({
+    ...r,
+    profiles: byId.get(r.profile_id) ?? null,
+    chapters: { city: cityOf.get(r.chapter_id) ?? null },
+  }));
+  const eventRows = (pendingEvents ?? []).map((e: any) => ({
+    ...e,
+    profiles: byId.get(e.created_by) ?? null,
+    chapters: { city: cityOf.get(e.chapter_id) ?? null },
+  }));
+  const leadRows = (leads ?? []).map((p: any) => ({
+    ...p,
+    chapters: { city: cityOf.get(p.lead_chapter_id) ?? null },
+  }));
+  const reportRows = (reports ?? []).map((r: any) => {
+    const post = postById.get(r.post_id);
+    return { ...r, posts: post ? { ...post, profiles: byId.get(post.author_id) ?? null } : null };
+  });
+  const logRows = (log ?? []).map((l: any) => ({ ...l, profiles: byId.get(l.actor_id) ?? null }));
+
   return (
     <main className="wrap">
       <h1>Admin</h1>
       <p className="mute" style={{ marginTop: 10, maxWidth: '62ch' }}>
         Approvals, access grants, venues and reports. Every decision here is written to the audit log.
       </p>
+
+      <section className="surf" style={{
+        padding: 'clamp(20px,3vw,28px)', marginTop: 26,
+        background: inbox.total > 0
+          ? 'linear-gradient(160deg,var(--gold-100),#fff)'
+          : '#fff',
+        borderColor: inbox.total > 0 ? 'var(--gold-200)' : 'var(--line)',
+      }}>
+        <p className="eyebrow">Needs your attention</p>
+        {inbox.total === 0 ? (
+          <p style={{ margin: '10px 0 0', fontSize: 17 }}>
+            Nothing waiting. The queue is clear.
+          </p>
+        ) : (
+          <>
+            <h2 style={{ marginTop: 10, fontSize: 28 }}>
+              {inbox.total} {inbox.total === 1 ? 'item' : 'items'} waiting on you
+            </h2>
+            <div className="row" style={{ gap: 10, marginTop: 16 }}>
+              {inbox.accessRequests > 0 && (
+                <a className="btn btn-gold" href="#access-requests"
+                  style={{ minHeight: 40, padding: '0 16px', fontSize: 14.5 }}>
+                  {inbox.accessRequests} access {inbox.accessRequests === 1 ? 'request' : 'requests'}
+                </a>
+              )}
+              {inbox.pendingEvents > 0 && (
+                <a className="btn btn-out" href="#pending-events"
+                  style={{ minHeight: 40, padding: '0 16px', fontSize: 14.5 }}>
+                  {inbox.pendingEvents} {inbox.pendingEvents === 1 ? 'event' : 'events'} to approve
+                </a>
+              )}
+              {inbox.openReports > 0 && (
+                <a className="btn btn-out" href="#reports"
+                  style={{ minHeight: 40, padding: '0 16px', fontSize: 14.5 }}>
+                  {inbox.openReports} reported {inbox.openReports === 1 ? 'post' : 'posts'}
+                </a>
+              )}
+            </div>
+          </>
+        )}
+      </section>
       <AdminControls
-        requests={requests ?? []}
-        pendingEvents={pendingEvents ?? []}
-        leads={leads ?? []}
-        reports={reports ?? []}
+        requests={requestRows}
+        pendingEvents={eventRows}
+        leads={leadRows}
+        reports={reportRows}
         chapters={chapters ?? []}
         venues={venues ?? []}
-        log={log ?? []}
+        log={logRows}
         everyone={everyone ?? []}
         currentAdminId={me.id}
       />

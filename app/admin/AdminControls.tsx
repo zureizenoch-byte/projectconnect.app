@@ -15,7 +15,7 @@ export function AdminControls({ requests, pendingEvents, leads, reports, chapter
     <>
       {msg && <p className="hint" style={{ color: msg === 'Done.' ? 'var(--ok)' : 'var(--err)' }}>{msg}</p>}
 
-      <h2 style={{ marginTop: 30 }}>Access requests</h2>
+      <h2 id="access-requests" style={{ marginTop: 30, scrollMarginTop: 80 }}>Access requests</h2>
       <div className="surf" style={{ marginTop: 14, overflow: 'hidden' }}>
         <table className="table">
           <thead><tr><th>Person</th><th>Requesting</th><th>Chapter</th><th>Note</th><th style={{ textAlign: 'right' }}>Decision</th></tr></thead>
@@ -25,7 +25,13 @@ export function AdminControls({ requests, pendingEvents, leads, reports, chapter
                 <td>{r.profiles?.full_name}<br /><span className="mute small">{r.profiles?.email}</span></td>
                 <td>{r.kind === 'speaker' ? 'Speaker' : 'Chapter Lead'}</td>
                 <td className="mute">{r.chapters?.city ?? '—'}</td>
-                <td className="mute small" style={{ maxWidth: 320 }}>{r.note}</td>
+                <td className="mute small" style={{ maxWidth: 320 }}>
+                  {r.note || <span style={{ opacity: .6 }}>No details given</span>}
+                  <br />
+                  <span style={{ opacity: .75 }}>
+                    Waiting {Math.max(0, Math.floor((Date.now() - +new Date(r.created_at)) / 86400000))} day(s)
+                  </span>
+                </td>
                 <td>
                   <div className="row" style={{ justifyContent: 'flex-end', gap: 6 }}>
                     <button className="btn btn-gold" style={{ minHeight: 34, padding: '0 12px', fontSize: 13.5 }}
@@ -41,7 +47,7 @@ export function AdminControls({ requests, pendingEvents, leads, reports, chapter
         </table>
       </div>
 
-      <h2 style={{ marginTop: 30 }}>Events awaiting approval</h2>
+      <h2 id="pending-events" style={{ marginTop: 30, scrollMarginTop: 80 }}>Events awaiting approval</h2>
       <div className="surf" style={{ marginTop: 14, overflow: 'hidden' }}>
         <table className="table">
           <thead><tr><th>Event</th><th>Kind</th><th>Chapter</th><th>Created by</th><th style={{ textAlign: 'right' }}>Decision</th></tr></thead>
@@ -209,7 +215,7 @@ export function AdminControls({ requests, pendingEvents, leads, reports, chapter
         </table>
       </div>
 
-      <h2 style={{ marginTop: 30 }}>Reported posts</h2>
+      <h2 id="reports" style={{ marginTop: 30, scrollMarginTop: 80 }}>Reported posts</h2>
       <div className="surf" style={{ marginTop: 14, overflow: 'hidden' }}>
         <table className="table">
           <thead><tr><th>Post</th><th>Reason</th><th style={{ textAlign: 'right' }}>Action</th></tr></thead>

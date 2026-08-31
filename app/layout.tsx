@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { SiteNav } from '@/components/SiteNav';
 import { getSession } from '@/lib/auth';
+import { getInboxCounts } from '@/lib/inbox';
 
 export const metadata: Metadata = {
   title: 'Project Connect',
@@ -16,10 +17,11 @@ export const metadata: Metadata = {
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const session = await getSession();
+  const inbox = session?.profile.role === 'admin' ? await getInboxCounts() : null;
   return (
     <html lang="en">
       <body>
-        <SiteNav profile={session?.profile ?? null} />
+        <SiteNav profile={session?.profile ?? null} inboxCount={inbox?.total ?? 0} />
         {children}
         <footer style={{ borderTop: '1px solid var(--line)', background: '#fff', marginTop: 48 }}>
           <div className="wrap grid g3" style={{ paddingBlock: 40 }}>
