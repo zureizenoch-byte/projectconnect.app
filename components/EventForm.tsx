@@ -77,9 +77,15 @@ export function EventForm({ kind, chapters, venues }: {
         }}>
           <iframe
             title="Venue location"
-            width="100%" height="220" loading="lazy" style={{ border: 0, display: 'block' }}
+            width="100%" height="240" loading="lazy" style={{ border: 0, display: 'block' }}
             referrerPolicy="no-referrer-when-downgrade"
-            src={'https://www.google.com/maps?q=' + encodeURIComponent(fullAddress) + '&output=embed'} />
+            src={
+              process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+                ? 'https://www.google.com/maps/embed/v1/place?key='
+                  + process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+                  + '&q=' + encodeURIComponent(fullAddress) + '&zoom=16'
+                : 'https://www.google.com/maps?q=' + encodeURIComponent(fullAddress) + '&output=embed'
+            } />
           <div className="row" style={{ justifyContent: 'space-between', padding: '12px 16px', background: '#fcfcff' }}>
             <span className="mute small">{fullAddress}</span>
             <a className="btn btn-out" href={mapsUrl(fullAddress)} target="_blank" rel="noopener noreferrer"

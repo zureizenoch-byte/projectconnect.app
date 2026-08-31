@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
+import { loadGoogleMaps, hasGoogleKey } from '@/lib/googleMaps';
 
 type Suggestion = {
   key: string;
@@ -7,25 +8,39 @@ type Suggestion = {
   address: string;
   saved?: boolean;
   venueId?: string;
+  placeId?: string;
 };
 
 /**
- * Type a place name; suggestions come from this chapter's saved venues first,
- * then real addresses from Photon (OpenStreetMap). No API key required.
+ * Venue search. Uses Google Places Autocomplete when a key is configured,
+ * and falls back to Photon (OpenStreetMap) when it is not — so the field
+ * always works, with or without billing set up.
  */
 export function VenueSearch({
   venues, city, onPick,
 }: {
   venues: { id: string; name: string; address?: string }[];
   city: string;
-  onPick: (v: { venueId: string | null; name: string; address: string }) => void;
+  onPick: (v: { venueId: string | null; name: string; address: string; lat?: number; lng?: number; placeId?: string }) => void;
 }) {
   const [query, setQuery] = useState('');
   const [remote, setRemote] = useState<Suggestion[]>([]);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [picked, setPicked] = useState<Suggestion | null>(null);
+  const [googleReady, setGoogleReady] = useState(false);
   const boxRef = useRef<HTMLDivElement>(null);
+  const sessionToken = useRef<any>(null);
+
+  useEffect(() => {
+    loadGoogleMaps().then((ok) => {
+      setGoogleReady(ok);
+      if (ok) {
+        const g = (window as any).google;
+        sessionToken.current = new g.maps.places.AutocompleteSessionToken();
+      }
+    });
+  }, []);
 
   useEffect(() => {
     const onDown = (e: MouseEvent) => {
@@ -35,41 +50,66 @@ export function VenueSearch({
     return () => document.removeEventListener('mousedown', onDown);
   }, []);
 
-  // debounced lookup
   useEffect(() => {
     const q = query.trim();
     if (q.length < 3) { setRemote([]); setLoading(false); return; }
 
     let cancelled = false;
     setLoading(true);
+
     const timer = setTimeout(async () => {
       try {
-        const url = 'https://photon.komoot.io/api/?limit=6&lang=en&q='
-          + encodeURIComponent(q + ' ' + city);
-        const res = await fetch(url);
-        const json = await res.json();
-        if (cancelled) return;
+        if (googleReady) {
+          const g = (window as any).google;
+          const { suggestions } = await g.maps.places.AutocompleteSuggestion
+            .fetchAutocompleteSuggestions({
+              input: q,
+              sessionToken: sessionToken.current,
+              includedRegionCodes: ['ca'],
+              locationBias: undefined,
+            });
 
-        const items: Suggestion[] = (json.features ?? []).map((f: any, i: number) => {
-          const p = f.properties ?? {};
-          const line = [p.housenumber && p.street ? p.housenumber + ' ' + p.street : p.street,
-            p.city ?? p.district, p.state, p.country].filter(Boolean).join(', ');
-          return {
-            key: 'r' + i + (p.osm_id ?? ''),
-            name: p.name || p.street || q,
-            address: line || p.name || q,
-          };
-        });
-        setRemote(items);
+          if (cancelled) return;
+          const items: Suggestion[] = (suggestions ?? [])
+            .filter((s: any) => s.placePrediction)
+            .slice(0, 6)
+            .map((s: any, i: number) => {
+              const p = s.placePrediction;
+              return {
+                key: 'g' + i + p.placeId,
+                name: p.mainText?.text ?? p.text?.text ?? q,
+                address: p.secondaryText?.text ?? p.text?.text ?? '',
+                placeId: p.placeId,
+              };
+            });
+          setRemote(items);
+        } else {
+          const url = 'https://photon.komoot.io/api/?limit=6&lang=en&q='
+            + encodeURIComponent(q + ' ' + city);
+          const res = await fetch(url);
+          const json = await res.json();
+          if (cancelled) return;
+          const items: Suggestion[] = (json.features ?? []).map((f: any, i: number) => {
+            const p = f.properties ?? {};
+            const line = [p.housenumber && p.street ? p.housenumber + ' ' + p.street : p.street,
+              p.city ?? p.district, p.state, p.country].filter(Boolean).join(', ');
+            return {
+              key: 'r' + i + (p.osm_id ?? ''),
+              name: p.name || p.street || q,
+              address: line || p.name || q,
+            };
+          });
+          setRemote(items);
+        }
       } catch {
         if (!cancelled) setRemote([]);
       } finally {
         if (!cancelled) setLoading(false);
       }
-    }, 350);
+    }, 300);
 
     return () => { cancelled = true; clearTimeout(timer); };
-  }, [query, city]);
+  }, [query, city, googleReady]);
 
   const q = query.trim().toLowerCase();
   const savedMatches: Suggestion[] = venues
@@ -77,11 +117,31 @@ export function VenueSearch({
     .slice(0, 4)
     .map((v) => ({ key: 's' + v.id, name: v.name, address: v.address ?? '', saved: true, venueId: v.id }));
 
-  const choose = (s: Suggestion) => {
+  const choose = async (s: Suggestion) => {
     setPicked(s);
     setQuery('');
     setOpen(false);
-    onPick({ venueId: s.venueId ?? null, name: s.name, address: s.address });
+
+    // Google gives us the canonical address and coordinates on request
+    if (s.placeId && googleReady) {
+      try {
+        const g = (window as any).google;
+        const place = new g.maps.places.Place({ id: s.placeId });
+        await place.fetchFields({ fields: ['displayName', 'formattedAddress', 'location'] });
+        const address = place.formattedAddress ?? s.address;
+        const name = place.displayName ?? s.name;
+        setPicked({ ...s, name, address });
+        onPick({
+          venueId: null, name, address,
+          lat: place.location?.lat(), lng: place.location?.lng(),
+          placeId: s.placeId,
+        });
+        sessionToken.current = new g.maps.places.AutocompleteSessionToken();
+        return;
+      } catch { /* fall through to the prediction text */ }
+    }
+
+    onPick({ venueId: s.venueId ?? null, name: s.name, address: s.address, placeId: s.placeId });
   };
 
   const clear = () => {
@@ -124,21 +184,19 @@ export function VenueSearch({
         <div style={{
           position: 'absolute', zIndex: 40, left: 0, right: 0, top: 'calc(100% + 6px)',
           background: '#fff', border: '1px solid var(--line)', borderRadius: 12,
-          boxShadow: 'var(--sh-lg)', overflow: 'hidden', maxHeight: 320, overflowY: 'auto',
+          boxShadow: 'var(--sh-lg)', overflow: 'hidden', maxHeight: 340, overflowY: 'auto',
         }}>
           {savedMatches.length > 0 && (
             <>
               <p className="eyebrow" style={{ padding: '10px 16px 6px', margin: 0 }}>Your venues</p>
-              {savedMatches.map((s) => (
-                <Row key={s.key} s={s} onPick={choose} />
-              ))}
+              {savedMatches.map((s) => <Row key={s.key} s={s} onPick={choose} />)}
             </>
           )}
 
           {query.trim().length >= 3 && (
             <>
               <p className="eyebrow" style={{ padding: '12px 16px 6px', margin: 0 }}>
-                {loading ? 'Searching…' : 'Places'}
+                {loading ? 'Searching…' : googleReady ? 'Google Places' : 'Places'}
               </p>
               {remote.map((s) => <Row key={s.key} s={s} onPick={choose} />)}
               {!loading && remote.length === 0 && (
@@ -166,6 +224,12 @@ export function VenueSearch({
               Keep typing to search places…
             </p>
           )}
+
+          {googleReady && (
+            <p className="mute" style={{
+              padding: '8px 16px', margin: 0, fontSize: 12, borderTop: '1px solid var(--line)',
+            }}>Powered by Google</p>
+          )}
         </div>
       )}
     </div>
@@ -184,9 +248,11 @@ function Row({ s, onPick }: { s: Suggestion; onPick: (s: Suggestion) => void }) 
       <span style={{ display: 'block', fontSize: 15.5, fontWeight: 500, color: 'var(--ink)' }}>
         {s.name}
       </span>
-      <span className="mute" style={{ display: 'block', fontSize: 13.5, marginTop: 1 }}>
-        {s.address}
-      </span>
+      {s.address && (
+        <span className="mute" style={{ display: 'block', fontSize: 13.5, marginTop: 1 }}>
+          {s.address}
+        </span>
+      )}
     </button>
   );
 }

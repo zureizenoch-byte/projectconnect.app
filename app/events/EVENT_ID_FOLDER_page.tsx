@@ -71,10 +71,31 @@ export default async function EventPage({ params }: { params: { id: string } }) 
               status={mine?.status ?? null} full={confirmed >= e.seat_cap} />
           )}
           {venue?.address && (
-            <p className="hint">
-              Directions open in Google Maps: <a target="_blank" rel="noopener noreferrer"
-                href={mapsUrl(venue.address)}>{venue.address}</a>
-            </p>
+            <>
+              <div style={{
+                marginTop: 20, borderRadius: 14, overflow: 'hidden', border: '1px solid var(--line)',
+              }}>
+                <iframe
+                  title="Venue location"
+                  width="100%" height="260" loading="lazy" style={{ border: 0, display: 'block' }}
+                  referrerPolicy="no-referrer-when-downgrade"
+                  src={
+                    process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+                      ? 'https://www.google.com/maps/embed/v1/place?key='
+                        + process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+                        + '&q=' + encodeURIComponent(venue.address) + '&zoom=16'
+                      : 'https://www.google.com/maps?q=' + encodeURIComponent(venue.address) + '&output=embed'
+                  } />
+                <div className="row" style={{
+                  justifyContent: 'space-between', padding: '12px 16px', background: '#fcfcff',
+                }}>
+                  <span className="mute small">{venue.address}</span>
+                  <a className="btn btn-out" target="_blank" rel="noopener noreferrer"
+                    href={mapsUrl(venue.address)}
+                    style={{ minHeight: 34, padding: '0 14px', fontSize: 13.5 }}>Directions</a>
+                </div>
+              </div>
+            </>
           )}
         </div>
       </div>
