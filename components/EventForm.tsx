@@ -27,7 +27,6 @@ export function EventForm({ kind, chapters, venues }: {
 
   return (
     <form className="surf" style={{ padding: 'clamp(20px,3vw,28px)', marginTop: 16 }}
-      // Enter is for picking a venue suggestion, not for submitting the whole form
       onKeyDown={(e) => {
         const el = e.target as HTMLElement;
         if (e.key === 'Enter' && el.tagName !== 'TEXTAREA' && el.getAttribute('type') !== 'submit') {

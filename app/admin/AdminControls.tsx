@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { decideAccessRequest, revokeRole, grantRole, setAccountRole, setEventStatus, saveVenue, resolveReport, resolveMessageReport } from '@/app/actions/admin';
+import { decideAccessRequest, revokeRole, grantRole, setAccountRole, setEventStatus, saveVenue, setVenueActive, deleteVenue, resolveReport, resolveMessageReport } from '@/app/actions/admin';
 
 export function AdminControls({ requests, pendingEvents, leads, reports, chapters, venues, log, everyone = [], messageReports = [], currentAdminId }: any) {
   const [pending, start] = useTransition();
@@ -173,19 +173,48 @@ export function AdminControls({ requests, pendingEvents, leads, reports, chapter
       </form>
       <div className="surf" style={{ marginTop: 14, overflow: 'hidden' }}>
         <table className="table">
-          <thead><tr><th>Venue</th><th>Address</th><th>Capacity</th><th>Active</th></tr></thead>
+          <thead>
+            <tr>
+              <th>Venue</th><th>Address</th><th>Capacity</th><th>Status</th>
+              <th style={{ textAlign: 'right' }}>Actions</th>
+            </tr>
+          </thead>
           <tbody>
             {venues.map((v: any) => (
-              <tr key={v.id}>
+              <tr key={v.id} style={{ opacity: v.active ? 1 : .6 }}>
                 <td>{v.name}</td>
                 <td className="mute small">{v.address}</td>
                 <td className="mute">{v.capacity}</td>
-                <td>{v.active ? <span className="pill pill-ok">Active</span> : <span className="pill pill-off">Off</span>}</td>
+                <td>
+                  {v.active
+                    ? <span className="pill pill-ok">Active</span>
+                    : <span className="pill pill-off">Retired</span>}
+                </td>
+                <td>
+                  <div className="row" style={{ justifyContent: 'flex-end', gap: 6 }}>
+                    <button className="btn btn-out" disabled={pending}
+                      style={{ minHeight: 34, padding: '0 12px', fontSize: 13.5 }}
+                      onClick={() => run(() => setVenueActive(v.id, !v.active))}>
+                      {v.active ? 'Retire' : 'Restore'}
+                    </button>
+                    <button className="btn btn-quiet" disabled={pending}
+                      style={{ minHeight: 34, padding: '0 12px', fontSize: 13.5, color: 'var(--err)' }}
+                      onClick={() => {
+                        if (!confirm('Permanently delete ' + v.name + '? This cannot be undone.')) return;
+                        run(() => deleteVenue(v.id));
+                      }}>Delete</button>
+                  </div>
+                </td>
               </tr>
             ))}
+            {!venues.length && <tr><td colSpan={5} className="mute">No venues yet.</td></tr>}
           </tbody>
         </table>
       </div>
+      <p className="hint">
+        Retiring hides a venue from new events but keeps it on past ones. Delete only works
+        when no event references it.
+      </p>
 
       <h2 style={{ marginTop: 30 }}>All accounts</h2>
       <p className="mute small" style={{ marginTop: 6 }}>

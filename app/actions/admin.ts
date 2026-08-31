@@ -201,6 +201,40 @@ export async function resolveMessageReport(reportId: string, alsoSuspend = false
   return { ok: true };
 }
 
+/**
+ * Retire or restore a venue. Venues attached to past events are deactivated
+ * rather than deleted, so event history keeps its location.
+ */
+export async function setVenueActive(venueId: string, active: boolean) {
+  const { profile } = await requireRole('admin');
+  const admin = createAdminClient();
+  const { error } = await admin.from('venues').update({ active }).eq('id', venueId);
+  if (error) return { error: error.message };
+  await log(profile.id, active ? 'venue.restore' : 'venue.retire', venueId);
+  revalidatePath('/admin');
+  revalidatePath('/venues');
+  return { ok: true };
+}
+
+/** Permanently delete a venue. Refused when any event still references it. */
+export async function deleteVenue(venueId: string) {
+  const { profile } = await requireRole('admin');
+  const admin = createAdminClient();
+
+  const { count } = await admin.from('events')
+    .select('id', { count: 'exact', head: true }).eq('venue_id', venueId);
+  if ((count ?? 0) > 0) {
+    return { error: (count ?? 0) + ' event(s) use this venue. Retire it instead to keep their history.' };
+  }
+
+  const { error } = await admin.from('venues').delete().eq('id', venueId);
+  if (error) return { error: error.message };
+  await log(profile.id, 'venue.delete', venueId);
+  revalidatePath('/admin');
+  revalidatePath('/venues');
+  return { ok: true };
+}
+
 export async function resolveReport(reportId: string) {
   const { profile } = await requireRole('admin');
   const admin = createAdminClient();
