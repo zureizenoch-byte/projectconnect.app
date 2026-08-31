@@ -38,9 +38,11 @@ export default async function DashboardPage() {
     }
   };
 
+  const PERSON = 'id,full_name,photo_url,role_level,city';
+
   const [authors, likes, comments] = await Promise.all([
     authorIds.length
-      ? safe(() => supabase.from('profiles').select('id,full_name,photo_url,role_level').in('id', authorIds))
+      ? safe(() => supabase.from('profiles').select(PERSON).in('id', authorIds))
       : Promise.resolve([] as any[]),
     postIds.length
       ? safe(() => supabase.from('post_likes').select('post_id,profile_id').in('post_id', postIds))
@@ -57,12 +59,13 @@ export default async function DashboardPage() {
     full_name: profile.full_name ?? authorMap.get(user.id)?.full_name ?? null,
     photo_url: profile.photo_url ?? authorMap.get(user.id)?.photo_url ?? null,
     role_level: profile.role_level ?? authorMap.get(user.id)?.role_level ?? null,
+    city: profile.city ?? authorMap.get(user.id)?.city ?? null,
   });
+
   const commenterIds = Array.from(new Set((comments ?? []).map((c: any) => c.author_id)))
     .filter((id: any) => !authorMap.has(id));
   if (commenterIds.length) {
-    const extra = await safe(() => supabase.from('profiles')
-      .select('id,full_name,photo_url,role_level').in('id', commenterIds));
+    const extra = await safe(() => supabase.from('profiles').select(PERSON).in('id', commenterIds));
     for (const a of extra) authorMap.set(a.id, a);
   }
 
@@ -147,28 +150,41 @@ export default async function DashboardPage() {
           <PostForm />
           {(posts ?? []).map((p: any) => (
             <article key={p.id} id={'post-' + p.id} className="surf lift" style={{ padding: 24 }}>
-              <div className="row">
-                <a href={'/members/' + p.author_id} aria-label="View profile">
-                  <Avatar src={authorMap.get(p.author_id)?.photo_url} name={authorMap.get(p.author_id)?.full_name} size={72} />
+              <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+                <a href={'/members/' + p.author_id} aria-label="View profile" style={{ flex: 'none' }}>
+                  <Avatar src={authorMap.get(p.author_id)?.photo_url}
+                    name={authorMap.get(p.author_id)?.full_name} size={64} />
                 </a>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <div style={{ minWidth: 0, flex: 1 }}>
                   <a href={'/members/' + p.author_id}
-                    style={{ fontWeight: 600, fontSize: 19, color: 'var(--ink)' }}>
+                    style={{ fontWeight: 600, fontSize: 19, color: 'var(--ink)', textDecoration: 'none' }}>
                     {authorMap.get(p.author_id)?.full_name ?? 'Member'}
                   </a>
-                  <span className="mute" style={{ fontSize: 15 }}>{authorMap.get(p.author_id)?.role_level}</span>
+                  <div style={{
+                    display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginTop: 3,
+                  }}>
+                    {authorMap.get(p.author_id)?.role_level && (
+                      <span className="mute" style={{ fontSize: 15 }}>
+                        {authorMap.get(p.author_id).role_level}
+                      </span>
+                    )}
+                    {authorMap.get(p.author_id)?.role_level && authorMap.get(p.author_id)?.city && (
+                      <span className="mute" style={{ fontSize: 15, opacity: .5 }}>·</span>
+                    )}
+                    {authorMap.get(p.author_id)?.city && (
+                      <span className="mute" style={{ fontSize: 15 }}>
+                        {authorMap.get(p.author_id).city}
+                      </span>
+                    )}
+                  </div>
                 </div>
-                {authorMap.get(p.author_id)?.city && (
-                  <span className="pill pill-wait" style={{ marginLeft: 'auto' }}>
-                    {authorMap.get(p.author_id).city}
-                  </span>
-                )}
-              </div>
-              <p style={{ fontSize: 15.5, lineHeight: 1.7, margin: '16px 0 0', whiteSpace: 'pre-wrap' }}>{p.body}</p>
-              <footer className="row" style={{ gap: 6, marginTop: 18, paddingTop: 14, borderTop: '1px solid var(--line)' }}>
-                <span className="mute small" style={{ marginRight: 'auto' }}>
-                  {new Date(p.created_at).toLocaleDateString('en-CA', { dateStyle: 'medium' })}
+                <span className="mute" style={{ fontSize: 13.5, whiteSpace: 'nowrap', alignSelf: 'flex-start' }}>
+                  {new Date(p.created_at).toLocaleDateString('en-CA', { month: 'short', day: 'numeric' })}
                 </span>
+              </div>
+              <p style={{ fontSize: 16.5, lineHeight: 1.7, margin: '18px 0 0', whiteSpace: 'pre-wrap' }}>{p.body}</p>
+              <footer className="row" style={{ gap: 6, marginTop: 18, paddingTop: 14, borderTop: '1px solid var(--line)' }}>
+                <span style={{ marginRight: 'auto' }} />
                 {(p.author_id === user.id || profile.role === 'admin') && <PostActions postId={p.id} />}
               </footer>
               <PostEngagement
