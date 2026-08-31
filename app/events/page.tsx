@@ -2,6 +2,7 @@ import { getSession } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 import { isPaid } from '@/lib/tiers';
 import { RsvpButton } from '@/components/RsvpButton';
+import { EventLifecycle } from '@/components/EventLifecycle';
 
 export const metadata = { title: 'Events — Project Connect' };
 
@@ -17,6 +18,14 @@ export default async function EventsPage({ searchParams }: { searchParams: { cit
     .gte('starts_at', new Date().toISOString())
     .order('starts_at');
 
+  const isAdmin = session?.profile.role === 'admin';
+  if (isAdmin) {
+    query = supabase
+      .from('events')
+      .select('id,title,kind,description,starts_at,seat_cap,status,status_note,original_starts_at,chapters(city),venues(name,address),event_seats(id,status,profile_id)')
+      .order('starts_at');
+  }
+
   const { data: events } = await query;
   const city = searchParams.city;
   const kind = searchParams.kind;
@@ -29,6 +38,11 @@ export default async function EventsPage({ searchParams }: { searchParams: { cit
       <p className="mute" style={{ marginTop: 10, maxWidth: '62ch' }}>
         Matched meetups and Speaker Series talks, in one schedule. Tables run twelve to fifteen seats.
       </p>
+      {isAdmin && (
+        <p className="hint" style={{ marginTop: 8 }}>
+          You're seeing every event, including drafts and past ones, with management controls on each.
+        </p>
+      )}
 
       <div className="row" style={{ marginTop: 22 }}>
         {[['All', ''], ['Vancouver', 'Vancouver'], ['Toronto', 'Toronto']].map(([label, value]) => (
@@ -68,6 +82,9 @@ export default async function EventsPage({ searchParams }: { searchParams: { cit
                       {e.chapters?.city} · {e.kind === 'talk' ? 'Speaker Series' : 'Meetup'}
                     </p>
                     {e.status === 'postponed' && <span className="pill pill-off">Postponed</span>}
+                    {isAdmin && e.status !== 'published' && e.status !== 'postponed' && (
+                      <span className="pill pill-wait">{e.status}</span>
+                    )}
                     {e.status === 'published' && e.original_starts_at && (
                       <span className="pill pill-wait">New date</span>
                     )}
@@ -89,7 +106,7 @@ export default async function EventsPage({ searchParams }: { searchParams: { cit
                   {e.description && <p className="mute" style={{ marginTop: 8 }}>{e.description}</p>}
                 </div>
 
-                <div style={{ marginLeft: 'auto' }}>
+                <div style={{ marginLeft: 'auto', display: 'grid', gap: 10, justifyItems: 'end' }}>
                   {e.status === 'postponed' ? (
                     <span className="mute small">Awaiting a new date</span>
                   ) : !session ? (
@@ -99,6 +116,20 @@ export default async function EventsPage({ searchParams }: { searchParams: { cit
                   ) : (
                     <RsvpButton eventId={e.id} address={e.venues?.address ?? null}
                       status={mine?.status ?? null} full={full} />
+                  )}
+
+                  {isAdmin && (
+                    <div style={{
+                      paddingTop: 10, marginTop: 2, borderTop: '1px dashed var(--line)',
+                      width: '100%', display: 'grid', justifyItems: 'end', gap: 6,
+                    }}>
+                      <span className="mute" style={{ fontSize: 12, letterSpacing: '.06em', textTransform: 'uppercase' }}>
+                        Admin
+                      </span>
+                      <EventLifecycle eventId={e.id} title={e.title} status={e.status}
+                        startsAt={e.starts_at} seatCount={(e.event_seats ?? []).length}
+                        canDelete />
+                    </div>
                   )}
                 </div>
               </div>
