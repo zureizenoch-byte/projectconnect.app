@@ -42,7 +42,7 @@ export function SiteNav({ profile, inboxCount = 0, unreadCount = 0 }:
           {profile ? (
             <>
               <a className="btn btn-quiet" style={{ minHeight: 38, padding: '0 14px', fontSize: 14 }} href="/profile">
-                Profile
+                Edit profile
               </a>
               <form action={signOut}>
                 <button className="btn btn-out" type="submit"
