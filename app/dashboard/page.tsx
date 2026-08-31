@@ -141,7 +141,7 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      <h2 style={{ marginTop: 34 }}>Chapter feed</h2>
+      <h2 style={{ marginTop: 34 }}>Feed</h2>
       <div className="grid" style={{ gridTemplateColumns: 'minmax(0,7fr) minmax(0,4fr)', marginTop: 16, alignItems: 'start' }}>
         <div className="grid" style={{ gap: 14 }}>
           <PostForm />

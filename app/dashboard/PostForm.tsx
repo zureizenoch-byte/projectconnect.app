@@ -19,7 +19,7 @@ export function PostForm() {
         });
       }}>
       <label className="fld" style={{ marginBottom: 12 }}>
-        <span>Post to your chapter</span>
+        <span>Post to the community</span>
         <textarea name="body" required placeholder="What are you working through this week?" />
       </label>
       {error && <p className="err">{error}</p>}
