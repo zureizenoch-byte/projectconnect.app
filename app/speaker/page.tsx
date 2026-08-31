@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { canHostTalks } from '@/lib/permissions';
 import { SeatActions } from '@/components/SeatActions';
 import { EventForm } from '@/components/EventForm';
+import { EventLifecycle } from '@/components/EventLifecycle';
 
 export const metadata = { title: 'Speaker — Project Connect' };
 
@@ -20,7 +21,7 @@ export default async function SpeakerPage() {
   // no nested embeds: each table is read plainly and stitched together below
   const [rawTalks, chapters, venues] = await Promise.all([
     safe(() => supabase.from('events')
-      .select('id,title,status,starts_at,seat_cap,chapter_id')
+      .select('id,title,status,starts_at,seat_cap,chapter_id,status_note')
       .eq('host_id', profile.id).order('starts_at', { ascending: false })),
     safe(() => supabase.from('chapters').select('id,city').eq('active', true)),
     safe(() => supabase.from('venues').select('id,name,chapter_id,address').eq('active', true)),
@@ -50,7 +51,8 @@ export default async function SpeakerPage() {
   }));
 
   const now = Date.now();
-  const upcoming = talks.filter((t: any) => +new Date(t.starts_at) >= now);
+  const upcoming = talks.filter((t: any) =>
+    +new Date(t.starts_at) >= now || t.status === 'postponed');
   const past = talks.filter((t: any) => +new Date(t.starts_at) < now);
   const requests = upcoming.reduce((n: number, t: any) =>
     n + (t.event_seats ?? []).filter((s: any) => s.status === 'requested').length, 0);
@@ -81,15 +83,22 @@ export default async function SpeakerPage() {
           const confirmed = (t.event_seats ?? []).filter((s: any) => s.status === 'confirmed').length;
           return (
             <section key={t.id} className="surf" style={{ padding: 22 }}>
-              <div className="row">
-                <div>
+              <div className="row" style={{ alignItems: 'flex-start' }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
                   <p className="eyebrow">{t.chapters?.city} · {t.status}</p>
                   <h3 style={{ marginTop: 8, fontSize: 22 }}>{t.title}</h3>
                   <p className="mute small" style={{ marginTop: 6 }}>
                     {new Date(t.starts_at).toLocaleString('en-CA', { dateStyle: 'full', timeStyle: 'short' })} ·{' '}
                     {confirmed} of {t.seat_cap} seats
                   </p>
+                  {t.status_note && (
+                    <p className="mute small" style={{ margin: '6px 0 0', fontStyle: 'italic' }}>
+                      {t.status_note}
+                    </p>
+                  )}
                 </div>
+                <EventLifecycle eventId={t.id} title={t.title} status={t.status}
+                  startsAt={t.starts_at} seatCount={(t.event_seats ?? []).length} />
               </div>
               <table className="table" style={{ marginTop: 16 }}>
                 <thead>

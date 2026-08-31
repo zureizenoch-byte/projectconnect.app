@@ -11,7 +11,7 @@ export default async function EventPage({ params }: { params: { id: string } }) 
 
   const { data: e } = await supabase
     .from('events')
-    .select('id,title,kind,description,starts_at,duration_min,seat_cap,status,chapters(city),venues(name,address,notes),profiles:host_id(full_name,intro)')
+    .select('id,title,kind,description,starts_at,duration_min,seat_cap,status,status_note,original_starts_at,chapters(city),venues(name,address,notes),profiles:host_id(full_name,intro)')
     .eq('id', params.id).single();
   if (!e) notFound();
 
@@ -28,6 +28,28 @@ export default async function EventPage({ params }: { params: { id: string } }) 
     <main className="wrap" style={{ maxWidth: 860 }}>
       <p className="eyebrow">{(e.chapters as any)?.city} · {e.kind === 'talk' ? 'Speaker Series' : 'Meetup'}</p>
       <h1 style={{ marginTop: 12 }}>{e.title}</h1>
+
+      {(e.status === 'postponed' || e.status === 'cancelled' || e.original_starts_at) && (
+        <div style={{
+          marginTop: 16, padding: '16px 20px', borderRadius: 14,
+          border: '1px solid ' + (e.status === 'cancelled' ? 'rgba(180,35,24,.3)' : 'var(--gold-200)'),
+          background: e.status === 'cancelled' ? '#fff6f5' : 'var(--gold-100)',
+        }}>
+          <strong style={{ color: e.status === 'cancelled' ? 'var(--err)' : 'var(--gold-700)' }}>
+            {e.status === 'cancelled' ? 'This event was cancelled'
+              : e.status === 'postponed' ? 'Postponed — a new date is coming'
+                : 'This event was moved'}
+          </strong>
+          {e.original_starts_at && e.status !== 'cancelled' && (
+            <p className="mute" style={{ margin: '6px 0 0', fontSize: 14.5 }}>
+              Originally {new Date(e.original_starts_at).toLocaleString('en-CA', { dateStyle: 'full', timeStyle: 'short' })}
+            </p>
+          )}
+          {e.status_note && (
+            <p style={{ margin: '8px 0 0', fontSize: 15, lineHeight: 1.6 }}>{e.status_note}</p>
+          )}
+        </div>
+      )}
       <p className="mute" style={{ marginTop: 12, fontSize: 17 }}>
         {d.toLocaleString('en-CA', { dateStyle: 'full', timeStyle: 'short' })} · {e.duration_min} minutes
       </p>

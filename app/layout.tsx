@@ -4,6 +4,7 @@ import { SiteNav } from '@/components/SiteNav';
 import { getSession } from '@/lib/auth';
 import { getInboxCounts } from '@/lib/inbox';
 import { getUnreadCount } from '@/lib/messages';
+import { getUnreadNotificationCount } from '@/lib/notifications';
 
 export const metadata: Metadata = {
   title: 'Project Connect',
@@ -18,14 +19,15 @@ export const metadata: Metadata = {
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const session = await getSession();
-  const [inbox, unread] = await Promise.all([
+  const [inbox, unread, alerts] = await Promise.all([
     session?.profile.role === 'admin' ? getInboxCounts() : Promise.resolve(null),
     session ? getUnreadCount(session.user.id) : Promise.resolve(0),
+    session ? getUnreadNotificationCount(session.user.id) : Promise.resolve(0),
   ]);
   return (
     <html lang="en">
       <body>
-        <SiteNav profile={session?.profile ?? null} inboxCount={inbox?.total ?? 0} unreadCount={unread} />
+        <SiteNav profile={session?.profile ?? null} inboxCount={inbox?.total ?? 0} unreadCount={unread} alertCount={alerts} />
         {children}
         <footer style={{ borderTop: '1px solid var(--line)', background: '#fff', marginTop: 48 }}>
           <div className="wrap grid g3" style={{ paddingBlock: 40 }}>

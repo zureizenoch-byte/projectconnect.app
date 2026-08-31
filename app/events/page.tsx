@@ -12,8 +12,8 @@ export default async function EventsPage({ searchParams }: { searchParams: { cit
 
   let query = supabase
     .from('events')
-    .select('id,title,kind,description,starts_at,seat_cap,chapters(city),venues(name,address),event_seats(id,status,profile_id)')
-    .eq('status', 'published')
+    .select('id,title,kind,description,starts_at,seat_cap,status,status_note,original_starts_at,chapters(city),venues(name,address),event_seats(id,status,profile_id)')
+    .in('status', ['published', 'postponed'])
     .gte('starts_at', new Date().toISOString())
     .order('starts_at');
 
@@ -63,9 +63,15 @@ export default async function EventsPage({ searchParams }: { searchParams: { cit
                 </div>
 
                 <div style={{ flex: 1, minWidth: 240 }}>
-                  <p className="eyebrow">
-                    {e.chapters?.city} · {e.kind === 'talk' ? 'Speaker Series' : 'Meetup'}
-                  </p>
+                  <div className="row" style={{ gap: 8 }}>
+                    <p className="eyebrow" style={{ margin: 0 }}>
+                      {e.chapters?.city} · {e.kind === 'talk' ? 'Speaker Series' : 'Meetup'}
+                    </p>
+                    {e.status === 'postponed' && <span className="pill pill-off">Postponed</span>}
+                    {e.status === 'published' && e.original_starts_at && (
+                      <span className="pill pill-wait">New date</span>
+                    )}
+                  </div>
                   <h3 style={{ marginTop: 8, fontSize: 22 }}>
                     <a href={'/events/' + e.id}>{e.title}</a>
                   </h3>
@@ -73,11 +79,20 @@ export default async function EventsPage({ searchParams }: { searchParams: { cit
                     {d.toLocaleString('en-CA', { weekday: 'short', hour: 'numeric', minute: '2-digit' })}
                     {e.venues?.name ? ' · ' + e.venues.name : ''} · {confirmed} of {e.seat_cap} seats
                   </p>
+                  {e.status_note && (
+                    <p style={{
+                      marginTop: 8, padding: '8px 12px', borderRadius: 10, fontSize: 14.5,
+                      background: 'var(--gold-100)', border: '1px solid var(--gold-200)',
+                      color: 'var(--gold-700)',
+                    }}>{e.status_note}</p>
+                  )}
                   {e.description && <p className="mute" style={{ marginTop: 8 }}>{e.description}</p>}
                 </div>
 
                 <div style={{ marginLeft: 'auto' }}>
-                  {!session ? (
+                  {e.status === 'postponed' ? (
+                    <span className="mute small">Awaiting a new date</span>
+                  ) : !session ? (
                     <a className="btn btn-gold" href="/signup">Join to RSVP</a>
                   ) : locked ? (
                     <a className="btn btn-out" href="/pricing">Paid plans only</a>

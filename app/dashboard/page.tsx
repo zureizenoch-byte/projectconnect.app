@@ -17,7 +17,7 @@ export default async function DashboardPage() {
 
   const [{ data: seats }, { data: tags }, { data: posts, error: postsError }] = await Promise.all([
     supabase.from('event_seats')
-      .select('id,status,table_no,events(id,title,kind,starts_at,seat_cap,venues(name,address))')
+      .select('id,status,table_no,events(id,title,kind,starts_at,seat_cap,status,status_note,venues(name,address))')
       .eq('profile_id', user.id).neq('status', 'cancelled')
       .order('created_at', { ascending: false }),
     supabase.from('profile_tags').select('category').eq('profile_id', user.id),
@@ -149,8 +149,11 @@ export default async function DashboardPage() {
                     {s.events && new Date(s.events.starts_at).toLocaleDateString('en-CA', { dateStyle: 'medium' })}
                   </p>
                 </div>
-                <span className={'pill ' + (s.status === 'confirmed' ? 'pill-ok' : s.status === 'waitlist' ? 'pill-off' : 'pill-wait')}>
-                  {s.status}
+                <span className={'pill ' + (
+                  s.events?.status === 'postponed' ? 'pill-off'
+                    : s.status === 'confirmed' ? 'pill-ok'
+                      : s.status === 'waitlist' ? 'pill-off' : 'pill-wait')}>
+                  {s.events?.status === 'postponed' ? 'postponed' : s.status}
                 </span>
               </div>
             ))}

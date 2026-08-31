@@ -5,6 +5,7 @@ import { canRunChapter } from '@/lib/permissions';
 import { SeatActions } from '@/components/SeatActions';
 import { EventForm } from '@/components/EventForm';
 import { MatchButton } from './MatchButton';
+import { EventLifecycle } from '@/components/EventLifecycle';
 
 export const metadata = { title: 'Chapter — Project Connect' };
 
@@ -17,7 +18,7 @@ export default async function ChapterPage() {
 
   const [{ data: events }, { data: chapters }, { data: venues }, { data: members }] = await Promise.all([
     supabase.from('events')
-      .select('id,title,kind,status,starts_at,seat_cap,venues(name,address),event_seats(id,status,table_no,checked_in,profiles(full_name,role_level))')
+      .select('id,title,kind,status,starts_at,seat_cap,status_note,venues(name,address),event_seats(id,status,table_no,checked_in,profiles(full_name,role_level))')
       .eq('chapter_id', chapterId ?? '').order('starts_at'),
     supabase.from('chapters').select('id,city').eq('active', true),
     supabase.from('venues').select('id,name,chapter_id,address').eq('active', true),
@@ -25,7 +26,8 @@ export default async function ChapterPage() {
   ]);
 
   const now = Date.now();
-  const upcoming = (events ?? []).filter((e: any) => +new Date(e.starts_at) >= now);
+  const upcoming = (events ?? []).filter((e: any) =>
+    +new Date(e.starts_at) >= now || e.status === 'postponed');
 
   return (
     <main className="wrap">
@@ -54,14 +56,25 @@ export default async function ChapterPage() {
           <section key={e.id} className="surf" style={{ padding: 22 }}>
             <div className="row">
               <div>
-                <p className="eyebrow">{e.kind === 'talk' ? 'Speaker Series' : 'Meetup'} · {e.status}</p>
+                <p className="eyebrow">
+                  {e.kind === 'talk' ? 'Speaker Series' : 'Meetup'} · {e.status}
+                </p>
+                {e.status_note && (
+                  <p className="mute small" style={{ margin: '6px 0 0', fontStyle: 'italic' }}>
+                    {e.status_note}
+                  </p>
+                )}
                 <h3 style={{ marginTop: 8, fontSize: 22 }}>{e.title}</h3>
                 <p className="mute small" style={{ marginTop: 6 }}>
                   {new Date(e.starts_at).toLocaleString('en-CA', { dateStyle: 'full', timeStyle: 'short' })}
                   {e.venues?.name ? ' · ' + e.venues.name : ''} · cap {e.seat_cap}
                 </p>
               </div>
-              <div style={{ marginLeft: 'auto' }}><MatchButton eventId={e.id} /></div>
+              <div style={{ marginLeft: 'auto', display: 'grid', gap: 10, justifyItems: 'end' }}>
+                <MatchButton eventId={e.id} />
+                <EventLifecycle eventId={e.id} title={e.title} status={e.status}
+                  startsAt={e.starts_at} seatCount={(e.event_seats ?? []).length} />
+              </div>
             </div>
             <table className="table" style={{ marginTop: 16 }}>
               <thead><tr><th>Attendee</th><th>Level</th><th>Status</th><th style={{ textAlign: 'right' }}>Table / actions</th></tr></thead>

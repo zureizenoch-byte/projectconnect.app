@@ -2,8 +2,8 @@ import { navFor } from '@/lib/permissions';
 import { signOut } from '@/app/actions/auth';
 import type { Profile } from '@/lib/types';
 
-export function SiteNav({ profile, inboxCount = 0, unreadCount = 0 }:
-  { profile: Profile | null; inboxCount?: number; unreadCount?: number }) {
+export function SiteNav({ profile, inboxCount = 0, unreadCount = 0, alertCount = 0 }:
+  { profile: Profile | null; inboxCount?: number; unreadCount?: number; alertCount?: number }) {
   const links: [string, string][] = profile
     ? navFor(profile)
     : [['Events', '/events'], ['Venues', '/venues'], ['Pricing', '/pricing']];
@@ -41,6 +41,25 @@ export function SiteNav({ profile, inboxCount = 0, unreadCount = 0 }:
         <div className="row" style={{ gap: 8 }}>
           {profile ? (
             <>
+              <a href="/notifications" aria-label={alertCount + ' notifications'}
+                title="Notifications"
+                style={{
+                  position: 'relative', display: 'grid', placeItems: 'center',
+                  width: 38, height: 38, borderRadius: 11,
+                  border: '1px solid var(--line)', background: '#fff',
+                  fontSize: 16, color: 'var(--ink)', textDecoration: 'none',
+                }}>
+                <span aria-hidden>🔔</span>
+                {alertCount > 0 && (
+                  <span style={{
+                    position: 'absolute', top: -6, right: -6,
+                    display: 'grid', placeItems: 'center',
+                    minWidth: 19, height: 19, padding: '0 5px', borderRadius: 999,
+                    background: 'var(--err)', color: '#fff',
+                    fontSize: 11.5, fontWeight: 700, lineHeight: 1,
+                  }}>{alertCount > 99 ? '99+' : alertCount}</span>
+                )}
+              </a>
               <a className="btn btn-quiet" style={{ minHeight: 38, padding: '0 14px', fontSize: 14 }} href="/profile">
                 Edit profile
               </a>
