@@ -97,7 +97,7 @@ export default async function DashboardPage() {
               {profile.city ? ' · ' + profile.city : ''}
             </p>
           </div>
-          <Avatar src={profile.photo_url} name={profile.full_name} email={profile.email} size={72} />
+          <Avatar src={profile.photo_url} name={profile.full_name} email={profile.email} size={104} />
         </a>
       </div>
 
