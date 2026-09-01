@@ -5,14 +5,14 @@ import { useRouter } from 'next/navigation';
 import { saveVenueContact, resendVenueNotice } from '@/app/actions/venueNotify';
 
 /** Contact details for a venue, plus the state of any notice we have sent. */
-export function VenueContact({ venue, notices }: { venue: any; notices: any[] }) {
+export function VenueContact({ venue, notices = [] }: { venue: any; notices?: any[] }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [pending, start] = useTransition();
   const [msg, setMsg] = useState<string | null>(null);
   const [isError, setIsError] = useState(false);
 
-  const mine = notices.filter((n) => n.venue_id === venue.id);
+  const mine = (notices ?? []).filter((n) => n?.venue_id === venue.id);
   const sent = mine.filter((n) => n.status === 'sent').length;
   const stuck = mine.filter((n) => n.status === 'queued' || n.status === 'failed');
 

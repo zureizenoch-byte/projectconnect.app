@@ -36,10 +36,12 @@ export default async function AdminPage() {
     .select('id,reason,detail,created_at,reporter_id,reported_id,message_id,conversation_id')
     .eq('resolved', false).order('created_at');
 
-  const { data: venueNotices } = await supabase
+  const venueNotices = await supabase
     .from('venue_notifications')
     .select('id,event_id,venue_id,to_email,status,error,sent_at,created_at')
-    .order('created_at', { ascending: false }).limit(200);
+    .order('created_at', { ascending: false }).limit(200)
+    .then((r) => r.data ?? [])
+    .catch(() => [] as any[]);
 
   const { data: everyone } = await supabase
     .from('profiles')
@@ -154,7 +156,7 @@ export default async function AdminPage() {
         reports={reportRows}
         chapters={chapters ?? []}
         venues={venues ?? []}
-        venueNotices={venueNotices ?? []}
+        venueNotices={venueNotices}
         log={logRows}
         messageReports={messageReportRows}
         everyone={everyone ?? []}

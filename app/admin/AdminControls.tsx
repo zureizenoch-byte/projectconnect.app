@@ -164,8 +164,8 @@ export function AdminControls({ requests, pendingEvents, leads, reports, chapter
             </tr>
           </thead>
           <tbody>
-            {venues.map((v: any) => (
-              <VenueRow key={v.id} venue={v} notices={venueNotices} />
+            {(venues ?? []).map((v: any) => (
+              <VenueRow key={v.id} venue={v} notices={venueNotices ?? []} />
             ))}
             {!venues.length && <tr><td colSpan={5} className="mute">No venues yet.</td></tr>}
           </tbody>
