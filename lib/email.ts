@@ -84,67 +84,92 @@ async function sendViaResend(
   }
 }
 
-/** The note a coffee shop receives. Plain, specific, and easy to reply to. */
+/** The note a coffee shop receives, from the approved template. */
 export function venueNoticeTemplate({
-  venueName, contactName, eventTitle, when, seats, hostName, hostEmail, eventUrl, address,
+  venueName, contactName, when, date, time, seats, hostName,
+  chapterLeadName, city, supportEmail, websiteUrl, eventUrl, address,
 }: {
-  venueName: string; contactName?: string | null; eventTitle: string; when: string;
-  seats: number; hostName: string; hostEmail?: string | null; eventUrl: string; address: string;
+  venueName: string; contactName?: string | null; when: string;
+  date: string; time: string; seats: string; hostName: string;
+  chapterLeadName: string; city: string; supportEmail: string; websiteUrl: string;
+  eventUrl: string; address: string;
 }) {
-  const greeting = contactName ? 'Hello ' + contactName : 'Hello ' + venueName;
-  const subject = 'Project Connect meetup at ' + venueName + ' \u2014 ' + when;
+  const subject = 'Project Connect is hosting a meetup at ' + venueName
+    + ' on ' + date + ' \u2615';
+
+  const greeting = contactName ? 'Hi ' + contactName : 'Hi ' + venueName + ' team';
 
   const text = [
     greeting + ',',
     '',
-    'A member of Project Connect has scheduled a small professional meetup at ' + venueName + '.',
+    'My name is ' + chapterLeadName + ', and I\u2019m reaching out on behalf of Project Connect, '
+      + 'a community that brings together professionals in Project Management, Product, Agile, QA, '
+      + 'Data, Cyber, Cloud, and Delivery through small, in-person meetups in ' + city + '.',
     '',
-    'What: ' + eventTitle,
-    'When: ' + when,
-    'Group size: up to ' + seats + ' people',
-    'Where: ' + address,
-    'Organised by: ' + hostName + (hostEmail ? ' (' + hostEmail + ')' : ''),
+    'We wanted to let you know that one of our members has just scheduled a meetup at '
+      + venueName + ':',
     '',
-    'Project Connect runs matched small-group meetups for project, product, delivery and',
-    'technology professionals. Attendees buy their own drinks, and groups are capped so they',
-    'fit around one table.',
+    '  Date: ' + date,
+    '  Time: ' + time,
+    '  Expected group size: ' + seats + ' people',
+    '  Organizer: ' + hostName,
     '',
-    'This is a courtesy notice rather than a booking. If you would prefer we did not meet at',
-    'your venue on this date, or you would like to reserve a table for us, just reply to this',
-    'email and we will sort it out.',
+    'We love partnering with local coffee shops like yours to host these gatherings \u2014 it\u2019s '
+      + 'a great way to bring new regulars through your door while giving our members a welcoming '
+      + 'spot to connect. If you\u2019re part of our Venue Branding program, this visit also counts '
+      + 'toward your co-branding perks; if you\u2019d like to learn more about that program, just '
+      + 'reply to this email and we\u2019ll send details.',
     '',
-    'Details: ' + eventUrl,
+    'If this date or time doesn\u2019t work for you, or you have any questions, please let us know '
+      + 'as soon as possible by replying to this email or reaching us at ' + supportEmail
+      + ', and we\u2019ll sort it out.',
     '',
-    'Thank you,',
-    'Project Connect',
-    'projectconnect.app',
+    'Thanks so much for being a part of the Project Connect community \u2014 we\u2019re looking '
+      + 'forward to seeing everyone there!',
+    '',
+    'Warmly,',
+    chapterLeadName,
+    'Project Connect \u2014 ' + city + ' Chapter',
+    supportEmail + ' | ' + websiteUrl,
+    '',
+    'Meetup details: ' + eventUrl,
   ].join('\n');
 
-  const row = (label: string, value: string) =>
-    '<tr><td style="padding:4px 16px 4px 0;color:#5a6478">' + label +
-    '</td><td style="padding:4px 0">' + value + '</td></tr>';
+  const li = (label: string, value: string) =>
+    '<li style="margin:0 0 6px"><strong>' + label + ':</strong> ' + value + '</li>';
 
   const html = '<div style="font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;'
-    + 'font-size:15px;line-height:1.6;color:#0d1330;max-width:560px">'
+    + 'font-size:15px;line-height:1.65;color:#0d1330;max-width:560px">'
     + '<p style="margin:0 0 16px">' + greeting + ',</p>'
-    + '<p style="margin:0 0 16px">A member of Project Connect has scheduled a small professional '
-    + 'meetup at <strong>' + venueName + '</strong>.</p>'
-    + '<table cellpadding="0" cellspacing="0" style="margin:0 0 16px;font-size:15px">'
-    + row('What', '<strong>' + eventTitle + '</strong>')
-    + row('When', when)
-    + row('Group size', 'Up to ' + seats + ' people')
-    + row('Where', address)
-    + row('Organiser', hostName + (hostEmail ? ' &lt;' + hostEmail + '&gt;' : ''))
-    + '</table>'
-    + '<p style="margin:0 0 16px">Project Connect runs matched small-group meetups for project, '
-    + 'product, delivery and technology professionals. Attendees buy their own drinks, and groups '
-    + 'are capped so they fit around one table.</p>'
-    + '<p style="margin:0 0 16px">This is a courtesy notice rather than a booking. If you would '
-    + 'prefer we did not meet at your venue on this date, or you would like to reserve a table '
-    + 'for us, just reply to this email and we will sort it out.</p>'
-    + '<p style="margin:0 0 24px"><a href="' + eventUrl + '" style="color:#20358a">'
+    + '<p style="margin:0 0 16px">My name is ' + chapterLeadName + ', and I\u2019m reaching out on '
+    + 'behalf of <strong>Project Connect</strong>, a community that brings together professionals in '
+    + 'Project Management, Product, Agile, QA, Data, Cyber, Cloud, and Delivery through small, '
+    + 'in-person meetups in ' + city + '.</p>'
+    + '<p style="margin:0 0 12px">We wanted to let you know that one of our members has just '
+    + 'scheduled a meetup at <strong>' + venueName + '</strong>:</p>'
+    + '<ul style="margin:0 0 16px;padding-left:20px">'
+    + li('Date', date)
+    + li('Time', time)
+    + li('Expected group size', seats + ' people')
+    + li('Organizer', hostName)
+    + '</ul>'
+    + '<p style="margin:0 0 16px">We love partnering with local coffee shops like yours to host '
+    + 'these gatherings \u2014 it\u2019s a great way to bring new regulars through your door while '
+    + 'giving our members a welcoming spot to connect. If you\u2019re part of our Venue Branding '
+    + 'program, this visit also counts toward your co-branding perks; if you\u2019d like to learn '
+    + 'more about that program, just reply to this email and we\u2019ll send details.</p>'
+    + '<p style="margin:0 0 16px">If this date or time doesn\u2019t work for you, or you have any '
+    + 'questions, please let us know as soon as possible by replying to this email or reaching us at '
+    + '<a href="mailto:' + supportEmail + '" style="color:#20358a">' + supportEmail + '</a>, '
+    + 'and we\u2019ll sort it out.</p>'
+    + '<p style="margin:0 0 20px">Thanks so much for being a part of the Project Connect community '
+    + '\u2014 we\u2019re looking forward to seeing everyone there!</p>'
+    + '<p style="margin:0 0 4px">Warmly,<br />' + chapterLeadName + '</p>'
+    + '<p style="margin:0;color:#5a6478;font-size:13.5px">Project Connect \u2014 ' + city
+    + ' Chapter<br /><a href="mailto:' + supportEmail + '" style="color:#20358a">' + supportEmail
+    + '</a> | <a href="' + websiteUrl + '" style="color:#20358a">' + websiteUrl + '</a></p>'
+    + '<p style="margin:20px 0 0;font-size:13.5px"><a href="' + eventUrl + '" style="color:#20358a">'
     + 'See the meetup details</a></p>'
-    + '<p style="margin:0;color:#5a6478;font-size:13.5px">Project Connect · projectconnect.app</p>'
     + '</div>';
 
   return { subject, text, html };

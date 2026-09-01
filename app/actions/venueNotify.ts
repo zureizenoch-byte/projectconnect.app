@@ -55,23 +55,48 @@ export async function notifyVenue(eventId: string, force = false) {
     ? await db.from('profiles').select('full_name,email').eq('id', hostId).maybeSingle()
     : { data: null };
 
+  // The chapter's own lead signs the note; an admin stands in if there is none
+  const { data: lead } = await db.from('profiles')
+    .select('full_name').eq('lead_chapter_id', ev.chapter_id)
+    .eq('role', 'chapter_lead').limit(1).maybeSingle();
+
+  const { data: fallbackAdmin } = lead ? { data: null } : await db.from('profiles')
+    .select('full_name').eq('role', 'admin').order('created_at').limit(1).maybeSingle();
+
+  const chapterLeadName = lead?.full_name
+    ?? fallbackAdmin?.full_name
+    ?? 'the Project Connect team';
+
   const city = (ev.chapters as any)?.city ?? '';
   const address = venue.address.toLowerCase().includes(city.toLowerCase())
     ? venue.address
     : venue.address + ', ' + city;
 
-  const when = new Date(ev.starts_at).toLocaleString('en-CA', {
-    dateStyle: 'full', timeStyle: 'short',
+  const starts = new Date(ev.starts_at);
+  const when = starts.toLocaleString('en-CA', { dateStyle: 'full', timeStyle: 'short' });
+  const date = starts.toLocaleDateString('en-CA', {
+    weekday: 'long', month: 'long', day: 'numeric',
   });
+  const time = starts.toLocaleTimeString('en-CA', {
+    hour: 'numeric', minute: '2-digit',
+  });
+
+  const supportEmail = process.env.EMAIL_REPLY_TO
+    ?? process.env.SMTP_USER
+    ?? 'hello@projectconnect.app';
 
   const { subject, text, html } = venueNoticeTemplate({
     venueName: venue.name,
     contactName: venue.contact_name,
-    eventTitle: ev.title,
     when,
-    seats: ev.seat_cap,
+    date,
+    time,
+    seats: String(ev.seat_cap),
     hostName: host?.full_name ?? 'a Project Connect member',
-    hostEmail: host?.email ?? null,
+    chapterLeadName,
+    city: city || 'your city',
+    supportEmail,
+    websiteUrl: siteUrl().replace(/^https?:\/\//, ''),
     eventUrl: siteUrl() + '/events/' + ev.id,
     address,
   });
