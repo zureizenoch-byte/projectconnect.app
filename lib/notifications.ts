@@ -11,21 +11,30 @@ export type Notification = {
 };
 
 export async function getNotifications(userId: string, limit = 30) {
-  const db = createAdminClient();
-  const { data } = await db.from('notifications')
+  try {
+    const db = createAdminClient();
+    const { data } = await db.from('notifications')
     .select('id,kind,title,body,href,read_at,created_at')
     .eq('profile_id', userId)
     .order('created_at', { ascending: false })
-    .limit(limit);
-  return (data ?? []) as Notification[];
+      .limit(limit);
+    return (data ?? []) as Notification[];
+  } catch {
+    return [] as Notification[];
+  }
 }
 
+/** Runs in the root layout, so it must never throw. */
 export async function getUnreadNotificationCount(userId: string) {
-  const db = createAdminClient();
-  const { count } = await db.from('notifications')
-    .select('id', { count: 'exact', head: true })
-    .eq('profile_id', userId).is('read_at', null);
-  return count ?? 0;
+  try {
+    const db = createAdminClient();
+    const { count } = await db.from('notifications')
+      .select('id', { count: 'exact', head: true })
+      .eq('profile_id', userId).is('read_at', null);
+    return count ?? 0;
+  } catch {
+    return 0;
+  }
 }
 
 /** A small glyph per notification kind — no icon library needed. */

@@ -74,6 +74,7 @@ export async function getConversations(userId: string): Promise<ConversationSumm
  * The full conversation list is only built on the Messages page itself.
  */
 export async function getUnreadCount(userId: string) {
+  try {
   const db = createAdminClient();
 
   const { data: mine } = await db.from('conversation_participants')
@@ -99,4 +100,7 @@ export async function getUnreadCount(userId: string) {
     if (!seen || new Date(msg.created_at) > new Date(seen)) unread++;
   }
   return unread;
+  } catch {
+    return 0;
+  }
 }
