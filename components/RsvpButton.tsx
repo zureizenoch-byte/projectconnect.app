@@ -11,8 +11,10 @@ export function RsvpButton({
   const [current, setCurrent] = useState(status);
 
   const label = current && current !== 'cancelled'
-    ? (current === 'confirmed' ? 'Going — cancel seat' : current === 'waitlist' ? 'On the waitlist' : 'Requested — cancel')
-    : full ? 'Join the waitlist' : 'RSVP';
+    ? (current === 'confirmed' ? "You're going — cancel"
+      : current === 'waitlist' ? 'On the waitlist — leave'
+        : 'Cancel')
+    : full ? 'Join the waitlist' : 'Take a seat';
 
   return (
     <div>
@@ -22,7 +24,7 @@ export function RsvpButton({
             setError(null);
             const res = await rsvp(eventId);
             if (res?.error) setError(res.error);
-            else setCurrent(current && current !== 'cancelled' ? 'cancelled' : 'requested');
+            else setCurrent(current && current !== 'cancelled' ? 'cancelled' : (full ? 'waitlist' : 'confirmed'));
           })}>
           {pending ? 'Saving…' : label}
         </button>

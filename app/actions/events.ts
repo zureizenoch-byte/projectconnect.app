@@ -6,6 +6,25 @@ import { requireSession } from '@/lib/auth';
 import { assignTables, selectBalanced, describeMix } from '@/lib/matching';
 import { canRunChapter, canHostTalks, isAdmin } from '@/lib/permissions';
 
+/** Promote the longest-waiting person when a seat frees up. */
+async function promoteFromWaitlist(eventId: string) {
+  const db = createAdminClient();
+  const { data: ev } = await db.from('events').select('seat_cap').eq('id', eventId).maybeSingle();
+  if (!ev) return;
+
+  const { count } = await db.from('event_seats')
+    .select('id', { count: 'exact', head: true })
+    .eq('event_id', eventId).eq('status', 'confirmed');
+  if ((count ?? 0) >= ev.seat_cap) return;
+
+  const { data: next } = await db.from('event_seats')
+    .select('id').eq('event_id', eventId).eq('status', 'waitlist')
+    .order('created_at').limit(1).maybeSingle();
+  if (next) {
+    await db.from('event_seats').update({ status: 'confirmed' }).eq('id', next.id);
+  }
+}
+
 export async function rsvp(eventId: string) {
   const { user } = await requireSession();
   const supabase = createClient();
@@ -14,17 +33,24 @@ export async function rsvp(eventId: string) {
     .from('event_seats').select('id,status')
     .eq('event_id', eventId).eq('profile_id', user.id).maybeSingle();
 
+  let released = false;
+
   if (existing) {
-    const next = existing.status === 'cancelled' ? 'requested' : 'cancelled';
+    const leaving = existing.status !== 'cancelled';
+    const next = leaving ? 'cancelled' : 'confirmed';
     const { error } = await supabase.from('event_seats')
       .update({ status: next }).eq('id', existing.id);
     if (error) return { error: error.message };
+    released = leaving && existing.status === 'confirmed';
   } else {
+    // First come, first served: take the seat now, or land on the waitlist
+    // if the cap is already met (the seat_rules trigger decides).
     const { error } = await supabase.from('event_seats')
-      .insert({ event_id: eventId, profile_id: user.id, status: 'requested' });
-    // seat rules live in the database — surface its message verbatim
+      .insert({ event_id: eventId, profile_id: user.id, status: 'confirmed' });
     if (error) return { error: error.message };
   }
+
+  if (released) await promoteFromWaitlist(eventId);
 
   revalidatePath('/events');
   revalidatePath('/events/' + eventId);
@@ -88,9 +114,12 @@ export async function autoMatch(eventId: string) {
 }
 
 /**
- * Seat a coffee meetup by mix rather than by arrival. Usable by the host,
- * that chapter's lead, or an admin. Confirms a balanced set up to the seat
- * cap and waitlists the rest; everyone is notified by the seat trigger.
+ * Group the people who are already coming into tables.
+ *
+ * Seats are first come, first served — this does not decide who is in. It
+ * decides who sits with whom: tables are built to spread domains and role
+ * levels, so nobody ends up at an all-one-discipline table. Usable by the
+ * host, that chapter's lead, or an admin, and safe to re-run.
  */
 export async function matchAttendees(eventId: string) {
   const { profile } = await requireSession();
@@ -104,12 +133,12 @@ export async function matchAttendees(eventId: string) {
     || ev.host_id === profile.id
     || ev.created_by === profile.id
     || (canRunChapter(profile) && profile.lead_chapter_id === ev.chapter_id);
-  if (!allowed) return { error: 'Only the host, chapter lead or an admin can seat this event.' };
+  if (!allowed) return { error: 'Only the host, chapter lead or an admin can group this event.' };
 
   const { data: seats } = await db.from('event_seats')
-    .select('id,profile_id,status,created_at')
-    .eq('event_id', eventId).in('status', ['requested', 'confirmed', 'waitlist']);
-  if (!seats?.length) return { error: 'Nobody has asked for a seat yet.' };
+    .select('id,profile_id,created_at')
+    .eq('event_id', eventId).eq('status', 'confirmed').order('created_at');
+  if (!seats?.length) return { error: 'Nobody is confirmed yet.' };
 
   const ids = seats.map((s: any) => s.profile_id);
   const [{ data: people }, { data: tags }] = await Promise.all([
@@ -128,23 +157,24 @@ export async function matchAttendees(eventId: string) {
     profile_id: s.profile_id,
     role_level: levelOf.get(s.profile_id) ?? null,
     domains: domainsOf.get(s.profile_id) ?? [],
-    requested_at: s.created_at,
   }));
 
-  const result = selectBalanced(candidates, ev.seat_cap);
+  // Small groups sit at one table; larger ones split into tables of up to 15.
+  const perTable = seats.length <= 15 ? seats.length : 15;
+  const assignment = assignTables(candidates, Math.min(4, perTable), perTable);
 
-  for (const pid of result.confirmed) {
-    await db.from('event_seats').update({ status: 'confirmed' })
-      .eq('event_id', eventId).eq('profile_id', pid);
+  for (const [profileId, tableNo] of Object.entries(assignment)) {
+    await db.from('event_seats').update({ table_no: tableNo })
+      .eq('event_id', eventId).eq('profile_id', profileId);
   }
-  for (const pid of result.waitlisted) {
-    await db.from('event_seats').update({ status: 'waitlist' })
-      .eq('event_id', eventId).eq('profile_id', pid);
-  }
+
+  const tables = Math.max(1, ...Object.values(assignment));
+  const domains = new Set(candidates.flatMap((c) => c.domains));
+  const levels = new Set(candidates.map((c) => c.role_level).filter(Boolean));
 
   await db.from('audit_log').insert({
-    actor_id: profile.id, action: 'event.match', target: eventId,
-    meta: { confirmed: result.confirmed.length, waitlisted: result.waitlisted.length },
+    actor_id: profile.id, action: 'event.group', target: eventId,
+    meta: { people: seats.length, tables },
   });
 
   revalidatePath('/events');
@@ -154,8 +184,8 @@ export async function matchAttendees(eventId: string) {
   revalidatePath('/dashboard');
 
   return {
-    ok: result.confirmed.length + ' seated, ' + result.waitlisted.length + ' waitlisted. '
-      + describeMix(result.domains, result.levels),
+    ok: seats.length + ' people across ' + tables + (tables === 1 ? ' table. ' : ' tables. ')
+      + describeMix([...domains] as string[], [...levels] as string[]),
   };
 }
 
@@ -203,7 +233,7 @@ export async function createEvent(formData: FormData) {
     venueId = venue.id;
   }
 
-  const { error } = await supabase.from('events').insert({
+  const { data: created, error } = await supabase.from('events').insert({
     chapter_id: chapterId,
     venue_id: venueId,
     host_id: kind === 'talk' || !organiser ? profile.id : null,
@@ -216,8 +246,16 @@ export async function createEvent(formData: FormData) {
     // Chapter Lead creates, admin approves before publishing
     status: isAdmin(profile) ? 'published' : 'pending',
     published_at: isAdmin(profile) ? new Date().toISOString() : null,
-  });
+  }).select('id').single();
   if (error) return { error: error.message };
+
+  // The host is at their own table — take one of the seats for them.
+  if (created?.id) {
+    const db = createAdminClient();
+    await db.from('event_seats').insert({
+      event_id: created.id, profile_id: profile.id, status: 'confirmed',
+    });
+  }
 
   revalidatePath('/chapter');
   revalidatePath('/speaker');

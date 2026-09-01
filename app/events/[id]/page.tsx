@@ -5,6 +5,8 @@ import { isPaid } from '@/lib/tiers';
 import { mapsUrl } from '@/lib/matching';
 import { RsvpButton } from '@/components/RsvpButton';
 import { MatchAttendeesButton } from '@/components/MatchAttendeesButton';
+import { Avatar } from '@/components/Avatar';
+import { describeMix } from '@/lib/matching';
 
 export default async function EventPage({ params }: { params: { id: string } }) {
   const session = await getSession();
@@ -17,7 +19,39 @@ export default async function EventPage({ params }: { params: { id: string } }) 
   if (!e) notFound();
 
   const { data: seats } = await supabase
-    .from('event_seats').select('id,status,profile_id').eq('event_id', params.id);
+    .from('event_seats').select('id,status,profile_id,table_no,created_at')
+    .eq('event_id', params.id).order('created_at');
+
+  const attendeeIds = (seats ?? [])
+    .filter((s) => s.status === 'confirmed' || s.status === 'waitlist')
+    .map((s) => s.profile_id);
+
+  const [{ data: people }, { data: domainTags }] = await Promise.all([
+    attendeeIds.length
+      ? supabase.from('profiles')
+          .select('id,full_name,photo_url,role_level,city,employer,role,speaker_approved')
+          .in('id', attendeeIds)
+      : Promise.resolve({ data: [] as any[] }),
+    attendeeIds.length
+      ? supabase.from('profile_tags')
+          .select('profile_id,value').eq('category', 'domain').in('profile_id', attendeeIds)
+      : Promise.resolve({ data: [] as any[] }),
+  ]);
+
+  const personById = new Map((people ?? []).map((x: any) => [x.id, x]));
+  const domainsOf = new Map<string, string[]>();
+  for (const t of domainTags ?? []) {
+    if (!domainsOf.has(t.profile_id)) domainsOf.set(t.profile_id, []);
+    domainsOf.get(t.profile_id)!.push(t.value);
+  }
+
+  const going = (seats ?? []).filter((s) => s.status === 'confirmed');
+  const waitlist = (seats ?? []).filter((s) => s.status === 'waitlist');
+
+  const mixDomains = [...new Set(going.flatMap((s) => domainsOf.get(s.profile_id) ?? []))];
+  const mixLevels = [...new Set(going
+    .map((s) => personById.get(s.profile_id)?.role_level)
+    .filter(Boolean))] as string[];
 
   const canSeat = !!session && (
     session.profile.role === 'admin'
@@ -25,7 +59,7 @@ export default async function EventPage({ params }: { params: { id: string } }) 
     || e.created_by === session.user.id
     || (session.profile.lead_chapter_id && session.profile.lead_chapter_id === e.chapter_id)
   );
-  const requested = (seats ?? []).filter((s) => s.status === 'requested').length;
+
 
   const confirmed = (seats ?? []).filter((s) => s.status === 'confirmed').length;
   const mine = session ? (seats ?? []).find((s) => s.profile_id === session.user.id) : null;
@@ -99,26 +133,39 @@ export default async function EventPage({ params }: { params: { id: string } }) 
           {(e.profiles as any)?.full_name && (
             <div>
               <dt className="eyebrow">Host</dt>
-              <dd style={{ margin: '6px 0 0' }}>
-                {(e.profiles as any).full_name}
-                <br /><span className="mute small">{(e.profiles as any).intro}</span>
+              <dd style={{ margin: '8px 0 0' }}>
+                <a href={'/members/' + e.host_id}
+                  style={{
+                    display: 'inline-flex', gap: 12, alignItems: 'center',
+                    textDecoration: 'none', color: 'inherit',
+                  }}>
+                  <Avatar src={personById.get(e.host_id)?.photo_url}
+                    name={(e.profiles as any).full_name} size={44} />
+                  <span>
+                    <span style={{ display: 'block', fontWeight: 600 }}>
+                      {(e.profiles as any).full_name}
+                    </span>
+                    {(e.profiles as any).intro && (
+                      <span className="mute small">{(e.profiles as any).intro}</span>
+                    )}
+                  </span>
+                </a>
               </dd>
             </div>
           )}
         </dl>
 
-        {canSeat && (
+        {canSeat && going.length > 15 && (
           <div style={{
             marginTop: 20, padding: '16px 18px', borderRadius: 14,
             background: 'var(--gold-100)', border: '1px solid var(--gold-200)',
           }}>
-            <p className="eyebrow" style={{ margin: 0 }}>Seating</p>
+            <p className="eyebrow" style={{ margin: 0 }}>Tables</p>
             <p className="mute small" style={{ margin: '6px 0 12px' }}>
-              {requested > 0
-                ? requested + ' request(s) waiting. Matching seats the widest mix of domains and role levels, then waitlists the rest.'
-                : 'No new requests. Matching reshuffles the current list by mix.'}
+              {going.length} people is more than one table. Split them into tables that spread
+              domains and role levels, so nobody sits with only their own discipline.
             </p>
-            <MatchAttendeesButton eventId={e.id} requestCount={(seats ?? []).length} seatCap={e.seat_cap} />
+            <MatchAttendeesButton eventId={e.id} requestCount={going.length} seatCap={e.seat_cap} />
           </div>
         )}
 
@@ -140,6 +187,94 @@ export default async function EventPage({ params }: { params: { id: string } }) 
           )}
         </div>
       </div>
+
+      <section className="surf" style={{ padding: 'clamp(22px,3vw,30px)', marginTop: 18 }}>
+        <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-end' }}>
+          <div>
+            <h2 style={{ fontSize: 26 }}>Who's coming</h2>
+            {going.length > 0 && (
+              <p className="mute small" style={{ margin: '6px 0 0' }}>
+                {describeMix(mixDomains, mixLevels)}
+              </p>
+            )}
+          </div>
+          <span className="mute small">{going.length} of {e.seat_cap}</span>
+        </div>
+
+        {going.length === 0 ? (
+          <p className="mute" style={{ marginTop: 16 }}>
+            Nobody yet. Take the first seat and others will be matched around you.
+          </p>
+        ) : (
+          <div style={{
+            display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
+            gap: 12, marginTop: 20,
+          }}>
+            {going.map((s) => {
+              const person = personById.get(s.profile_id);
+              const domains = (domainsOf.get(s.profile_id) ?? []).slice(0, 2);
+              return (
+                <a key={s.id} href={'/members/' + s.profile_id}
+                  style={{
+                    display: 'flex', gap: 12, alignItems: 'flex-start',
+                    padding: 14, borderRadius: 14, border: '1px solid var(--line)',
+                    textDecoration: 'none', color: 'inherit', background: '#fff',
+                  }}>
+                  <Avatar src={person?.photo_url} name={person?.full_name} size={52} />
+                  <div style={{ minWidth: 0 }}>
+                    <span style={{ display: 'block', fontWeight: 600, fontSize: 16 }}>
+                      {person?.full_name ?? 'Member'}
+                      {s.profile_id === e.host_id && (
+                        <span className="pill pill-wait" style={{ marginLeft: 6, fontSize: 10 }}>Host</span>
+                      )}
+                      {person?.speaker_approved && s.profile_id !== e.host_id && (
+                        <span className="pill pill-wait" style={{ marginLeft: 6, fontSize: 10 }}>Speaker</span>
+                      )}
+                    </span>
+                    {person?.role_level && (
+                      <span className="mute small" style={{ display: 'block', marginTop: 2 }}>
+                        {person.role_level}
+                      </span>
+                    )}
+                    {domains.length > 0 && (
+                      <span className="mute small" style={{ display: 'block', marginTop: 4 }}>
+                        {domains.join(' · ')}
+                      </span>
+                    )}
+                    {s.table_no && (
+                      <span className="mute small" style={{ display: 'block', marginTop: 4 }}>
+                        Table {s.table_no}
+                      </span>
+                    )}
+                  </div>
+                </a>
+              );
+            })}
+          </div>
+        )}
+
+        {waitlist.length > 0 && (
+          <div style={{ marginTop: 22, paddingTop: 18, borderTop: '1px solid var(--line)' }}>
+            <p className="eyebrow" style={{ margin: 0 }}>Waitlist · {waitlist.length}</p>
+            <p className="mute small" style={{ margin: '6px 0 12px' }}>
+              Promoted automatically, in order, whenever someone cancels.
+            </p>
+            <div className="row" style={{ gap: 10 }}>
+              {waitlist.map((s, i) => {
+                const person = personById.get(s.profile_id);
+                return (
+                  <a key={s.id} href={'/members/' + s.profile_id}
+                    title={(person?.full_name ?? 'Member') + ' — position ' + (i + 1)}
+                    style={{ display: 'flex', gap: 8, alignItems: 'center', textDecoration: 'none', color: 'inherit' }}>
+                    <Avatar src={person?.photo_url} name={person?.full_name} size={34} />
+                    <span className="small">{person?.full_name ?? 'Member'}</span>
+                  </a>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </section>
 
       {mapQuery && (
         <section className="surf" style={{ marginTop: 18, overflow: 'hidden' }}>

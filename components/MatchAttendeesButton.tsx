@@ -16,17 +16,13 @@ export function MatchAttendeesButton({ eventId, requestCount, seatCap }:
       <button className="btn btn-out" disabled={pending || requestCount === 0}
         style={{ minHeight: 40, padding: '0 16px', fontSize: 14 }}
         onClick={() => {
-          const over = requestCount > seatCap;
-          if (over && !confirm(
-            requestCount + ' people want ' + seatCap + ' seats. Seat the best mix and waitlist the rest?'
-          )) return;
           start(async () => {
             const res: any = await matchAttendees(eventId);
             if (res?.error) { setIsError(true); setMsg(res.error); }
             else { setIsError(false); setMsg(res.ok); router.refresh(); }
           });
         }}>
-        {pending ? 'Seating…' : 'Match attendees'}
+        {pending ? 'Grouping…' : 'Group into tables'}
       </button>
       {msg && (
         <p className={isError ? 'err' : 'hint'} style={!isError ? { color: 'var(--ok)' } : undefined}>
