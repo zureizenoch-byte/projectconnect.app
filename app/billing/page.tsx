@@ -6,7 +6,8 @@ export const metadata = { title: 'Billing — Project Connect' };
 
 export default async function BillingPage({ searchParams }: { searchParams: { status?: string } }) {
   const { profile, subscription } = await requireSession();
-  const runsProgramme = profile.role === 'admin' || profile.role === 'chapter_lead';
+  const comped = profile.role === 'admin'
+    || (profile.role === 'speaker' && profile.speaker_approved);
   const plan = PLANS[subscription.tier];
   const paid = isPaid(subscription.tier, subscription.status, subscription.current_period_end);
 
@@ -18,13 +19,13 @@ export default async function BillingPage({ searchParams }: { searchParams: { st
           <strong>Payment received.</strong> <span className="mute">Your plan is active.</span>
         </div>
       )}
-      {runsProgramme && (
+      {comped && (
         <div className="surf" style={{
           padding: 18, marginTop: 20,
           background: 'var(--gold-100)', borderColor: 'var(--gold-200)',
         }}>
           <strong style={{ color: 'var(--gold-700)' }}>
-            {profile.role === 'admin' ? 'Admin access' : 'Chapter Lead access'}
+            {profile.role === 'admin' ? 'Admin access' : 'Speaker access'}
           </strong>
           <p className="mute small" style={{ margin: '6px 0 0' }}>
             You have every paid capability while you hold this role — unlimited events and

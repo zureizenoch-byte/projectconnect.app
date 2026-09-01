@@ -14,12 +14,13 @@ export async function getSession() {
 
   const role = (profile as Profile | null)?.role;
 
-  // Admins and Chapter Leads run the programme, so every paid capability is
-  // theirs regardless of billing. Stated once here, so every isPaid() check
-  // and every gated button agrees.
-  const runsProgramme = role === 'admin' || role === 'chapter_lead';
+  // Admins and approved Speakers get every paid capability without billing.
+  // Chapter Leads are members who volunteer, so they pay like anyone else.
+  // Stated once here, so every isPaid() check and gated button agrees.
+  const comped = role === 'admin'
+    || (role === 'speaker' && (profile as Profile | null)?.speaker_approved === true);
 
-  const resolved: Subscription = runsProgramme
+  const resolved: Subscription = comped
     ? {
         profile_id: user.id,
         tier: 'annual',
