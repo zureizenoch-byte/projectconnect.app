@@ -106,7 +106,12 @@ export default async function DashboardPage() {
           <p className="eyebrow">Your next event</p>
           {next ? (
             <>
-              <h2 style={{ marginTop: 10, fontSize: 24 }}>{next.events.title}</h2>
+              <h2 style={{ marginTop: 10, fontSize: 24 }}>
+                <a href={'/events/' + next.events.id}
+                  style={{ color: 'inherit', textDecoration: 'none' }}>
+                  {next.events.title}
+                </a>
+              </h2>
               <p className="mute" style={{ marginTop: 8 }}>
                 {new Date(next.events.starts_at).toLocaleString('en-CA', { dateStyle: 'full', timeStyle: 'short' })}
               </p>
@@ -144,7 +149,12 @@ export default async function DashboardPage() {
           <p className="eyebrow">My RSVPs</p>
           <div className="grid" style={{ gap: 10, marginTop: 14 }}>
             {(seats ?? []).slice(0, 5).map((s: any) => (
-              <div key={s.id} className="row" style={{ border: '1px solid var(--line)', borderRadius: 12, padding: '10px 12px' }}>
+              <a key={s.id} href={s.events?.id ? '/events/' + s.events.id : '#'}
+                className="row"
+                style={{
+                  border: '1px solid var(--line)', borderRadius: 12, padding: '10px 12px',
+                  color: 'inherit', textDecoration: 'none',
+                }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <strong style={{ fontSize: 15 }}>{s.events?.title}</strong>
                   <p className="small mute" style={{ margin: '2px 0 0' }}>
@@ -157,7 +167,7 @@ export default async function DashboardPage() {
                       : s.status === 'waitlist' ? 'pill-off' : 'pill-wait')}>
                   {s.events?.status === 'postponed' ? 'postponed' : s.status}
                 </span>
-              </div>
+              </a>
             ))}
             {!seats?.length && <p className="small mute">No RSVPs yet.</p>}
           </div>
