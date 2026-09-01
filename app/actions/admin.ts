@@ -172,6 +172,13 @@ export async function setEventStatus(eventId: string, status: 'published' | 'dra
     published_at: status === 'published' ? new Date().toISOString() : null,
   }).eq('id', eventId);
   await log(profile.id, 'event.' + status, eventId);
+
+  // Publishing is the moment the venue should hear from us
+  if (status === 'published') {
+    const { notifyVenue } = await import('@/app/actions/venueNotify');
+    await notifyVenue(eventId).catch(() => {});
+  }
+
   revalidatePath('/admin');
   revalidatePath('/events');
   return { ok: true };
@@ -189,6 +196,8 @@ export async function saveVenue(formData: FormData) {
     capacity: Math.min(15, Math.max(1, Number(formData.get('capacity') ?? 15))),
     notes: String(formData.get('notes') ?? '').slice(0, 600),
     active: formData.get('active') !== null,
+    contact_email: String(formData.get('contact_email') ?? '').trim() || null,
+    contact_name: String(formData.get('contact_name') ?? '').trim() || null,
   };
   const { error } = id
     ? await admin.from('venues').update(row).eq('id', id)

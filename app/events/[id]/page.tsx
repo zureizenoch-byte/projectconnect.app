@@ -7,6 +7,7 @@ import { RsvpButton } from '@/components/RsvpButton';
 import { MatchAttendeesButton } from '@/components/MatchAttendeesButton';
 import { Avatar } from '@/components/Avatar';
 import { LiveSeats } from '@/components/LiveSeats';
+import { VenueNotice } from '@/components/VenueNotice';
 import { describeMix } from '@/lib/matching';
 
 export const dynamic = 'force-dynamic';
@@ -17,7 +18,7 @@ export default async function EventPage({ params }: { params: { id: string } }) 
 
   const { data: e } = await supabase
     .from('events')
-    .select('id,title,kind,description,starts_at,duration_min,seat_cap,status,status_note,original_starts_at,host_id,created_by,chapter_id,chapters(city),venues(name,address,notes),profiles:host_id(full_name,intro)')
+    .select('id,title,kind,description,starts_at,duration_min,seat_cap,status,status_note,original_starts_at,host_id,created_by,chapter_id,venue_id,chapters(city),venues(name,address,notes),profiles:host_id(full_name,intro)')
     .eq('id', params.id).single();
   if (!e) notFound();
 
@@ -68,6 +69,15 @@ export default async function EventPage({ params }: { params: { id: string } }) 
   const mixLevels = [...new Set(going
     .map((s) => personById.get(s.profile_id)?.role_level)
     .filter(Boolean))] as string[];
+
+  const { data: notice } = e.venue_id
+    ? await db.from('venue_notifications')
+        .select('status,to_email').eq('event_id', e.id).maybeSingle()
+    : { data: null };
+
+  const { data: venueContact } = e.venue_id
+    ? await db.from('venues').select('contact_email,notify').eq('id', e.venue_id).maybeSingle()
+    : { data: null };
 
   const canSeat = !!session && (
     session.profile.role === 'admin'
@@ -173,6 +183,12 @@ export default async function EventPage({ params }: { params: { id: string } }) 
             </div>
           )}
         </dl>
+
+        {canSeat && venue?.name && (
+          <VenueNotice eventId={e.id} venueName={venue.name}
+            status={notice?.status ?? null} toEmail={notice?.to_email ?? null}
+            hasContact={!!venueContact?.contact_email} />
+        )}
 
         {canSeat && going.length > 15 && (
           <div style={{

@@ -274,6 +274,12 @@ export async function createEvent(formData: FormData) {
   }).select('id').single();
   if (error) return { error: error.message };
 
+  // Admin-created events publish immediately, so the venue hears now
+  if (created?.id && isAdmin(profile)) {
+    const { notifyVenue } = await import('@/app/actions/venueNotify');
+    await notifyVenue(created.id).catch(() => {});
+  }
+
   // The host is at their own table — take one of the seats for them.
   if (created?.id) {
     const db = createAdminClient();

@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react';
 import { VenueForm } from './VenueForm';
 import { VenueRow } from './VenueRow';
+import { VenueContact } from './VenueContact';
 import { decideAccessRequest, revokeRole, grantRole, setAccountRole, setEventStatus, saveVenue, setVenueActive, deleteVenue, resolveReport, resolveMessageReport } from '@/app/actions/admin';
 
 export function AdminControls({ requests, pendingEvents, leads, reports, chapters, venues, log, everyone = [], messageReports = [], currentAdminId }: any) {
@@ -163,14 +164,17 @@ export function AdminControls({ requests, pendingEvents, leads, reports, chapter
             </tr>
           </thead>
           <tbody>
-            {venues.map((v: any) => <VenueRow key={v.id} venue={v} />)}
+            {venues.map((v: any) => (
+              <VenueRow key={v.id} venue={v} notices={venueNotices} />
+            ))}
             {!venues.length && <tr><td colSpan={5} className="mute">No venues yet.</td></tr>}
           </tbody>
         </table>
       </div>
       <p className="hint">
         Retiring hides a venue from new events but keeps it on past ones. Delete only works
-        when no event references it.
+        when no event references it. Add a contact email and the venue is emailed automatically
+        whenever a meetup there is published.
       </p>
 
       <h2 style={{ marginTop: 30 }}>All accounts</h2>

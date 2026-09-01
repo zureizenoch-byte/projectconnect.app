@@ -2,8 +2,9 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { setVenueActive, deleteVenue } from '@/app/actions/admin';
+import { VenueContact } from './VenueContact';
 
-export function VenueRow({ venue }: { venue: any }) {
+export function VenueRow({ venue, notices = [] }: { venue: any; notices?: any[] }) {
   const router = useRouter();
   const [pending, start] = useTransition();
   const [msg, setMsg] = useState<string | null>(null);
@@ -30,6 +31,7 @@ export function VenueRow({ venue }: { venue: any }) {
     <tr style={{ opacity: venue.active ? 1 : .6 }}>
       <td>
         {venue.name}
+        <VenueContact venue={venue} notices={notices} />
         {msg && (
           <>
             <br />

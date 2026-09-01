@@ -97,6 +97,16 @@ export function VenueForm({ chapters }: { chapters: { id: string; city: string }
         </div>
       )}
 
+      <div className="grid g2">
+        <label className="fld"><span>Contact email</span>
+          <input name="contact_email" type="email" placeholder="manager@coffeeshop.com" />
+          <span className="hint">Emailed automatically when a meetup here is published.</span>
+        </label>
+        <label className="fld"><span>Contact name (optional)</span>
+          <input name="contact_name" placeholder="Dana" />
+        </label>
+      </div>
+
       <label className="fld"><span>Notes</span>
         <input name="notes" placeholder="Step-free access, projector…" />
       </label>
