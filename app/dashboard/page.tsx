@@ -8,6 +8,8 @@ import { Avatar } from '@/components/Avatar';
 import { PostActions } from './PostActions';
 import { PostEngagement } from './PostEngagement';
 
+export const dynamic = 'force-dynamic';
+
 export const metadata = { title: 'Dashboard — Project Connect' };
 
 export default async function DashboardPage() {
@@ -107,8 +109,8 @@ export default async function DashboardPage() {
           {next ? (
             <>
               <h2 style={{ marginTop: 10, fontSize: 24 }}>
-                <a href={'/events/' + next.events.id}
-                  style={{ color: 'inherit', textDecoration: 'none' }}>
+                <a href={'/events/' + next.events.id} className="evlink"
+                  style={{ color: 'inherit' }}>
                   {next.events.title}
                 </a>
               </h2>
@@ -150,7 +152,7 @@ export default async function DashboardPage() {
           <div className="grid" style={{ gap: 10, marginTop: 14 }}>
             {(seats ?? []).slice(0, 5).map((s: any) => (
               <a key={s.id} href={s.events?.id ? '/events/' + s.events.id : '#'}
-                className="row"
+                className="row evrow"
                 style={{
                   border: '1px solid var(--line)', borderRadius: 12, padding: '10px 12px',
                   color: 'inherit', textDecoration: 'none',
