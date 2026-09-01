@@ -12,13 +12,31 @@ export async function getSession() {
   const { data: subscription } = await supabase
     .from('subscriptions').select('*').eq('profile_id', user.id).maybeSingle();
 
+  const role = (profile as Profile | null)?.role;
+
+  // Admins and Chapter Leads run the programme, so every paid capability is
+  // theirs regardless of billing. Stated once here, so every isPaid() check
+  // and every gated button agrees.
+  const runsProgramme = role === 'admin' || role === 'chapter_lead';
+
+  const resolved: Subscription = runsProgramme
+    ? {
+        profile_id: user.id,
+        tier: 'annual',
+        status: 'active',
+        stripe_customer_id: (subscription as Subscription | null)?.stripe_customer_id ?? null,
+        stripe_subscription_id: (subscription as Subscription | null)?.stripe_subscription_id ?? null,
+        current_period_end: null,
+      }
+    : (subscription as Subscription | null) ?? {
+        profile_id: user.id, tier: 'free', status: 'none',
+        stripe_customer_id: null, stripe_subscription_id: null, current_period_end: null,
+      };
+
   return {
     user,
     profile: profile as Profile,
-    subscription: (subscription as Subscription | null) ?? {
-      profile_id: user.id, tier: 'free' as const, status: 'none',
-      stripe_customer_id: null, stripe_subscription_id: null, current_period_end: null,
-    },
+    subscription: resolved,
   };
 }
 

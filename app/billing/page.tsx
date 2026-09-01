@@ -5,7 +5,8 @@ import { stripeEnabled } from '@/lib/stripe';
 export const metadata = { title: 'Billing — Project Connect' };
 
 export default async function BillingPage({ searchParams }: { searchParams: { status?: string } }) {
-  const { subscription } = await requireSession();
+  const { profile, subscription } = await requireSession();
+  const runsProgramme = profile.role === 'admin' || profile.role === 'chapter_lead';
   const plan = PLANS[subscription.tier];
   const paid = isPaid(subscription.tier, subscription.status, subscription.current_period_end);
 
@@ -17,6 +18,21 @@ export default async function BillingPage({ searchParams }: { searchParams: { st
           <strong>Payment received.</strong> <span className="mute">Your plan is active.</span>
         </div>
       )}
+      {runsProgramme && (
+        <div className="surf" style={{
+          padding: 18, marginTop: 20,
+          background: 'var(--gold-100)', borderColor: 'var(--gold-200)',
+        }}>
+          <strong style={{ color: 'var(--gold-700)' }}>
+            {profile.role === 'admin' ? 'Admin access' : 'Chapter Lead access'}
+          </strong>
+          <p className="mute small" style={{ margin: '6px 0 0' }}>
+            You have every paid capability while you hold this role — unlimited events and
+            Speaker Series talks — with nothing to pay.
+          </p>
+        </div>
+      )}
+
       <div className="surf" style={{ padding: 26, marginTop: 22 }}>
         <p className="eyebrow">Current plan</p>
         <h2 style={{ marginTop: 10 }}>{plan.label} · {plan.price} {plan.cadence}</h2>
