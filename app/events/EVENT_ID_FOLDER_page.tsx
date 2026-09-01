@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import { getSession } from '@/lib/auth';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { isPaid } from '@/lib/tiers';
 import { mapsUrl } from '@/lib/matching';
 import { RsvpButton } from '@/components/RsvpButton';
@@ -26,19 +26,30 @@ export default async function EventPage({ params }: { params: { id: string } }) 
     .filter((s) => s.status === 'confirmed' || s.status === 'waitlist')
     .map((s) => s.profile_id);
 
+  const db = createAdminClient();
+
   const [{ data: people }, { data: domainTags }] = await Promise.all([
     attendeeIds.length
-      ? supabase.from('profiles')
+      ? db.from('profiles')
           .select('id,full_name,photo_url,role_level,city,employer,role,speaker_approved')
           .in('id', attendeeIds)
       : Promise.resolve({ data: [] as any[] }),
     attendeeIds.length
-      ? supabase.from('profile_tags')
+      ? db.from('profile_tags')
           .select('profile_id,value').eq('category', 'domain').in('profile_id', attendeeIds)
       : Promise.resolve({ data: [] as any[] }),
   ]);
 
   const personById = new Map((people ?? []).map((x: any) => [x.id, x]));
+
+  // The host may predate having a seat, so fetch them regardless
+  const hostId = e.host_id ?? e.created_by;
+  if (hostId && !personById.has(hostId)) {
+    const { data: host } = await db.from('profiles')
+      .select('id,full_name,photo_url,role_level,city,employer,role,speaker_approved')
+      .eq('id', hostId).maybeSingle();
+    if (host) personById.set(host.id, host);
+  }
   const domainsOf = new Map<string, string[]>();
   for (const t of domainTags ?? []) {
     if (!domainsOf.has(t.profile_id)) domainsOf.set(t.profile_id, []);
@@ -130,24 +141,26 @@ export default async function EventPage({ params }: { params: { id: string } }) 
             <dt className="eyebrow">Seats</dt>
             <dd style={{ margin: '6px 0 0' }}>{confirmed} confirmed of {e.seat_cap}</dd>
           </div>
-          {(e.profiles as any)?.full_name && (
+          {(personById.get(hostId ?? '')?.full_name || (e.profiles as any)?.full_name) && (
             <div>
               <dt className="eyebrow">Host</dt>
               <dd style={{ margin: '8px 0 0' }}>
-                <a href={'/members/' + e.host_id}
+                <a href={'/members/' + hostId}
                   style={{
                     display: 'inline-flex', gap: 12, alignItems: 'center',
                     textDecoration: 'none', color: 'inherit',
                   }}>
-                  <Avatar src={personById.get(e.host_id)?.photo_url}
-                    name={(e.profiles as any).full_name} size={44} />
+                  <Avatar src={personById.get(hostId ?? '')?.photo_url}
+                    name={personById.get(hostId ?? '')?.full_name ?? (e.profiles as any)?.full_name}
+                    size={52} />
                   <span>
-                    <span style={{ display: 'block', fontWeight: 600 }}>
-                      {(e.profiles as any).full_name}
+                    <span style={{ display: 'block', fontWeight: 600, fontSize: 16.5 }}>
+                      {personById.get(hostId ?? '')?.full_name ?? (e.profiles as any)?.full_name}
                     </span>
-                    {(e.profiles as any).intro && (
-                      <span className="mute small">{(e.profiles as any).intro}</span>
-                    )}
+                    <span className="mute small">
+                      {[personById.get(hostId ?? '')?.role_level, (e.profiles as any)?.intro]
+                        .filter(Boolean).join(' · ')}
+                    </span>
                   </span>
                 </a>
               </dd>
@@ -224,10 +237,10 @@ export default async function EventPage({ params }: { params: { id: string } }) 
                   <div style={{ minWidth: 0 }}>
                     <span style={{ display: 'block', fontWeight: 600, fontSize: 16 }}>
                       {person?.full_name ?? 'Member'}
-                      {s.profile_id === e.host_id && (
+                      {s.profile_id === hostId && (
                         <span className="pill pill-wait" style={{ marginLeft: 6, fontSize: 10 }}>Host</span>
                       )}
-                      {person?.speaker_approved && s.profile_id !== e.host_id && (
+                      {person?.speaker_approved && s.profile_id !== hostId && (
                         <span className="pill pill-wait" style={{ marginLeft: 6, fontSize: 10 }}>Speaker</span>
                       )}
                     </span>
