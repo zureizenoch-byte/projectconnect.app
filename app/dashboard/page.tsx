@@ -186,7 +186,6 @@ export default async function DashboardPage() {
                     || authorMap.get(p.author_id)?.role === 'speaker') && (
                     <span className="pill pill-wait" style={{ marginLeft: 8 }}>Speaker</span>
                   )}
-                  {(authorMap.get(p.author_id)?.speaker_approved || authorMap.get(p.author_id)?.role === "speaker") && (<span className="pill pill-wait" style={{ marginLeft: 8 }}>Speaker</span>)}
                   {authorMap.get(p.author_id)?.role_level && (
                     <p className="mute" style={{ fontSize: 15, margin: '3px 0 0' }}>
                       {authorMap.get(p.author_id).role_level}
