@@ -6,7 +6,7 @@ import { VenueRow } from './VenueRow';
 import { SectionBoundary } from './SectionBoundary';
 import { decideAccessRequest, revokeRole, grantRole, setAccountRole, setEventStatus, saveVenue, setVenueActive, deleteVenue, resolveReport, resolveMessageReport } from '@/app/actions/admin';
 
-export function AdminControls({ requests, pendingEvents, leads, reports, chapters, venues, log, everyone = [], messageReports = [], currentAdminId }: any) {
+export function AdminControls({ requests, pendingEvents, leads, reports, chapters, venues, venueNotices = [], log, everyone = [], messageReports = [], currentAdminId }: any) {
   const [pending, start] = useTransition();
   const [msg, setMsg] = useState<string | null>(null);
   const run = (fn: () => Promise<any>) => start(async () => {
