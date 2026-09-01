@@ -38,7 +38,7 @@ export default async function DashboardPage() {
     }
   };
 
-  const PERSON = 'id,full_name,photo_url,role_level,city';
+  const PERSON = 'id,full_name,photo_url,role_level,city,role,speaker_approved';
 
   const [authors, likes, comments] = await Promise.all([
     authorIds.length
@@ -60,6 +60,10 @@ export default async function DashboardPage() {
     photo_url: profile.photo_url ?? authorMap.get(user.id)?.photo_url ?? null,
     role_level: profile.role_level ?? authorMap.get(user.id)?.role_level ?? null,
     city: profile.city ?? authorMap.get(user.id)?.city ?? null,
+    role: profile.role,
+    speaker_approved: profile.speaker_approved,
+    role: profile.role,
+    speaker_approved: profile.speaker_approved,
   });
 
   const commenterIds = Array.from(new Set((comments ?? []).map((c: any) => c.author_id)))
@@ -178,6 +182,11 @@ export default async function DashboardPage() {
                     style={{ fontWeight: 600, fontSize: 19, color: 'var(--ink)', textDecoration: 'none' }}>
                     {authorMap.get(p.author_id)?.full_name ?? 'Member'}
                   </a>
+                  {(authorMap.get(p.author_id)?.speaker_approved
+                    || authorMap.get(p.author_id)?.role === 'speaker') && (
+                    <span className="pill pill-wait" style={{ marginLeft: 8 }}>Speaker</span>
+                  )}
+                  {(authorMap.get(p.author_id)?.speaker_approved || authorMap.get(p.author_id)?.role === "speaker") && (<span className="pill pill-wait" style={{ marginLeft: 8 }}>Speaker</span>)}
                   {authorMap.get(p.author_id)?.role_level && (
                     <p className="mute" style={{ fontSize: 15, margin: '3px 0 0' }}>
                       {authorMap.get(p.author_id).role_level}
