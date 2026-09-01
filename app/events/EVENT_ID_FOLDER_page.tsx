@@ -21,15 +21,17 @@ export default async function EventPage({ params }: { params: { id: string } }) 
     .eq('id', params.id).single();
   if (!e) notFound();
 
-  const { data: seats } = await supabase
+  // People sharing a table are meant to see each other, but the RLS policy on
+  // event_seats only exposes your own row — read the roster past it.
+  const db = createAdminClient();
+
+  const { data: seats } = await db
     .from('event_seats').select('id,status,profile_id,table_no,created_at')
     .eq('event_id', params.id).order('created_at');
 
   const attendeeIds = (seats ?? [])
     .filter((s) => s.status === 'confirmed' || s.status === 'waitlist')
     .map((s) => s.profile_id);
-
-  const db = createAdminClient();
 
   const [{ data: people }, { data: domainTags }] = await Promise.all([
     attendeeIds.length

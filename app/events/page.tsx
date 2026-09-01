@@ -1,5 +1,5 @@
 import { getSession } from '@/lib/auth';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { isPaid } from '@/lib/tiers';
 import { RsvpButton } from '@/components/RsvpButton';
 import { EventLifecycle } from '@/components/EventLifecycle';
@@ -26,6 +26,18 @@ export default async function EventsPage({ searchParams }: { searchParams: { cit
         .order('starts_at');
 
   const { data: events } = await query;
+
+  // event_seats is RLS-scoped to your own row, so counts read past it
+  const db = createAdminClient();
+  const eventIds = (events ?? []).map((e: any) => e.id);
+  const { data: allSeats } = eventIds.length
+    ? await db.from('event_seats').select('id,event_id,status,profile_id').in('event_id', eventIds)
+    : { data: [] as any[] };
+  const seatsOf = new Map<string, any[]>();
+  for (const s of allSeats ?? []) {
+    if (!seatsOf.has(s.event_id)) seatsOf.set(s.event_id, []);
+    seatsOf.get(s.event_id)!.push(s);
+  }
   const city = searchParams.city;
   const kind = searchParams.kind;
   const rows = (events ?? []).filter((e: any) =>
@@ -70,8 +82,9 @@ export default async function EventsPage({ searchParams }: { searchParams: { cit
         gap: 22, marginTop: 26, alignItems: 'stretch',
       }}>
         {rows.map((e: any) => {
-          const confirmed = (e.event_seats ?? []).filter((s: any) => s.status === 'confirmed').length;
-          const mine = session ? (e.event_seats ?? []).find((s: any) => s.profile_id === session.user.id) : null;
+          const seatRows = seatsOf.get(e.id) ?? e.event_seats ?? [];
+          const confirmed = seatRows.filter((s: any) => s.status === 'confirmed').length;
+          const mine = session ? seatRows.find((s: any) => s.profile_id === session.user.id) : null;
           const full = confirmed >= e.seat_cap;
           const locked = e.kind === 'talk' && !paid;
           const d = new Date(e.starts_at);
@@ -195,7 +208,7 @@ export default async function EventsPage({ searchParams }: { searchParams: { cit
                       Admin
                     </span>
                     <EventLifecycle eventId={e.id} title={e.title} status={e.status}
-                      startsAt={e.starts_at} seatCount={(e.event_seats ?? []).length}
+                      startsAt={e.starts_at} seatCount={seatRows.length}
                       canDelete />
                   </div>
                 )}
