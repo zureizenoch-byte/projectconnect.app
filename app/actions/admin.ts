@@ -3,6 +3,8 @@
 import { revalidatePath } from 'next/cache';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { requireRole, requireSession } from '@/lib/auth';
+import { bootstrapEmails } from "@/lib/bootstrap";
+import { bootstrapEmails } from '@/lib/bootstrap';
 
 async function log(actorId: string, action: string, target: string, meta?: unknown) {
   const admin = createAdminClient();
@@ -38,12 +40,6 @@ async function applyRole(profileId: string, role: string, chapterId?: string | n
   const { error } = await admin.from('profiles').update(patch).eq('id', profileId);
   if (error) return { error: error.message };
   return { ok: true };
-}
-
-/** Emails allowed to bootstrap the very first admin. Set ADMIN_BOOTSTRAP_EMAILS in the environment. */
-export function bootstrapEmails() {
-  return (process.env.ADMIN_BOOTSTRAP_EMAILS ?? '')
-    .split(',').map((e) => e.trim().toLowerCase()).filter(Boolean);
 }
 
 /**

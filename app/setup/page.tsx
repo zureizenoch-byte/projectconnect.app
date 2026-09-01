@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation';
 import { requireSession } from '@/lib/auth';
 import { createAdminClient } from '@/lib/supabase/server';
 import { ClaimAdmin } from './ClaimAdmin';
-import { bootstrapEmails } from '@/app/actions/admin';
+import { bootstrapEmails } from '@/lib/bootstrap';
 
 export const metadata = { title: 'Setup — Project Connect' };
 export const dynamic = 'force-dynamic';
