@@ -209,6 +209,31 @@ export async function createEvent(formData: FormData) {
   // Any member may propose a coffee meetup; it goes to an admin for approval.
   // Chapter Leads and admins run the larger matched meetups.
   const organiser = canRunChapter(profile);
+
+  // Free membership covers hosting one meetup per cycle.
+  if (!organiser && !isAdmin(profile)) {
+    const { isPaid } = await import('@/lib/tiers');
+    const db0 = createAdminClient();
+    const { data: sub } = await db0.from('subscriptions')
+      .select('tier,status,current_period_end').eq('profile_id', profile.id).maybeSingle();
+    const paidMember = sub ? isPaid(sub.tier, sub.status, sub.current_period_end) : false;
+
+    if (!paidMember) {
+      const cycleStart = new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth(), 1));
+      const { count } = await db0.from('events')
+        .select('id', { count: 'exact', head: true })
+        .eq('created_by', profile.id)
+        .neq('status', 'cancelled')
+        .gte('starts_at', cycleStart.toISOString());
+
+      if ((count ?? 0) >= 1) {
+        return {
+          error: 'Free membership covers hosting one meetup per cycle. '
+            + 'Upgrade to schedule more, or wait until next month.',
+        };
+      }
+    }
+  }
   const minSeats = organiser ? 12 : 2;
   const seatCap = Math.min(15, Math.max(minSeats, Number(formData.get('seat_cap') ?? (organiser ? 15 : 6))));
   const supabase = createClient();
