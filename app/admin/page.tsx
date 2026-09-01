@@ -1,6 +1,7 @@
 import { requireRole } from '@/lib/auth';
 import { createAdminClient } from '@/lib/supabase/server';
 import { AdminControls } from './AdminControls';
+import { SectionBoundary } from './SectionBoundary';
 import { getInboxCounts } from '@/lib/inbox';
 
 export const metadata = { title: 'Admin — Project Connect' };
@@ -149,6 +150,7 @@ export default async function AdminPage() {
           </>
         )}
       </section>
+      <SectionBoundary title="Admin console">
       <AdminControls
         requests={requestRows}
         pendingEvents={eventRows}
@@ -162,6 +164,7 @@ export default async function AdminPage() {
         everyone={everyone ?? []}
         currentAdminId={me.id}
       />
+      </SectionBoundary>
     </main>
   );
 }
