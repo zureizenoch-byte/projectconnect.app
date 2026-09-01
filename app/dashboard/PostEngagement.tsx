@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react';
 import { toggleLike, addComment, deleteComment } from '@/app/actions/feed';
 
-type Comment = { id: string; body: string; created_at: string; author_id: string; commenter?: { full_name?: string | null; photo_url?: string | null } };
+type Comment = { id: string; body: string; created_at: string; author_id: string; commenter?: { full_name?: string | null; photo_url?: string | null; speaker_approved?: boolean } };
 
 export function PostEngagement({
   postId, likeCount, liked, comments, userId, isAdmin,
@@ -100,6 +100,9 @@ export function PostEngagement({
                   backgroundSize: 'cover' }} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <span style={{ fontWeight: 600, fontSize: 14.5 }}>{c.commenter?.full_name ?? 'Member'}</span>
+                  {c.commenter?.speaker_approved && (
+                    <span className="pill pill-wait" style={{ marginLeft: 6, fontSize: 10 }}>Speaker</span>
+                  )}
                   <span className="mute small" style={{ marginLeft: 8 }}>
                     {new Date(c.created_at).toLocaleDateString('en-CA', { dateStyle: 'medium' })}
                   </span>
