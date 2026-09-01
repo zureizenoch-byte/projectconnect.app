@@ -8,7 +8,10 @@ export function VenueForm({ chapters }: { chapters: { id: string; city: string }
   const [pending, start] = useTransition();
   const [msg, setMsg] = useState<string | null>(null);
   const [chapterId, setChapterId] = useState(chapters[0]?.id ?? '');
-  const [place, setPlace] = useState<{ name: string; address: string; website?: string | null; phone?: string | null }>({ name: '', address: '' });
+  const [place, setPlace] = useState<{
+    name: string; address: string;
+    website?: string | null; phone?: string | null; photoUrl?: string | null;
+  }>({ name: '', address: '' });
 
   const cityName = chapters.find((c) => c.id === chapterId)?.city ?? '';
   const fullAddress = place.address && !place.address.toLowerCase().includes(cityName.toLowerCase())
@@ -55,7 +58,10 @@ export function VenueForm({ chapters }: { chapters: { id: string; city: string }
         <VenueSearch
           venues={[]}
           city={cityName}
-          onPick={(v: any) => setPlace({ name: v.name, address: v.address, website: v.website, phone: v.phone })} />
+          onPick={(v: any) => setPlace({
+            name: v.name, address: v.address,
+            website: v.website, phone: v.phone, photoUrl: v.photoUrl,
+          })} />
         <span className="hint">
           Search by name or address. The name and address below fill in automatically, and you can edit them.
         </span>
@@ -126,6 +132,7 @@ export function VenueForm({ chapters }: { chapters: { id: string; city: string }
 
       <input type="hidden" name="website" value={place.website ?? ''} />
       <input type="hidden" name="phone" value={place.phone ?? ''} />
+      <input type="hidden" name="photo_url" value={place.photoUrl ?? ''} />
 
       <div className="grid g2">
         <label className="fld"><span>Contact email</span>

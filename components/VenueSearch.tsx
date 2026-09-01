@@ -137,7 +137,7 @@ export function VenueSearch({
         await place.fetchFields({
           fields: [
             'displayName', 'formattedAddress', 'location',
-            'websiteURI', 'nationalPhoneNumber',
+            'websiteURI', 'nationalPhoneNumber', 'photos',
           ],
         });
         const address = place.formattedAddress ?? s.address;
@@ -150,6 +150,10 @@ export function VenueSearch({
           // Places never exposes an email, but these make finding one quick
           website: place.websiteURI ?? null,
           phone: place.nationalPhoneNumber ?? null,
+          // the venue's own photograph, if they have one on Google
+          photoUrl: place.photos?.[0]
+            ? place.photos[0].getURI({ maxWidth: 800, maxHeight: 500 })
+            : null,
         });
         sessionToken.current = new g.maps.places.AutocompleteSessionToken();
         return;

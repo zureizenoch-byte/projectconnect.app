@@ -3,14 +3,14 @@ import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { isPaid } from '@/lib/tiers';
 import { RsvpButton } from '@/components/RsvpButton';
 import { EventLifecycle } from '@/components/EventLifecycle';
-import { MapThumb } from '@/components/MapThumb';
+import { VenuePhoto } from '@/components/VenuePhoto';
 import { LiveSeats } from '@/components/LiveSeats';
 
 export const dynamic = 'force-dynamic';
 
 export const metadata = { title: 'Events — Project Connect' };
 
-const COLS = 'id,title,kind,description,starts_at,seat_cap,status,status_note,original_starts_at,chapters(city),venues(name,address),event_seats(id,status,profile_id)';
+const COLS = 'id,title,kind,description,starts_at,seat_cap,status,status_note,original_starts_at,chapters(city),venues(name,address,photo_url),event_seats(id,status,profile_id)';
 
 export default async function EventsPage({ searchParams }: { searchParams: { city?: string; kind?: string } }) {
   const session = await getSession();
@@ -101,7 +101,8 @@ export default async function EventsPage({ searchParams }: { searchParams: { cit
               padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column',
             }}>
               <div style={{ position: 'relative' }}>
-                <MapThumb query={address} />
+                <VenuePhoto photoUrl={e.venues?.photo_url} address={address}
+                  name={e.venues?.name ?? e.title} />
 
                 <div style={{
                   position: 'absolute', top: 14, left: 14,
