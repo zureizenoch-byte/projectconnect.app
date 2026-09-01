@@ -134,7 +134,12 @@ export function VenueSearch({
       try {
         const g = (window as any).google;
         const place = new g.maps.places.Place({ id: s.placeId });
-        await place.fetchFields({ fields: ['displayName', 'formattedAddress', 'location'] });
+        await place.fetchFields({
+          fields: [
+            'displayName', 'formattedAddress', 'location',
+            'websiteURI', 'nationalPhoneNumber',
+          ],
+        });
         const address = place.formattedAddress ?? s.address;
         const name = place.displayName ?? s.name;
         setPicked({ ...s, name, address });
@@ -142,6 +147,9 @@ export function VenueSearch({
           venueId: null, name, address,
           lat: place.location?.lat(), lng: place.location?.lng(),
           placeId: s.placeId,
+          // Places never exposes an email, but these make finding one quick
+          website: place.websiteURI ?? null,
+          phone: place.nationalPhoneNumber ?? null,
         });
         sessionToken.current = new g.maps.places.AutocompleteSessionToken();
         return;

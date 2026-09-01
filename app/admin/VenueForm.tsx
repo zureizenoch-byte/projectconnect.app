@@ -8,7 +8,7 @@ export function VenueForm({ chapters }: { chapters: { id: string; city: string }
   const [pending, start] = useTransition();
   const [msg, setMsg] = useState<string | null>(null);
   const [chapterId, setChapterId] = useState(chapters[0]?.id ?? '');
-  const [place, setPlace] = useState<{ name: string; address: string }>({ name: '', address: '' });
+  const [place, setPlace] = useState<{ name: string; address: string; website?: string | null; phone?: string | null }>({ name: '', address: '' });
 
   const cityName = chapters.find((c) => c.id === chapterId)?.city ?? '';
   const fullAddress = place.address && !place.address.toLowerCase().includes(cityName.toLowerCase())
@@ -55,7 +55,7 @@ export function VenueForm({ chapters }: { chapters: { id: string; city: string }
         <VenueSearch
           venues={[]}
           city={cityName}
-          onPick={(v) => setPlace({ name: v.name, address: v.address })} />
+          onPick={(v: any) => setPlace({ name: v.name, address: v.address, website: v.website, phone: v.phone })} />
         <span className="hint">
           Search by name or address. The name and address below fill in automatically, and you can edit them.
         </span>
@@ -97,10 +97,40 @@ export function VenueForm({ chapters }: { chapters: { id: string; city: string }
         </div>
       )}
 
+      {(place.website || place.phone) && (
+        <div style={{
+          marginBottom: 20, padding: '14px 16px', borderRadius: 12,
+          background: 'var(--gold-100)', border: '1px solid var(--gold-200)',
+        }}>
+          <p className="eyebrow" style={{ margin: 0 }}>Finding their email</p>
+          <p className="mute small" style={{ margin: '6px 0 10px' }}>
+            Google does not publish venue email addresses, so this part is manual — but here is
+            where to look.
+          </p>
+          <div className="row" style={{ gap: 8 }}>
+            {place.website && (
+              <a className="btn btn-out" href={place.website} target="_blank" rel="noopener noreferrer"
+                style={{ minHeight: 36, padding: '0 14px', fontSize: 13.5 }}>
+                Open their website
+              </a>
+            )}
+            {place.phone && (
+              <a className="btn btn-out" href={'tel:' + place.phone.replace(/\s/g, '')}
+                style={{ minHeight: 36, padding: '0 14px', fontSize: 13.5 }}>
+                {place.phone}
+              </a>
+            )}
+          </div>
+        </div>
+      )}
+
+      <input type="hidden" name="website" value={place.website ?? ''} />
+      <input type="hidden" name="phone" value={place.phone ?? ''} />
+
       <div className="grid g2">
         <label className="fld"><span>Contact email</span>
           <input name="contact_email" type="email" placeholder="manager@coffeeshop.com" />
-          <span className="hint">Emailed automatically when a meetup here is published.</span>
+          <span className="hint">Saved once, then reused for every meetup at this venue.</span>
         </label>
         <label className="fld"><span>Contact name (optional)</span>
           <input name="contact_name" placeholder="Dana" />

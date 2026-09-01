@@ -26,7 +26,7 @@ export default async function AdminPage() {
         .select('id,reason,created_at,post_id')
         .eq('resolved', false).order('created_at'),
       supabase.from('chapters').select('id,city'),
-      supabase.from('venues').select('id,name,address,capacity,notes,active,chapter_id').order('name'),
+      supabase.from('venues').select('id,name,address,capacity,notes,active,chapter_id,contact_email,contact_name,notify,website,phone').order('name'),
       supabase.from('audit_log').select('id,action,target,created_at,actor_id')
         .order('created_at', { ascending: false }).limit(20),
     ]);

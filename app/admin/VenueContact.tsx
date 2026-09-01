@@ -26,7 +26,14 @@ export function VenueContact({ venue, notices }: { venue: any; notices: any[] })
             {venue.notify ? '\u2709 ' : '\u2298 '}{venue.contact_email}
           </span>
         ) : (
-          <span className="small" style={{ color: 'var(--err)' }}>No contact email</span>
+          <>
+            <span className="small" style={{ color: 'var(--err)' }}>No contact email</span>
+            {venue.website && (
+              <a href={venue.website} target="_blank" rel="noopener noreferrer"
+                className="small" style={{ fontSize: 12.5 }}>find it ↗</a>
+            )}
+            {venue.phone && <span className="mute small" style={{ fontSize: 12.5 }}>{venue.phone}</span>}
+          </>
         )}
         <button type="button" className="btn btn-quiet" disabled={pending}
           style={{ minHeight: 28, padding: '0 8px', fontSize: 12.5 }}

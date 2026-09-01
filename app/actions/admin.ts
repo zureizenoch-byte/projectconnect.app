@@ -198,6 +198,8 @@ export async function saveVenue(formData: FormData) {
     active: formData.get('active') !== null,
     contact_email: String(formData.get('contact_email') ?? '').trim() || null,
     contact_name: String(formData.get('contact_name') ?? '').trim() || null,
+    website: String(formData.get('website') ?? '').trim() || null,
+    phone: String(formData.get('phone') ?? '').trim() || null,
   };
   const { error } = id
     ? await admin.from('venues').update(row).eq('id', id)
