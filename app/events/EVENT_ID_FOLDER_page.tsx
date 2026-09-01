@@ -33,12 +33,37 @@ export default async function EventPage({ params }: { params: { id: string } }) 
     : null;
 
   const key = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+
+  // With a key, Google's official embed. Without one, OpenStreetMap — Google's
+  // keyless embed is frame-blocked in many contexts, so it cannot be relied on.
   const embedSrc = mapQuery
     ? (key
         ? 'https://www.google.com/maps/embed/v1/place?key=' + key
             + '&q=' + encodeURIComponent(mapQuery) + '&zoom=16'
-        : 'https://www.google.com/maps?q=' + encodeURIComponent(mapQuery) + '&z=16&output=embed')
+        : 'https://www.openstreetmap.org/export/embed.html?bbox=-123.30,49.15,-123.00,49.35&layer=mapnik&marker=')
     : null;
+
+  // Nominatim geocode (no key). Cached for a day; failure just hides the map.
+  let coords: { lat: string; lon: string } | null = null;
+  if (mapQuery && !key) {
+    try {
+      const res = await fetch(
+        'https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' + encodeURIComponent(mapQuery),
+        { headers: { 'User-Agent': 'ProjectConnect/1.0 (projectconnect.app)' }, next: { revalidate: 86400 } },
+      );
+      const hits = await res.json();
+      if (Array.isArray(hits) && hits[0]) coords = { lat: hits[0].lat, lon: hits[0].lon };
+    } catch {}
+  }
+
+  const osmSrc = coords
+    ? 'https://www.openstreetmap.org/export/embed.html?bbox='
+      + (Number(coords.lon) - 0.004) + ',' + (Number(coords.lat) - 0.002) + ','
+      + (Number(coords.lon) + 0.004) + ',' + (Number(coords.lat) + 0.002)
+      + '&layer=mapnik&marker=' + coords.lat + ',' + coords.lon
+    : null;
+
+  const finalSrc = key ? embedSrc : osmSrc;
 
   return (
     <main className="wrap" style={{ maxWidth: 860 }}>
@@ -115,7 +140,7 @@ export default async function EventPage({ params }: { params: { id: string } }) 
         </div>
       </div>
 
-      {embedSrc && (
+      {mapQuery && (
         <section className="surf" style={{ marginTop: 18, overflow: 'hidden' }}>
           <header className="row" style={{
             justifyContent: 'space-between', padding: '16px 20px',
@@ -135,12 +160,22 @@ export default async function EventPage({ params }: { params: { id: string } }) 
                 style={{ minHeight: 40, padding: '0 16px', fontSize: 14 }}>Open in Maps</a>
             </div>
           </header>
-          <iframe
-            title={'Map of ' + (venue?.name ?? 'the venue')}
-            src={embedSrc}
-            width="100%" height="340" loading="lazy"
-            referrerPolicy="no-referrer-when-downgrade"
-            style={{ border: 0, display: 'block' }} />
+          {finalSrc ? (
+            <iframe
+              title={'Map of ' + (venue?.name ?? 'the venue')}
+              src={finalSrc}
+              width="100%" height="340" loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+              style={{ border: 0, display: 'block' }} />
+          ) : (
+            <div style={{
+              padding: 28, textAlign: 'center', background: 'var(--gold-100)',
+            }}>
+              <p className="mute" style={{ margin: 0 }}>
+                Map preview unavailable — use Directions above to open it in Maps.
+              </p>
+            </div>
+          )}
         </section>
       )}
     </main>
