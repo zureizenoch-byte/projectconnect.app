@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { requireSession } from '@/lib/auth';
-import { assignTables } from '@/lib/matching';
+import { assignTables, selectBalanced, describeMix } from '@/lib/matching';
 import { canRunChapter, canHostTalks, isAdmin } from '@/lib/permissions';
 
 export async function rsvp(eventId: string) {
@@ -87,6 +87,78 @@ export async function autoMatch(eventId: string) {
   return { ok: true, tables: Math.max(...Object.values(assignment)) };
 }
 
+/**
+ * Seat a coffee meetup by mix rather than by arrival. Usable by the host,
+ * that chapter's lead, or an admin. Confirms a balanced set up to the seat
+ * cap and waitlists the rest; everyone is notified by the seat trigger.
+ */
+export async function matchAttendees(eventId: string) {
+  const { profile } = await requireSession();
+  const db = createAdminClient();
+
+  const { data: ev } = await db.from('events')
+    .select('id,title,seat_cap,chapter_id,host_id,created_by').eq('id', eventId).maybeSingle();
+  if (!ev) return { error: 'Event not found' };
+
+  const allowed = isAdmin(profile)
+    || ev.host_id === profile.id
+    || ev.created_by === profile.id
+    || (canRunChapter(profile) && profile.lead_chapter_id === ev.chapter_id);
+  if (!allowed) return { error: 'Only the host, chapter lead or an admin can seat this event.' };
+
+  const { data: seats } = await db.from('event_seats')
+    .select('id,profile_id,status,created_at')
+    .eq('event_id', eventId).in('status', ['requested', 'confirmed', 'waitlist']);
+  if (!seats?.length) return { error: 'Nobody has asked for a seat yet.' };
+
+  const ids = seats.map((s: any) => s.profile_id);
+  const [{ data: people }, { data: tags }] = await Promise.all([
+    db.from('profiles').select('id,role_level').in('id', ids),
+    db.from('profile_tags').select('profile_id,value').eq('category', 'domain').in('profile_id', ids),
+  ]);
+
+  const levelOf = new Map((people ?? []).map((p: any) => [p.id, p.role_level]));
+  const domainsOf = new Map<string, string[]>();
+  for (const t of tags ?? []) {
+    if (!domainsOf.has(t.profile_id)) domainsOf.set(t.profile_id, []);
+    domainsOf.get(t.profile_id)!.push(t.value);
+  }
+
+  const candidates = seats.map((s: any) => ({
+    profile_id: s.profile_id,
+    role_level: levelOf.get(s.profile_id) ?? null,
+    domains: domainsOf.get(s.profile_id) ?? [],
+    requested_at: s.created_at,
+  }));
+
+  const result = selectBalanced(candidates, ev.seat_cap);
+
+  for (const pid of result.confirmed) {
+    await db.from('event_seats').update({ status: 'confirmed' })
+      .eq('event_id', eventId).eq('profile_id', pid);
+  }
+  for (const pid of result.waitlisted) {
+    await db.from('event_seats').update({ status: 'waitlist' })
+      .eq('event_id', eventId).eq('profile_id', pid);
+  }
+
+  await db.from('audit_log').insert({
+    actor_id: profile.id, action: 'event.match', target: eventId,
+    meta: { confirmed: result.confirmed.length, waitlisted: result.waitlisted.length },
+  });
+
+  revalidatePath('/events');
+  revalidatePath('/events/' + eventId);
+  revalidatePath('/chapter');
+  revalidatePath('/speaker');
+  revalidatePath('/dashboard');
+
+  return {
+    ok: result.confirmed.length + ' seated, ' + result.waitlisted.length + ' waitlisted. '
+      + describeMix(result.domains, result.levels),
+  };
+}
+
 export async function setTable(seatId: string, tableNo: number | null) {
   const { profile } = await requireSession();
   if (!canRunChapter(profile)) return { error: 'Chapter Leads and admins only' };
@@ -101,10 +173,14 @@ export async function createEvent(formData: FormData) {
   const { profile } = await requireSession();
   const kind = String(formData.get('kind') ?? 'meetup') as 'meetup' | 'talk';
 
-  if (kind === 'talk' && !canHostTalks(profile)) return { error: 'Approved speakers only' };
-  if (kind === 'meetup' && !canRunChapter(profile)) return { error: 'Chapter Leads only' };
-
-  const seatCap = Math.min(15, Math.max(12, Number(formData.get('seat_cap') ?? 15)));
+  if (kind === 'talk' && !canHostTalks(profile)) {
+    return { error: 'Speaker Series talks are hosted by approved speakers.' };
+  }
+  // Any member may propose a coffee meetup; it goes to an admin for approval.
+  // Chapter Leads and admins run the larger matched meetups.
+  const organiser = canRunChapter(profile);
+  const minSeats = organiser ? 12 : 2;
+  const seatCap = Math.min(15, Math.max(minSeats, Number(formData.get('seat_cap') ?? (organiser ? 15 : 6))));
   const supabase = createClient();
   const chapterId = String(formData.get('chapter_id'));
 
@@ -130,7 +206,7 @@ export async function createEvent(formData: FormData) {
   const { error } = await supabase.from('events').insert({
     chapter_id: chapterId,
     venue_id: venueId,
-    host_id: kind === 'talk' ? profile.id : null,
+    host_id: kind === 'talk' || !organiser ? profile.id : null,
     created_by: profile.id,
     kind,
     title: String(formData.get('title') ?? '').slice(0, 200),
@@ -146,5 +222,7 @@ export async function createEvent(formData: FormData) {
   revalidatePath('/chapter');
   revalidatePath('/speaker');
   revalidatePath('/admin');
+  revalidatePath('/events');
+  revalidatePath('/dashboard');
   return { ok: true };
 }

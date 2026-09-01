@@ -4,10 +4,13 @@ import { createEvent } from '@/app/actions/events';
 import { mapsUrl } from '@/lib/matching';
 import { VenueSearch } from '@/components/VenueSearch';
 
-export function EventForm({ kind, chapters, venues }: {
+export function EventForm({ kind, chapters, venues, minSeats = 12, defaultSeats = 15, submitLabel }: {
   kind: 'meetup' | 'talk';
   chapters: { id: string; city: string }[];
   venues: { id: string; name: string; chapter_id: string; address?: string }[];
+  minSeats?: number;
+  defaultSeats?: number;
+  submitLabel?: string;
 }) {
   const [pending, start] = useTransition();
   const [msg, setMsg] = useState<string | null>(null);
@@ -72,8 +75,8 @@ export function EventForm({ kind, chapters, venues }: {
             </span>
           )}
         </label>
-        <label className="fld"><span>Seats (12–15)</span>
-          <input name="seat_cap" type="number" min={12} max={15} defaultValue={15} />
+        <label className="fld"><span>Seats ({minSeats}–15)</span>
+          <input name="seat_cap" type="number" min={minSeats} max={15} defaultValue={defaultSeats} />
         </label>
       </div>
 
@@ -102,7 +105,7 @@ export function EventForm({ kind, chapters, venues }: {
                 ? 'https://www.google.com/maps/embed/v1/place?key='
                   + process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
                   + '&q=' + encodeURIComponent(fullAddress) + '&zoom=16'
-                : 'https://www.google.com/maps?q=' + encodeURIComponent(fullAddress) + '&output=embed'
+                : 'https://maps.google.com/maps?q=' + encodeURIComponent(fullAddress) + '&z=16&hl=en&output=embed'
             } />
           <div className="row" style={{ justifyContent: 'space-between', padding: '12px 16px', background: '#fcfcff' }}>
             <span className="mute small">{fullAddress}</span>
@@ -124,7 +127,7 @@ export function EventForm({ kind, chapters, venues }: {
       }}>
         <button className="btn btn-primary" type="submit" disabled={pending || !ready}
           style={{ minHeight: 48, padding: '0 26px', fontSize: 15.5 }}>
-          {pending ? 'Submitting…' : kind === 'talk' ? 'Submit talk' : 'Create meetup'}
+          {pending ? 'Submitting…' : (submitLabel ?? (kind === 'talk' ? 'Submit talk' : 'Create meetup'))}
         </button>
 
         {ready && (

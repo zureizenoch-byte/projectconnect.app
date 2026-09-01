@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { isPaid } from '@/lib/tiers';
 import { mapsUrl } from '@/lib/matching';
 import { RsvpButton } from '@/components/RsvpButton';
+import { MatchAttendeesButton } from '@/components/MatchAttendeesButton';
 
 export default async function EventPage({ params }: { params: { id: string } }) {
   const session = await getSession();
@@ -11,12 +12,20 @@ export default async function EventPage({ params }: { params: { id: string } }) 
 
   const { data: e } = await supabase
     .from('events')
-    .select('id,title,kind,description,starts_at,duration_min,seat_cap,status,status_note,original_starts_at,chapters(city),venues(name,address,notes),profiles:host_id(full_name,intro)')
+    .select('id,title,kind,description,starts_at,duration_min,seat_cap,status,status_note,original_starts_at,host_id,created_by,chapter_id,chapters(city),venues(name,address,notes),profiles:host_id(full_name,intro)')
     .eq('id', params.id).single();
   if (!e) notFound();
 
   const { data: seats } = await supabase
     .from('event_seats').select('id,status,profile_id').eq('event_id', params.id);
+
+  const canSeat = !!session && (
+    session.profile.role === 'admin'
+    || e.host_id === session.user.id
+    || e.created_by === session.user.id
+    || (session.profile.lead_chapter_id && session.profile.lead_chapter_id === e.chapter_id)
+  );
+  const requested = (seats ?? []).filter((s) => s.status === 'requested').length;
 
   const confirmed = (seats ?? []).filter((s) => s.status === 'confirmed').length;
   const mine = session ? (seats ?? []).find((s) => s.profile_id === session.user.id) : null;
@@ -97,6 +106,21 @@ export default async function EventPage({ params }: { params: { id: string } }) 
             </div>
           )}
         </dl>
+
+        {canSeat && (
+          <div style={{
+            marginTop: 20, padding: '16px 18px', borderRadius: 14,
+            background: 'var(--gold-100)', border: '1px solid var(--gold-200)',
+          }}>
+            <p className="eyebrow" style={{ margin: 0 }}>Seating</p>
+            <p className="mute small" style={{ margin: '6px 0 12px' }}>
+              {requested > 0
+                ? requested + ' request(s) waiting. Matching seats the widest mix of domains and role levels, then waitlists the rest.'
+                : 'No new requests. Matching reshuffles the current list by mix.'}
+            </p>
+            <MatchAttendeesButton eventId={e.id} requestCount={(seats ?? []).length} seatCap={e.seat_cap} />
+          </div>
+        )}
 
         <div style={{ marginTop: 22, paddingTop: 20, borderTop: '1px solid var(--line)' }}>
           {!session ? (

@@ -29,7 +29,15 @@ export default async function EventsPage({ searchParams }: { searchParams: { cit
 
   return (
     <main className="wrap">
-      <h1>Events</h1>
+      <div style={{
+        display: 'flex', gap: 16, alignItems: 'flex-end',
+        justifyContent: 'space-between', flexWrap: 'wrap',
+      }}>
+        <h1>Events</h1>
+        {session && (
+          <a className="btn btn-gold" href="/events/new">Propose a meetup</a>
+        )}
+      </div>
       <p className="mute" style={{ marginTop: 10, maxWidth: '62ch' }}>
         Matched meetups and Speaker Series talks, in one schedule. Tables run twelve to fifteen seats.
       </p>
