@@ -60,7 +60,7 @@ export default async function MemberProfile({ params }: { params: { id: string }
   }
 
   const roleLabel = person.role === 'admin' ? 'Admin'
-    : person.role === 'speaker' && person.speaker_approved ? 'Speaker'
+    : person.role === 'speaker' ? 'Speaker'
     : person.role === 'chapter_lead' ? 'Chapter Lead'
     : person.role === 'student' ? 'Student' : 'Member';
 
