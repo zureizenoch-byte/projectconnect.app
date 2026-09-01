@@ -1,11 +1,13 @@
 'use client';
 import { useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import { rsvp } from '@/app/actions/events';
 import { mapsUrl } from '@/lib/matching';
 
 export function RsvpButton({
   eventId, address, status, full,
 }: { eventId: string; address: string | null; status: string | null; full: boolean }) {
+  const router = useRouter();
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [current, setCurrent] = useState(status);
@@ -24,7 +26,10 @@ export function RsvpButton({
             setError(null);
             const res = await rsvp(eventId);
             if (res?.error) setError(res.error);
-            else setCurrent(current && current !== 'cancelled' ? 'cancelled' : (full ? 'waitlist' : 'confirmed'));
+            else {
+              setCurrent(current && current !== 'cancelled' ? 'cancelled' : (full ? 'waitlist' : 'confirmed'));
+              router.refresh();
+            }
           })}>
           {pending ? 'Saving…' : label}
         </button>

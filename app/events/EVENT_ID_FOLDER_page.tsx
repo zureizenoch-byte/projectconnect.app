@@ -6,7 +6,10 @@ import { mapsUrl } from '@/lib/matching';
 import { RsvpButton } from '@/components/RsvpButton';
 import { MatchAttendeesButton } from '@/components/MatchAttendeesButton';
 import { Avatar } from '@/components/Avatar';
+import { LiveSeats } from '@/components/LiveSeats';
 import { describeMix } from '@/lib/matching';
+
+export const dynamic = 'force-dynamic';
 
 export default async function EventPage({ params }: { params: { id: string } }) {
   const session = await getSession();
@@ -98,6 +101,7 @@ export default async function EventPage({ params }: { params: { id: string } }) 
 
   return (
     <main className="wrap" style={{ maxWidth: 860 }}>
+      <LiveSeats eventId={e.id} />
       <p className="eyebrow">{city} · {e.kind === 'talk' ? 'Speaker Series' : 'Meetup'}</p>
       <h1 style={{ marginTop: 12 }}>{e.title}</h1>
       <p className="mute" style={{ marginTop: 12, fontSize: 17 }}>

@@ -4,6 +4,9 @@ import { isPaid } from '@/lib/tiers';
 import { RsvpButton } from '@/components/RsvpButton';
 import { EventLifecycle } from '@/components/EventLifecycle';
 import { MapThumb } from '@/components/MapThumb';
+import { LiveSeats } from '@/components/LiveSeats';
+
+export const dynamic = 'force-dynamic';
 
 export const metadata = { title: 'Events — Project Connect' };
 
@@ -30,6 +33,7 @@ export default async function EventsPage({ searchParams }: { searchParams: { cit
 
   return (
     <main className="wrap">
+      <LiveSeats />
       <div style={{
         display: 'flex', gap: 16, alignItems: 'flex-end',
         justifyContent: 'space-between', flexWrap: 'wrap',
