@@ -1,6 +1,7 @@
 import { navFor } from '@/lib/permissions';
 import { signOut } from '@/app/actions/auth';
 import type { Profile } from '@/lib/types';
+import { Avatar } from '@/components/Avatar';
 
 export function SiteNav({ profile, inboxCount = 0, unreadCount = 0, alertCount = 0 }:
   { profile: Profile | null; inboxCount?: number; unreadCount?: number; alertCount?: number }) {
@@ -63,6 +64,11 @@ export function SiteNav({ profile, inboxCount = 0, unreadCount = 0, alertCount =
                     fontSize: 11.5, fontWeight: 700, lineHeight: 1,
                   }}>{alertCount > 99 ? '99+' : alertCount}</span>
                 )}
+              </a>
+              <a href={'/members/' + profile.id} title={profile.full_name ?? 'Your profile'}
+                aria-label="Your profile"
+                style={{ display: 'inline-flex', textDecoration: 'none', lineHeight: 0 }}>
+                <Avatar src={profile.photo_url} name={profile.full_name} email={profile.email} size={38} />
               </a>
               <a className="btn btn-quiet" style={{ minHeight: 38, padding: '0 14px', fontSize: 14 }} href="/profile">
                 Edit profile
