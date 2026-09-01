@@ -23,11 +23,30 @@ export default async function EventPage({ params }: { params: { id: string } }) 
   const paid = session ? isPaid(session.subscription.tier, session.subscription.status, session.subscription.current_period_end) : false;
   const d = new Date(e.starts_at);
   const venue = e.venues as any;
+  const city = (e.chapters as any)?.city;
+
+  // A full address geocodes far better than a bare street line
+  const mapQuery = venue?.address
+    ? (venue.address.toLowerCase().includes(String(city ?? '').toLowerCase())
+        ? venue.address
+        : venue.address + ', ' + city)
+    : null;
+
+  const key = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+  const embedSrc = mapQuery
+    ? (key
+        ? 'https://www.google.com/maps/embed/v1/place?key=' + key
+            + '&q=' + encodeURIComponent(mapQuery) + '&zoom=16'
+        : 'https://www.google.com/maps?q=' + encodeURIComponent(mapQuery) + '&z=16&output=embed')
+    : null;
 
   return (
     <main className="wrap" style={{ maxWidth: 860 }}>
-      <p className="eyebrow">{(e.chapters as any)?.city} · {e.kind === 'talk' ? 'Speaker Series' : 'Meetup'}</p>
+      <p className="eyebrow">{city} · {e.kind === 'talk' ? 'Speaker Series' : 'Meetup'}</p>
       <h1 style={{ marginTop: 12 }}>{e.title}</h1>
+      <p className="mute" style={{ marginTop: 12, fontSize: 17 }}>
+        {d.toLocaleString('en-CA', { dateStyle: 'full', timeStyle: 'short' })} · {e.duration_min} minutes
+      </p>
 
       {(e.status === 'postponed' || e.status === 'cancelled' || e.original_starts_at) && (
         <div style={{
@@ -50,9 +69,6 @@ export default async function EventPage({ params }: { params: { id: string } }) 
           )}
         </div>
       )}
-      <p className="mute" style={{ marginTop: 12, fontSize: 17 }}>
-        {d.toLocaleString('en-CA', { dateStyle: 'full', timeStyle: 'short' })} · {e.duration_min} minutes
-      </p>
 
       <div className="surf" style={{ padding: 24, marginTop: 24 }}>
         {e.description && <p style={{ marginTop: 0 }}>{e.description}</p>}
@@ -83,44 +99,50 @@ export default async function EventPage({ params }: { params: { id: string } }) 
         <div style={{ marginTop: 22, paddingTop: 20, borderTop: '1px solid var(--line)' }}>
           {!session ? (
             <a className="btn btn-gold" href="/signup">Join to RSVP</a>
+          ) : e.status === 'postponed' ? (
+            <p className="mute" style={{ margin: 0 }}>Awaiting a new date — your seat is held.</p>
+          ) : e.status === 'cancelled' ? (
+            <p className="mute" style={{ margin: 0 }}>This event is off.</p>
           ) : e.kind === 'talk' && !paid ? (
             <div>
               <a className="btn btn-out" href="/pricing">Speaker Series needs a paid plan</a>
               <p className="hint">Free membership covers one meetup per cycle.</p>
             </div>
           ) : (
-            <RsvpButton eventId={e.id} address={venue?.address ?? null}
+            <RsvpButton eventId={e.id} address={mapQuery}
               status={mine?.status ?? null} full={confirmed >= e.seat_cap} />
-          )}
-          {venue?.address && (
-            <>
-              <div style={{
-                marginTop: 20, borderRadius: 14, overflow: 'hidden', border: '1px solid var(--line)',
-              }}>
-                <iframe
-                  title="Venue location"
-                  width="100%" height="260" loading="lazy" style={{ border: 0, display: 'block' }}
-                  referrerPolicy="no-referrer-when-downgrade"
-                  src={
-                    process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
-                      ? 'https://www.google.com/maps/embed/v1/place?key='
-                        + process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
-                        + '&q=' + encodeURIComponent(venue.address) + '&zoom=16'
-                      : 'https://www.google.com/maps?q=' + encodeURIComponent(venue.address) + '&output=embed'
-                  } />
-                <div className="row" style={{
-                  justifyContent: 'space-between', padding: '12px 16px', background: '#fcfcff',
-                }}>
-                  <span className="mute small">{venue.address}</span>
-                  <a className="btn btn-out" target="_blank" rel="noopener noreferrer"
-                    href={mapsUrl(venue.address)}
-                    style={{ minHeight: 34, padding: '0 14px', fontSize: 13.5 }}>Directions</a>
-                </div>
-              </div>
-            </>
           )}
         </div>
       </div>
+
+      {embedSrc && (
+        <section className="surf" style={{ marginTop: 18, overflow: 'hidden' }}>
+          <header className="row" style={{
+            justifyContent: 'space-between', padding: '16px 20px',
+            borderBottom: '1px solid var(--line)',
+          }}>
+            <div>
+              <p className="eyebrow" style={{ margin: 0 }}>Getting there</p>
+              <p style={{ margin: '4px 0 0', fontSize: 16 }}>{venue?.name}</p>
+              <p className="mute small" style={{ margin: '2px 0 0' }}>{mapQuery}</p>
+            </div>
+            <div className="row" style={{ gap: 8 }}>
+              <a className="btn btn-out" target="_blank" rel="noopener noreferrer"
+                href={'https://www.google.com/maps/dir/?api=1&destination=' + encodeURIComponent(mapQuery!)}
+                style={{ minHeight: 40, padding: '0 16px', fontSize: 14 }}>Directions</a>
+              <a className="btn btn-gold" target="_blank" rel="noopener noreferrer"
+                href={mapsUrl(mapQuery!)}
+                style={{ minHeight: 40, padding: '0 16px', fontSize: 14 }}>Open in Maps</a>
+            </div>
+          </header>
+          <iframe
+            title={'Map of ' + (venue?.name ?? 'the venue')}
+            src={embedSrc}
+            width="100%" height="340" loading="lazy"
+            referrerPolicy="no-referrer-when-downgrade"
+            style={{ border: 0, display: 'block' }} />
+        </section>
+      )}
     </main>
   );
 }
