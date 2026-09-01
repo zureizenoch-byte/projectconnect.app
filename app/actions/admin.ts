@@ -40,10 +40,28 @@ async function applyRole(profileId: string, role: string, chapterId?: string | n
   return { ok: true };
 }
 
-/** First-run bootstrap: only works while no admin exists anywhere. */
+/** Emails allowed to bootstrap the very first admin. Set ADMIN_BOOTSTRAP_EMAILS in the environment. */
+export function bootstrapEmails() {
+  return (process.env.ADMIN_BOOTSTRAP_EMAILS ?? '')
+    .split(',').map((e) => e.trim().toLowerCase()).filter(Boolean);
+}
+
+/**
+ * First-run bootstrap. Two locks: no admin may exist yet, and the signed-in
+ * email must be on the ADMIN_BOOTSTRAP_EMAILS allowlist. After the first admin
+ * exists, admin access can only be granted by an existing admin.
+ */
 export async function claimAdmin() {
-  const { user } = await requireSession();
+  const { user, profile } = await requireSession();
   const admin = createAdminClient();
+
+  const allowed = bootstrapEmails();
+  if (allowed.length === 0) {
+    return { error: 'Bootstrap is closed. Set ADMIN_BOOTSTRAP_EMAILS to enable it.' };
+  }
+  if (!allowed.includes(profile.email.toLowerCase())) {
+    return { error: 'This account is not on the bootstrap allowlist.' };
+  }
 
   const { count } = await admin
     .from('profiles').select('id', { count: 'exact', head: true }).eq('role', 'admin');
@@ -138,8 +156,11 @@ export async function grantRole(formData: FormData) {
     chapter_id: role === 'chapter_lead' ? target.chapter_id : null,
     granted_by: profile.id,
   });
-  const patch: Record<string, unknown> = { role };
-  if (role === 'chapter_lead') patch.lead_chapter_id = target.chapter_id;
+  const patch: Record<string, unknown> = {
+    role,
+    speaker_approved: role === 'speaker',
+    lead_chapter_id: role === 'chapter_lead' ? target.chapter_id : null,
+  };
   const { error } = await admin.from('profiles').update(patch).eq('id', target.id);
   if (error) return { error: error.message };
 

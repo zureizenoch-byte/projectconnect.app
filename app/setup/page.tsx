@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { requireSession } from '@/lib/auth';
 import { createAdminClient } from '@/lib/supabase/server';
 import { ClaimAdmin } from './ClaimAdmin';
+import { bootstrapEmails } from '@/app/actions/admin';
 
 export const metadata = { title: 'Setup — Project Connect' };
 export const dynamic = 'force-dynamic';
@@ -18,6 +19,12 @@ export default async function SetupPage() {
     .from('profiles').select('id', { count: 'exact', head: true }).eq('role', 'admin');
 
   if ((count ?? 0) > 0) redirect('/dashboard');
+
+  // Not on the allowlist? The page does not exist for you.
+  const allowed = bootstrapEmails();
+  if (allowed.length === 0 || !allowed.includes(profile.email.toLowerCase())) {
+    redirect('/dashboard');
+  }
 
   return (
     <main className="wrap" style={{ maxWidth: 620 }}>

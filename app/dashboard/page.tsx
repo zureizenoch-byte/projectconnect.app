@@ -62,8 +62,6 @@ export default async function DashboardPage() {
     city: profile.city ?? authorMap.get(user.id)?.city ?? null,
     role: profile.role,
     speaker_approved: profile.speaker_approved,
-    role: profile.role,
-    speaker_approved: profile.speaker_approved,
   });
 
   const commenterIds = Array.from(new Set((comments ?? []).map((c: any) => c.author_id)))
