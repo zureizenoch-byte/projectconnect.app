@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { isPaid } from '@/lib/tiers';
 import { RsvpButton } from '@/components/RsvpButton';
 import { EventLifecycle } from '@/components/EventLifecycle';
+import { MapThumb } from '@/components/MapThumb';
 
 export const metadata = { title: 'Events — Project Connect' };
 
@@ -33,14 +34,14 @@ export default async function EventsPage({ searchParams }: { searchParams: { cit
         display: 'flex', gap: 16, alignItems: 'flex-end',
         justifyContent: 'space-between', flexWrap: 'wrap',
       }}>
-        <h1>Events</h1>
-        {session && (
-          <a className="btn btn-gold" href="/events/new">Propose a meetup</a>
-        )}
+        <div>
+          <h1>Events</h1>
+          <p className="mute" style={{ marginTop: 10, maxWidth: '58ch' }}>
+            Matched meetups and Speaker Series talks, in one schedule.
+          </p>
+        </div>
+        {session && <a className="btn btn-gold" href="/events/new">Propose a meetup</a>}
       </div>
-      <p className="mute" style={{ marginTop: 10, maxWidth: '62ch' }}>
-        Matched meetups and Speaker Series talks, in one schedule. Tables run twelve to fifteen seats.
-      </p>
       {isAdmin && (
         <p className="hint" style={{ marginTop: 8 }}>
           You're seeing every event, including drafts and past ones, with management controls on each.
@@ -61,8 +62,8 @@ export default async function EventsPage({ searchParams }: { searchParams: { cit
 
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))',
-        gap: 20, marginTop: 26, alignItems: 'stretch',
+        gridTemplateColumns: 'repeat(auto-fill, minmax(380px, 1fr))',
+        gap: 22, marginTop: 26, alignItems: 'stretch',
       }}>
         {rows.map((e: any) => {
           const confirmed = (e.event_seats ?? []).filter((s: any) => s.status === 'confirmed').length;
@@ -70,94 +71,131 @@ export default async function EventsPage({ searchParams }: { searchParams: { cit
           const full = confirmed >= e.seat_cap;
           const locked = e.kind === 'talk' && !paid;
           const d = new Date(e.starts_at);
+          const cityName = e.chapters?.city ?? '';
+          const address = e.venues?.address
+            ? (e.venues.address.toLowerCase().includes(cityName.toLowerCase())
+                ? e.venues.address
+                : e.venues.address + ', ' + cityName)
+            : null;
+          const left = Math.max(0, e.seat_cap - confirmed);
 
           return (
             <article key={e.id} className="surf lift" style={{
-              padding: 24, display: 'flex', flexDirection: 'column', gap: 14, minHeight: 300,
+              padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column',
             }}>
-              <header style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
+              <div style={{ position: 'relative' }}>
+                <MapThumb query={address} />
+
                 <div style={{
-                  width: 66, height: 66, borderRadius: 14, flex: 'none', display: 'grid',
-                  placeItems: 'center', background: 'var(--gold-100)',
-                  border: '1px solid var(--gold-200)', color: 'var(--gold-700)',
+                  position: 'absolute', top: 14, left: 14,
+                  width: 58, height: 58, borderRadius: 12, display: 'grid', placeItems: 'center',
+                  background: 'rgba(255,255,255,.94)', border: '1px solid var(--line)',
+                  boxShadow: 'var(--sh)', color: 'var(--gold-700)',
                   fontFamily: 'var(--font-heading)',
                 }}>
-                  <span style={{ fontSize: 11, letterSpacing: '.1em', textTransform: 'uppercase' }}>
+                  <span style={{ fontSize: 10.5, letterSpacing: '.1em', textTransform: 'uppercase' }}>
                     {d.toLocaleDateString('en-CA', { month: 'short' })}
                   </span>
-                  <span style={{ fontSize: 23, lineHeight: 1 }}>{d.getDate()}</span>
+                  <span style={{ fontSize: 21, lineHeight: 1 }}>{d.getDate()}</span>
                 </div>
 
-                <div style={{ minWidth: 0, flex: 1 }}>
-                  <div className="row" style={{ gap: 6 }}>
-                    <p className="eyebrow" style={{ margin: 0 }}>
-                      {e.chapters?.city} · {e.kind === 'talk' ? 'Speaker Series' : 'Meetup'}
-                    </p>
-                    {e.status === 'postponed' && <span className="pill pill-off">Postponed</span>}
-                    {isAdmin && e.status !== 'published' && e.status !== 'postponed' && (
-                      <span className="pill pill-wait">{e.status}</span>
-                    )}
-                    {e.status === 'published' && e.original_starts_at && (
-                      <span className="pill pill-wait">New date</span>
-                    )}
-                  </div>
-                  <h3 style={{ marginTop: 8, fontSize: 22, lineHeight: 1.15 }}>
-                    <a href={'/events/' + e.id} style={{ textDecoration: 'none' }}>{e.title}</a>
-                  </h3>
-                  <p className="mute small" style={{ marginTop: 6 }}>
-                    {d.toLocaleString('en-CA', { weekday: 'short', hour: 'numeric', minute: '2-digit' })}
-                    {e.venues?.name ? ' · ' + e.venues.name : ''}
-                  </p>
+                <div style={{
+                  position: 'absolute', top: 14, right: 14, display: 'flex', gap: 6, flexWrap: 'wrap',
+                  justifyContent: 'flex-end', maxWidth: '60%',
+                }}>
+                  <span className="pill" style={{
+                    background: 'rgba(255,255,255,.94)', border: '1px solid var(--line)',
+                    color: 'var(--gold-700)',
+                  }}>
+                    {e.kind === 'talk' ? 'Speaker Series' : 'Meetup'}
+                  </span>
+                  {e.status === 'postponed' && (
+                    <span className="pill" style={{
+                      background: 'rgba(255,255,255,.94)', border: '1px solid var(--line)',
+                      color: 'var(--mute)',
+                    }}>Postponed</span>
+                  )}
+                  {isAdmin && e.status !== 'published' && e.status !== 'postponed' && (
+                    <span className="pill" style={{
+                      background: 'rgba(255,255,255,.94)', border: '1px solid var(--line)',
+                      color: 'var(--gold-700)',
+                    }}>{e.status}</span>
+                  )}
+                  {e.status === 'published' && e.original_starts_at && (
+                    <span className="pill" style={{
+                      background: 'rgba(255,255,255,.94)', border: '1px solid var(--line)',
+                      color: 'var(--gold-700)',
+                    }}>New date</span>
+                  )}
                 </div>
-              </header>
-
-              {e.status_note && (
-                <p style={{
-                  margin: 0, padding: '8px 12px', borderRadius: 10, fontSize: 14,
-                  background: 'var(--gold-100)', border: '1px solid var(--gold-200)',
-                  color: 'var(--gold-700)',
-                }}>{e.status_note}</p>
-              )}
-
-              {e.description && (
-                <p className="mute" style={{ margin: 0, fontSize: 15, lineHeight: 1.6 }}>
-                  {e.description}
-                </p>
-              )}
-
-              <div style={{
-                marginTop: 'auto', paddingTop: 16, borderTop: '1px solid var(--line)',
-                display: 'flex', gap: 12, alignItems: 'center', justifyContent: 'space-between',
-                flexWrap: 'wrap',
-              }}>
-                <span className="mute small">{confirmed} of {e.seat_cap} seats</span>
-                {e.status === 'postponed' ? (
-                  <span className="mute small">Awaiting a new date</span>
-                ) : !session ? (
-                  <a className="btn btn-gold" href="/signup"
-                    style={{ minHeight: 40, padding: '0 16px', fontSize: 14 }}>Join to RSVP</a>
-                ) : locked ? (
-                  <a className="btn btn-out" href="/pricing"
-                    style={{ minHeight: 40, padding: '0 16px', fontSize: 14 }}>Paid plans only</a>
-                ) : (
-                  <RsvpButton eventId={e.id} address={e.venues?.address ?? null}
-                    status={mine?.status ?? null} full={full} />
-                )}
               </div>
 
-              {isAdmin && (
-                <div style={{
-                  paddingTop: 12, borderTop: '1px dashed var(--line)',
-                  display: 'grid', gap: 8,
-                }}>
-                  <span className="mute" style={{ fontSize: 11.5, letterSpacing: '.08em', textTransform: 'uppercase' }}>
-                    Admin
-                  </span>
-                  <EventLifecycle eventId={e.id} title={e.title} status={e.status}
-                    startsAt={e.starts_at} seatCount={(e.event_seats ?? []).length}
-                    canDelete />
+              <div style={{ padding: 22, display: 'flex', flexDirection: 'column', gap: 12, flex: 1 }}>
+                <div>
+                  <p className="eyebrow" style={{ margin: 0 }}>
+                    {cityName} · {d.toLocaleString('en-CA', { weekday: 'long', hour: 'numeric', minute: '2-digit' })}
+                  </p>
+                  <h3 style={{ marginTop: 8, fontSize: 24, lineHeight: 1.12 }}>
+                    <a href={'/events/' + e.id} style={{ textDecoration: 'none', color: 'var(--ink)' }}>
+                      {e.title}
+                    </a>
+                  </h3>
+                  {e.venues?.name && (
+                    <p className="mute small" style={{ marginTop: 6 }}>{e.venues.name}</p>
+                  )}
                 </div>
-              )}
+
+                {e.status_note && (
+                  <p style={{
+                    margin: 0, padding: '8px 12px', borderRadius: 10, fontSize: 14,
+                    background: 'var(--gold-100)', border: '1px solid var(--gold-200)',
+                    color: 'var(--gold-700)',
+                  }}>{e.status_note}</p>
+                )}
+
+                {e.description && (
+                  <p className="mute" style={{
+                    margin: 0, fontSize: 15, lineHeight: 1.6,
+                    display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
+                    overflow: 'hidden',
+                  }}>{e.description}</p>
+                )}
+
+                <div style={{
+                  marginTop: 'auto', paddingTop: 16, borderTop: '1px solid var(--line)',
+                  display: 'flex', gap: 12, alignItems: 'center',
+                  justifyContent: 'space-between', flexWrap: 'wrap',
+                }}>
+                  <span className="mute small">
+                    {full ? 'Full — waitlist open' : left + (left === 1 ? ' seat left' : ' seats left')}
+                  </span>
+                  {e.status === 'postponed' ? (
+                    <span className="mute small">Awaiting a new date</span>
+                  ) : !session ? (
+                    <a className="btn btn-gold" href="/signup"
+                      style={{ minHeight: 40, padding: '0 16px', fontSize: 14 }}>Join to RSVP</a>
+                  ) : locked ? (
+                    <a className="btn btn-out" href="/pricing"
+                      style={{ minHeight: 40, padding: '0 16px', fontSize: 14 }}>Paid plans only</a>
+                  ) : (
+                    <RsvpButton eventId={e.id} address={address}
+                      status={mine?.status ?? null} full={full} />
+                  )}
+                </div>
+
+                {isAdmin && (
+                  <div style={{
+                    paddingTop: 12, borderTop: '1px dashed var(--line)', display: 'grid', gap: 8,
+                  }}>
+                    <span className="mute" style={{ fontSize: 11.5, letterSpacing: '.08em', textTransform: 'uppercase' }}>
+                      Admin
+                    </span>
+                    <EventLifecycle eventId={e.id} title={e.title} status={e.status}
+                      startsAt={e.starts_at} seatCount={(e.event_seats ?? []).length}
+                      canDelete />
+                  </div>
+                )}
+              </div>
             </article>
           );
         })}
