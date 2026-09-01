@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react';
 import { VenueForm } from './VenueForm';
 import { VenueRow } from './VenueRow';
-import { VenueContact } from './VenueContact';
+import { SectionBoundary } from './SectionBoundary';
 import { decideAccessRequest, revokeRole, grantRole, setAccountRole, setEventStatus, saveVenue, setVenueActive, deleteVenue, resolveReport, resolveMessageReport } from '@/app/actions/admin';
 
 export function AdminControls({ requests, pendingEvents, leads, reports, chapters, venues, log, everyone = [], messageReports = [], currentAdminId }: any) {
@@ -19,11 +19,12 @@ export function AdminControls({ requests, pendingEvents, leads, reports, chapter
       {msg && <p className="hint" style={{ color: msg === 'Done.' ? 'var(--ok)' : 'var(--err)' }}>{msg}</p>}
 
       <h2 id="access-requests" style={{ marginTop: 30, scrollMarginTop: 80 }}>Access requests</h2>
+      <SectionBoundary title="Access requests">
       <div className="surf" style={{ marginTop: 14, overflow: 'hidden' }}>
         <table className="table">
           <thead><tr><th>Person</th><th>Requesting</th><th>Chapter</th><th>Introduction</th><th style={{ textAlign: 'right' }}>Decision</th></tr></thead>
           <tbody>
-            {requests.map((r: any) => (
+            {(requests ?? []).map((r: any) => (
               <tr key={r.id}>
                 <td>{r.profiles?.full_name}<br /><span className="mute small">{r.profiles?.email}</span></td>
                 <td>{r.kind === 'speaker' ? 'Speaker' : 'Chapter Lead'}</td>
@@ -45,17 +46,19 @@ export function AdminControls({ requests, pendingEvents, leads, reports, chapter
                 </td>
               </tr>
             ))}
-            {!requests.length && <tr><td colSpan={5} className="mute">Nothing waiting.</td></tr>}
+            {!requests?.length && <tr><td colSpan={5} className="mute">Nothing waiting.</td></tr>}
           </tbody>
         </table>
       </div>
+      </SectionBoundary>
 
       <h2 id="pending-events" style={{ marginTop: 30, scrollMarginTop: 80 }}>Events awaiting approval</h2>
+      <SectionBoundary title="Events awaiting approval">
       <div className="surf" style={{ marginTop: 14, overflow: 'hidden' }}>
         <table className="table">
           <thead><tr><th>Event</th><th>Kind</th><th>Chapter</th><th>Created by</th><th style={{ textAlign: 'right' }}>Decision</th></tr></thead>
           <tbody>
-            {pendingEvents.map((e: any) => (
+            {(pendingEvents ?? []).map((e: any) => (
               <tr key={e.id}>
                 <td>{e.title}<br /><span className="mute small">
                   {new Date(e.starts_at).toLocaleString('en-CA', { dateStyle: 'medium', timeStyle: 'short' })}
@@ -73,10 +76,11 @@ export function AdminControls({ requests, pendingEvents, leads, reports, chapter
                 </td>
               </tr>
             ))}
-            {!pendingEvents.length && <tr><td colSpan={5} className="mute">Nothing waiting.</td></tr>}
+            {!pendingEvents?.length && <tr><td colSpan={5} className="mute">Nothing waiting.</td></tr>}
           </tbody>
         </table>
       </div>
+      </SectionBoundary>
 
       <h2 style={{ marginTop: 30 }}>Granted access</h2>
       <form className="surf" style={{ padding: 20, marginTop: 14 }}
@@ -153,8 +157,11 @@ export function AdminControls({ requests, pendingEvents, leads, reports, chapter
       </div>
 
       <h2 style={{ marginTop: 30 }}>Venues</h2>
-      <VenueForm chapters={chapters} />
+      <SectionBoundary title="Add venue">
+        <VenueForm chapters={chapters ?? []} />
+      </SectionBoundary>
 
+      <SectionBoundary title="Venues">
       <div className="surf" style={{ marginTop: 14, overflow: 'hidden' }}>
         <table className="table">
           <thead>
@@ -171,6 +178,7 @@ export function AdminControls({ requests, pendingEvents, leads, reports, chapter
           </tbody>
         </table>
       </div>
+      </SectionBoundary>
       <p className="hint">
         Retiring hides a venue from new events but keeps it on past ones. Delete only works
         when no event references it. Add a contact email and the venue is emailed automatically
