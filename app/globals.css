@@ -317,33 +317,6 @@ img, iframe, video { max-width: 100%; }
 }
 
 /* -------- narrow phones */
-/* -------- two columns of cards on phones */
-@media (max-width: 640px) {
-  main div[style*="minmax(380px"],
-  main div[style*="minmax(340px"],
-  main div[style*="minmax(300px"],
-  main div[style*="minmax(280px"] {
-    grid-template-columns: 1fr 1fr !important;
-    gap: 12px !important;
-  }
-
-  /* the cards get tighter so two fit comfortably */
-  main div[style*="minmax(380px"] > article,
-  main div[style*="minmax(280px"] > article { min-width: 0; }
-  main div[style*="minmax(380px"] > article h3,
-  main div[style*="minmax(280px"] > article h3 { font-size: 17px; line-height: 1.15; }
-  main div[style*="minmax(380px"] > article .eyebrow,
-  main div[style*="minmax(280px"] > article .eyebrow { font-size: 10.5px; letter-spacing: .06em; }
-  main div[style*="minmax(380px"] > article > div:last-child,
-  main div[style*="minmax(280px"] > article > div:last-child { padding: 14px !important; }
-  main div[style*="minmax(380px"] > article .btn,
-  main div[style*="minmax(280px"] > article .btn {
-    width: 100%; padding: 0 10px !important; font-size: 13.5px !important;
-  }
-  main div[style*="minmax(380px"] > article img,
-  main div[style*="minmax(380px"] > article iframe { height: 110px !important; }
-}
-
 @media (max-width: 380px) {
   .wrap { padding: 18px 13px; }
   .brand span { font-size: 17px; }
