@@ -288,9 +288,14 @@ img, iframe, video { max-width: 100%; }
   .btn { min-height: 46px; padding: 0 18px; }
   .btn[style] { min-height: 46px !important; }
 
-  /* any two-or-more column inline grid stacks */
-  div[style*="grid-template-columns"],
-  div[style*="gridTemplateColumns"] {
+  /* multi-column inline grids stack, matched on their actual templates */
+  div[style*="minmax(0,7fr)"],
+  div[style*="minmax(0, 7fr)"],
+  div[style*="minmax(0,5fr)"],
+  div[style*="minmax(0, 5fr)"],
+  div[style*="1fr 1fr"],
+  div[style*="repeat(2,"],
+  div[style*="repeat(3,"] {
     grid-template-columns: 1fr !important;
   }
   .chips { gap: 8px; }
@@ -308,8 +313,10 @@ img, iframe, video { max-width: 100%; }
 
   /* footer: two tight columns instead of four stacked ones */
   footer .wrap { padding: 24px 16px 28px !important; }
-  footer .grid {
-    gap: 20px 18px !important;
+  footer .grid,
+  footer .g3,
+  footer .wrap.grid.g3 {
+    gap: 18px 16px !important;
     grid-template-columns: 1fr 1fr !important;
   }
   footer .grid > div:first-child { grid-column: 1 / -1; }
