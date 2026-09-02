@@ -367,6 +367,13 @@ img, iframe, video { max-width: 100%; }
   border-color: transparent; color: #fff; font-weight: 600;
   box-shadow: 0 6px 16px -8px rgba(51,82,207,.55);
 }
+/* buttons, not links — keep the reset consistent */
+.filteropt { font-family: var(--font-body); cursor: pointer; }
+.filteropt:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+
+/* a quiet cue while the list is updating */
+.filterpanel[data-pending="true"] .filtercol { opacity: .65; }
+
 .filterfoot {
   grid-column: 1 / -1;
   display: flex; gap: 12px; align-items: center; flex-wrap: wrap;

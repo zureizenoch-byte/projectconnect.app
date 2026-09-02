@@ -5,6 +5,7 @@ import { RsvpButton } from '@/components/RsvpButton';
 import { EventLifecycle } from '@/components/EventLifecycle';
 import { VenuePhoto } from '@/components/VenuePhoto';
 import { LiveSeats } from '@/components/LiveSeats';
+import { EventFilters } from '@/components/EventFilters';
 
 export const dynamic = 'force-dynamic';
 
@@ -64,50 +65,7 @@ export default async function EventsPage({ searchParams }: { searchParams: { cit
         </p>
       )}
 
-      <div className="filterpanel">
-        <div>
-          <span className="eyebrow" style={{ marginBottom: 10 }}>Chapter</span>
-          <div className="filtercol">
-            {([['All', ''], ['Vancouver', 'Vancouver'], ['Toronto', 'Toronto']] as const).map(([label, value]) => {
-              const params = new URLSearchParams();
-              if (value) params.set('city', value);
-              if (kind) params.set('kind', kind);
-              const qs = params.toString();
-              return (
-                <a key={label} className="filteropt" aria-pressed={(city ?? '') === value}
-                  href={'/events' + (qs ? '?' + qs : '')}>{label}</a>
-              );
-            })}
-          </div>
-        </div>
-
-        <div>
-          <span className="eyebrow" style={{ marginBottom: 10 }}>Type</span>
-          <div className="filtercol">
-            {([['Everything', ''], ['Meetups', 'meetup'], ['Speaker Series', 'talk']] as const).map(([label, value]) => {
-              const params = new URLSearchParams();
-              if (city) params.set('city', city);
-              if (value) params.set('kind', value);
-              const qs = params.toString();
-              return (
-                <a key={label} className="filteropt" aria-pressed={(kind ?? '') === value}
-                  href={'/events' + (qs ? '?' + qs : '')}>{label}</a>
-              );
-            })}
-          </div>
-        </div>
-
-        {(city || kind) && (
-          <div className="filterfoot">
-            <span className="mute small">
-              {rows.length} {rows.length === 1 ? 'event' : 'events'}
-              {city ? ' in ' + city : ''}
-              {kind ? (kind === 'talk' ? ' · Speaker Series' : ' · Meetups') : ''}
-            </span>
-            <a href="/events" className="small" style={{ marginLeft: 'auto' }}>Clear filters</a>
-          </div>
-        )}
-      </div>
+      <EventFilters city={city} kind={kind} count={rows.length} />
 
       <div style={{
         display: 'grid',
