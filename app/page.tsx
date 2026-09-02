@@ -6,6 +6,7 @@ import { EventLifecycle } from '@/components/EventLifecycle';
 import { VenuePhoto } from '@/components/VenuePhoto';
 import { LiveSeats } from '@/components/LiveSeats';
 import { EventFilters } from '@/components/EventFilters';
+import { canHostTalks } from '@/lib/permissions';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,6 +19,7 @@ export default async function EventsPage({ searchParams }: { searchParams: { cit
   const supabase = createClient();
   const paid = session ? isPaid(session.subscription.tier, session.subscription.status, session.subscription.current_period_end) : false;
   const isAdmin = session?.profile.role === 'admin';
+  const canTalk = session ? canHostTalks(session.profile) : false;
 
   const query = isAdmin
     ? supabase.from('events').select(COLS).order('starts_at')
@@ -57,7 +59,12 @@ export default async function EventsPage({ searchParams }: { searchParams: { cit
             Matched meetups and Speaker Series talks, in one schedule.
           </p>
         </div>
-        {session && <a className="btn btn-gold" href="/events/new">Propose a meetup</a>}
+        <div className="row" style={{ gap: 10 }}>
+          {canTalk && (
+            <a className="btn btn-dark" href="/events/new?kind=talk">Schedule a talk</a>
+          )}
+          {session && <a className="btn btn-gold" href="/events/new">Propose a meetup</a>}
+        </div>
       </div>
       {isAdmin && (
         <p className="hint" style={{ marginTop: 8 }}>
