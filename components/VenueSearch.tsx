@@ -72,7 +72,7 @@ export function VenueSearch({
             .fetchAutocompleteSuggestions({
               input: q,
               sessionToken: sessionToken.current,
-              includedRegionCodes: ['ca'],
+              
               locationBias: undefined,
             });
 
@@ -92,7 +92,7 @@ export function VenueSearch({
           setRemote(items);
         } else {
           const url = 'https://photon.komoot.io/api/?limit=6&lang=en&q='
-            + encodeURIComponent(q + ' ' + city);
+            + encodeURIComponent(q);
           const res = await fetch(url);
           const json = await res.json();
           if (cancelled) return;
@@ -192,7 +192,7 @@ export function VenueSearch({
         value={query}
         onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
         onFocus={() => setOpen(true)}
-        placeholder={'Search a place in ' + city + '…'}
+        placeholder="Search any place — cafés, offices, anywhere"
         style={{
           width: '100%', minHeight: 46, padding: '11px 14px',
           font: 'inherit', fontSize: 16, background: '#fff',
