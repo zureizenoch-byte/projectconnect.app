@@ -208,7 +208,7 @@ export default async function EventsPage({ searchParams }: { searchParams: { cit
             </article>
           );
         })}
-        {!rows.length && <p className="mute">Nothing published for that filter yet.</p>}
+        {!rows.length && <p className="mute">No events yet. Propose one from the button above.</p>}
       </div>
     </main>
   );
