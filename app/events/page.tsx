@@ -64,16 +64,56 @@ export default async function EventsPage({ searchParams }: { searchParams: { cit
         </p>
       )}
 
-      <div className="row" style={{ marginTop: 22 }}>
-        {[['All', ''], ['Vancouver', 'Vancouver'], ['Toronto', 'Toronto']].map(([label, value]) => (
-          <a key={label} className="chip" aria-pressed={(city ?? '') === value}
-            href={'/events' + (value ? '?city=' + value : '')}>{label}</a>
-        ))}
-        <span style={{ width: 12 }} />
-        {[['Everything', ''], ['Meetups', 'meetup'], ['Speaker Series', 'talk']].map(([label, value]) => (
-          <a key={label} className="chip" aria-pressed={(kind ?? '') === value}
-            href={'/events' + (value ? '?kind=' + value : '')}>{label}</a>
-        ))}
+      <div style={{
+        display: 'grid', gap: 14, marginTop: 24,
+        padding: '16px 18px', borderRadius: 16,
+        border: '1px solid var(--line)', background: '#fff',
+      }}>
+        <div style={{ display: 'flex', gap: 12, alignItems: 'baseline', flexWrap: 'wrap' }}>
+          <span className="eyebrow" style={{ minWidth: 62 }}>Chapter</span>
+          <div className="chips">
+            {([['All', ''], ['Vancouver', 'Vancouver'], ['Toronto', 'Toronto']] as const).map(([label, value]) => {
+              const params = new URLSearchParams();
+              if (value) params.set('city', value);
+              if (kind) params.set('kind', kind);
+              const qs = params.toString();
+              return (
+                <a key={label} className="chip" aria-pressed={(city ?? '') === value}
+                  href={'/events' + (qs ? '?' + qs : '')}>{label}</a>
+              );
+            })}
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', gap: 12, alignItems: 'baseline', flexWrap: 'wrap' }}>
+          <span className="eyebrow" style={{ minWidth: 62 }}>Type</span>
+          <div className="chips">
+            {([['Everything', ''], ['Meetups', 'meetup'], ['Speaker Series', 'talk']] as const).map(([label, value]) => {
+              const params = new URLSearchParams();
+              if (city) params.set('city', city);
+              if (value) params.set('kind', value);
+              const qs = params.toString();
+              return (
+                <a key={label} className="chip" aria-pressed={(kind ?? '') === value}
+                  href={'/events' + (qs ? '?' + qs : '')}>{label}</a>
+              );
+            })}
+          </div>
+        </div>
+
+        {(city || kind) && (
+          <div style={{
+            display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap',
+            paddingTop: 12, borderTop: '1px solid var(--line)',
+          }}>
+            <span className="mute small">
+              {rows.length} {rows.length === 1 ? 'event' : 'events'}
+              {city ? ' in ' + city : ''}
+              {kind ? (kind === 'talk' ? ' · Speaker Series' : ' · Meetups') : ''}
+            </span>
+            <a href="/events" className="small" style={{ marginLeft: 'auto' }}>Clear filters</a>
+          </div>
+        )}
       </div>
 
       <div style={{
