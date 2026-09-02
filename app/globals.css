@@ -338,39 +338,46 @@ img, iframe, video { max-width: 100%; }
 .evrow { cursor: pointer; transition: border-color .16s ease, background .16s ease; }
 .evrow:hover { border-color: var(--gold) !important; background: var(--gold-100); }
 
-/* ---------------------------------------------------------------- segmented filter */
-.seg-row {
-  display: flex;
-  gap: 4px;
-  padding: 4px;
-  border-radius: 12px;
-  background: rgba(14,16,19,.05);
+/* ---------------------------------------------------------------- event filters
+   Two columns side by side — Chapter and Type — each option stacked beneath
+   its heading. Classes rather than inline styles, so the phone rules that
+   flatten inline grids leave this alone. */
+.filterpanel {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 28px;
+  margin-top: 24px;
+  padding: 22px;
   border: 1px solid var(--line);
-}
-.seg-row .seg-opt {
-  flex: 1 1 0;
-  min-width: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 40px;
-  padding: 0 10px;
-  border-radius: 9px;
-  font-size: 14px;
-  font-weight: 500;
-  line-height: 1.2;
-  text-align: center;
-  color: var(--mute);
-  background: transparent;
-  transition: background .16s ease, color .16s ease, box-shadow .16s ease;
-}
-.seg-row .seg-opt:hover { color: var(--ink); background: rgba(255,255,255,.6); }
-.seg-row .seg-opt[aria-pressed="true"] {
+  border-radius: 16px;
   background: #fff;
-  color: var(--gold-700);
-  font-weight: 600;
-  box-shadow: var(--sh);
 }
-@media (max-width: 420px) {
-  .seg-row .seg-opt { font-size: 13px; padding: 0 6px; }
+.filtercol { display: flex; flex-direction: column; gap: 8px; }
+.filteropt {
+  display: flex; align-items: center; justify-content: center;
+  min-height: 42px; padding: 0 14px;
+  border: 1px solid var(--line); border-radius: 11px;
+  background: #fff; color: var(--ink);
+  font-size: 15px; line-height: 1.15; text-align: center;
+  transition: background .16s ease, border-color .16s ease, color .16s ease, box-shadow .16s ease;
+}
+.filteropt:hover { border-color: rgba(14,16,19,.24); color: var(--ink); }
+.filteropt[aria-pressed="true"] {
+  background: linear-gradient(100deg, var(--gold), var(--grn));
+  border-color: transparent; color: #fff; font-weight: 600;
+  box-shadow: 0 6px 16px -8px rgba(51,82,207,.55);
+}
+.filterfoot {
+  grid-column: 1 / -1;
+  display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
+  padding-top: 14px; border-top: 1px solid var(--line);
+}
+
+@media (max-width: 640px) {
+  .filterpanel { gap: 18px; padding: 18px; }
+  .filtercol { gap: 7px; }
+  .filteropt { min-height: 40px; padding: 0 8px; font-size: 14px; }
+}
+@media (max-width: 380px) {
+  .filteropt { font-size: 13px; padding: 0 6px; }
 }

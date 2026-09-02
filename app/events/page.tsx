@@ -64,21 +64,17 @@ export default async function EventsPage({ searchParams }: { searchParams: { cit
         </p>
       )}
 
-      <div style={{
-        display: 'grid', gap: 14, marginTop: 24,
-        padding: '16px 18px', borderRadius: 16,
-        border: '1px solid var(--line)', background: '#fff',
-      }}>
+      <div className="filterpanel">
         <div>
-          <span className="eyebrow" style={{ marginBottom: 8 }}>Chapter</span>
-          <div className="seg-row">
+          <span className="eyebrow" style={{ marginBottom: 10 }}>Chapter</span>
+          <div className="filtercol">
             {([['All', ''], ['Vancouver', 'Vancouver'], ['Toronto', 'Toronto']] as const).map(([label, value]) => {
               const params = new URLSearchParams();
               if (value) params.set('city', value);
               if (kind) params.set('kind', kind);
               const qs = params.toString();
               return (
-                <a key={label} className="seg-opt" aria-pressed={(city ?? '') === value}
+                <a key={label} className="filteropt" aria-pressed={(city ?? '') === value}
                   href={'/events' + (qs ? '?' + qs : '')}>{label}</a>
               );
             })}
@@ -86,15 +82,15 @@ export default async function EventsPage({ searchParams }: { searchParams: { cit
         </div>
 
         <div>
-          <span className="eyebrow" style={{ marginBottom: 8 }}>Type</span>
-          <div className="seg-row">
+          <span className="eyebrow" style={{ marginBottom: 10 }}>Type</span>
+          <div className="filtercol">
             {([['Everything', ''], ['Meetups', 'meetup'], ['Speaker Series', 'talk']] as const).map(([label, value]) => {
               const params = new URLSearchParams();
               if (city) params.set('city', city);
               if (value) params.set('kind', value);
               const qs = params.toString();
               return (
-                <a key={label} className="seg-opt" aria-pressed={(kind ?? '') === value}
+                <a key={label} className="filteropt" aria-pressed={(kind ?? '') === value}
                   href={'/events' + (qs ? '?' + qs : '')}>{label}</a>
               );
             })}
@@ -102,10 +98,7 @@ export default async function EventsPage({ searchParams }: { searchParams: { cit
         </div>
 
         {(city || kind) && (
-          <div style={{
-            display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap',
-            paddingTop: 12, borderTop: '1px solid var(--line)',
-          }}>
+          <div className="filterfoot">
             <span className="mute small">
               {rows.length} {rows.length === 1 ? 'event' : 'events'}
               {city ? ' in ' + city : ''}
