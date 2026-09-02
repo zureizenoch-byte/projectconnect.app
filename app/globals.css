@@ -296,7 +296,7 @@ img, iframe, video { max-width: 100%; }
 
   /* forms: 16px inputs stop iOS and Chrome zooming on focus */
   .fld input, .fld select, .fld textarea { font-size: 16px; }
-  .fld &gt; span { font-size: 16.5px; }
+  .fld > span { font-size: 16.5px; }
 
   /* right-aligned action rows recentre when they wrap */
   .row { gap: 10px; }
