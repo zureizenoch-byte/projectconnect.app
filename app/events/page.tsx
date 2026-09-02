@@ -69,36 +69,32 @@ export default async function EventsPage({ searchParams }: { searchParams: { cit
         padding: '16px 18px', borderRadius: 16,
         border: '1px solid var(--line)', background: '#fff',
       }}>
-        <div style={{ display: 'flex', gap: 12, alignItems: 'baseline', flexWrap: 'wrap' }}>
-          <span className="eyebrow" style={{ minWidth: 62 }}>Chapter</span>
-          <div className="chips" style={{
-            display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 9, flex: 1, minWidth: 200,
-          }}>
+        <div>
+          <span className="eyebrow" style={{ marginBottom: 8 }}>Chapter</span>
+          <div className="seg-row">
             {([['All', ''], ['Vancouver', 'Vancouver'], ['Toronto', 'Toronto']] as const).map(([label, value]) => {
               const params = new URLSearchParams();
               if (value) params.set('city', value);
               if (kind) params.set('kind', kind);
               const qs = params.toString();
               return (
-                <a key={label} className="chip" style={{ justifyContent: 'center' }} aria-pressed={(city ?? '') === value}
+                <a key={label} className="seg-opt" aria-pressed={(city ?? '') === value}
                   href={'/events' + (qs ? '?' + qs : '')}>{label}</a>
               );
             })}
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: 12, alignItems: 'baseline', flexWrap: 'wrap' }}>
-          <span className="eyebrow" style={{ minWidth: 62 }}>Type</span>
-          <div className="chips" style={{
-            display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 9, flex: 1, minWidth: 200,
-          }}>
+        <div>
+          <span className="eyebrow" style={{ marginBottom: 8 }}>Type</span>
+          <div className="seg-row">
             {([['Everything', ''], ['Meetups', 'meetup'], ['Speaker Series', 'talk']] as const).map(([label, value]) => {
               const params = new URLSearchParams();
               if (city) params.set('city', city);
               if (value) params.set('kind', value);
               const qs = params.toString();
               return (
-                <a key={label} className="chip" style={{ justifyContent: 'center' }} aria-pressed={(kind ?? '') === value}
+                <a key={label} className="seg-opt" aria-pressed={(kind ?? '') === value}
                   href={'/events' + (qs ? '?' + qs : '')}>{label}</a>
               );
             })}
