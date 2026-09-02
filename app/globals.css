@@ -373,6 +373,18 @@ img, iframe, video { max-width: 100%; }
   padding-top: 14px; border-top: 1px solid var(--line);
 }
 
+@media (min-width: 641px) {
+  .filterpanel {
+    grid-template-columns: repeat(2, minmax(0, 170px));
+    justify-content: start;
+    gap: 20px 22px;
+    padding: 18px 20px;
+    width: fit-content;
+  }
+  .filteropt { min-height: 38px; padding: 0 12px; font-size: 14px; }
+  .filterfoot { grid-column: 1 / -1; }
+}
+
 @media (max-width: 640px) {
   .filterpanel { gap: 18px; padding: 18px; }
   .filtercol { gap: 7px; }
@@ -380,4 +392,12 @@ img, iframe, video { max-width: 100%; }
 }
 @media (max-width: 380px) {
   .filteropt { font-size: 13px; padding: 0 6px; }
+}
+/* -------- desktop only: a tighter nav bar */
+@media (min-width: 641px) {
+  .navpill { padding: 2px; border-radius: 12px; }
+  .navpill a { padding: 6px 11px; font-size: 13.5px; border-radius: 9px; }
+  .brand img { height: 30px; }
+  .brand span { font-size: 19px; }
+  .nav-in { padding-block: 9px; gap: 12px; }
 }
