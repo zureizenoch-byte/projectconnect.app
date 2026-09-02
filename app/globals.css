@@ -262,6 +262,8 @@ img, iframe, video { max-width: 100%; }
 @media (max-width: 640px) {
   body { font-size: 15.5px; }
 
+  footer { margin-top: 28px !important; }
+
   .wrap { padding: 20px 16px; }
 
   h1 { font-size: 30px; }
@@ -304,8 +306,16 @@ img, iframe, video { max-width: 100%; }
   /* dialogs and panels lose their desktop padding */
   .surf[style*="padding: 3"], .surf[style*="padding:3"] { padding: 20px !important; }
 
-  /* footer becomes a simple stack */
-  footer .grid { gap: 24px; }
+  /* footer: two tight columns instead of four stacked ones */
+  footer .wrap { padding: 24px 16px 28px !important; }
+  footer .grid {
+    gap: 20px 18px !important;
+    grid-template-columns: 1fr 1fr !important;
+  }
+  footer .grid > div:first-child { grid-column: 1 / -1; }
+  footer .eyebrow { margin-bottom: 4px; }
+  footer .small { margin: 0 0 2px; line-height: 1.5; }
+  footer p { margin-top: 0; }
 }
 
 /* -------- narrow phones */
