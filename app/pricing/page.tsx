@@ -32,12 +32,16 @@ export default async function PricingPage() {
           return (
             <div key={tier} className="surf"
               style={{
-                padding: 24, position: 'relative',
+                padding: 24,
                 borderColor: popular ? 'var(--gold)' : 'var(--line)',
                 boxShadow: popular ? '0 14px 34px -14px rgba(51,82,207,.5)' : 'var(--sh)',
               }}>
               {popular && (
-                <span className="pill pill-wait" style={{ position: 'absolute', top: -12, left: 24 }}>Most popular</span>
+                <span className="pill" style={{
+                  display: 'inline-flex', marginBottom: 12,
+                  background: 'linear-gradient(100deg, var(--gold), var(--grn))',
+                  color: '#fff', border: 0,
+                }}>Most popular</span>
               )}
               <p className="eyebrow">{plan.label}</p>
               <p style={{ fontFamily: 'var(--font-heading)', fontSize: 38, margin: '10px 0 0' }}>{plan.price}</p>
