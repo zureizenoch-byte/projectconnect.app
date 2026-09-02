@@ -219,8 +219,100 @@ input[type="checkbox"], input[type="radio"] {
 .ondark .mute, .ondark p { color: var(--mute-d); }
 .ondark .eyebrow { color: #c6cef9; }
 
+/* ---------------------------------------------------------------- responsive
+   Layouts are written with inline grid templates, so the phone overrides need
+   !important to win. Everything collapses to one column and every tap target
+   stays at least 44px. */
+
+html { -webkit-text-size-adjust: 100%; }
+body { overflow-x: hidden; }
+img, iframe, video { max-width: 100%; }
+
+/* nothing may push the page sideways */
+.wrap, main, section, article { min-width: 0; }
+
 @media (max-width: 1024px) {
   .navpill { flex-wrap: wrap; }
+}
+
+/* -------- tablet and below */
+@media (max-width: 900px) {
+  .grid[style] { grid-template-columns: 1fr !important; }
+  .gfeed[style] { grid-template-columns: 1fr !important; }
+
+  /* sticky sidebars stop being sticky once they are stacked */
+  aside[style] { position: static !important; top: auto !important; }
+
+  /* wide card grids reflow instead of overflowing */
+  main div[style*="minmax(380px"],
+  main div[style*="minmax(340px"],
+  main div[style*="minmax(300px"],
+  main div[style*="minmax(280px"],
+  main div[style*="minmax(260px"],
+  main div[style*="minmax(240px"] {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)) !important;
+  }
+
+  /* tables scroll horizontally rather than stretching the page */
+  .surf { overflow-x: auto; }
+  .table { min-width: 560px; }
+}
+
+/* -------- phone */
+@media (max-width: 640px) {
+  body { font-size: 15.5px; }
+
+  .wrap { padding: 20px 16px; }
+
+  h1 { font-size: 30px; }
+  h2 { font-size: 24px; }
+  h3 { font-size: 20px; }
+
+  /* header: brand on the left, actions on the right, nav on its own line */
+  .nav-in { flex-wrap: wrap; gap: 10px; padding: 10px 14px; }
+  .brand img { height: 30px; }
+  .brand span { font-size: 19px; }
+  .navpill {
+    order: 3; width: 100%;
+    margin-left: 0 !important;
+    overflow-x: auto; flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .navpill::-webkit-scrollbar { display: none; }
+  .navpill a { padding: 9px 13px; white-space: nowrap; flex: none; }
+
+  /* buttons reach a comfortable tap size and wrap full-width in groups */
+  .btn { min-height: 46px; padding: 0 18px; }
+  .btn[style] { min-height: 46px !important; }
+
+  /* any two-or-more column inline grid stacks */
+  div[style*="grid-template-columns"],
+  div[style*="gridTemplateColumns"] {
+    grid-template-columns: 1fr !important;
+  }
+  .chips { gap: 8px; }
+  .chip { min-height: 42px; }
+
+  /* forms: 16px inputs stop iOS and Chrome zooming on focus */
+  .fld input, .fld select, .fld textarea { font-size: 16px; }
+  .fld &gt; span { font-size: 16.5px; }
+
+  /* right-aligned action rows recentre when they wrap */
+  .row { gap: 10px; }
+
+  /* dialogs and panels lose their desktop padding */
+  .surf[style*="padding: 3"], .surf[style*="padding:3"] { padding: 20px !important; }
+
+  /* footer becomes a simple stack */
+  footer .grid { gap: 24px; }
+}
+
+/* -------- narrow phones */
+@media (max-width: 380px) {
+  .wrap { padding: 18px 13px; }
+  .brand span { font-size: 17px; }
+  .btn { font-size: 14.5px; padding: 0 14px; }
 }
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; }

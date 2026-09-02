@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { SiteNav } from '@/components/SiteNav';
 import { getSession } from '@/lib/auth';
@@ -15,6 +15,13 @@ export const metadata: Metadata = {
     shortcut: ['/favicon.png'],
     apple: [{ url: '/favicon.png' }],
   },
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+  themeColor: '#f8f8fd',
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
