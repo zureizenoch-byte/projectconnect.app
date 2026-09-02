@@ -36,35 +36,40 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body>
         <SiteNav profile={session?.profile ?? null} inboxCount={inbox?.total ?? 0} unreadCount={unread} alertCount={alerts} />
         {children}
-        <footer style={{ borderTop: '1px solid var(--line)', background: '#fff', marginTop: 48 }}>
-          <div className="wrap grid g3" style={{ paddingBlock: 40 }}>
-            <div>
+        <footer style={{ borderTop: '1px solid var(--line)', background: '#fff', marginTop: 40 }}>
+          <div className="wrap" style={{
+            paddingBlock: 32,
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
+            gap: '22px 18px',
+            alignItems: 'start',
+          }}>
+            <div style={{ gridColumn: '1 / -1' }}>
               <span className="brand" style={{ display: 'inline-flex' }}>
                 <img src="/pc-mark-2026.png" alt="" />
                 <span>Project<span style={{ color: 'var(--gold-700)' }}>Connect</span></span>
               </span>
-              <p className="mute small" style={{ marginTop: 10, maxWidth: '32ch' }}>
+              <p className="mute small" style={{ margin: '8px 0 0', maxWidth: '32ch' }}>
                 Matched small-group meetups by city chapter.
               </p>
             </div>
             <div>
-              <p className="eyebrow">Product</p>
-              <p className="small"><a href="/dashboard">Dashboard</a></p>
-              <p className="small"><a href="/events">Events</a></p>
-              <p className="small"><a href="/messages">Messages</a></p>
-              <p className="small"><a href="/venues">Venues</a></p>
+              <p className="eyebrow" style={{ marginBottom: 6 }}>Product</p>
+              <p className="small" style={{ margin: "0 0 3px" }}><a href="/dashboard">Dashboard</a></p>
+              <p className="small" style={{ margin: "0 0 3px" }}><a href="/events">Events</a></p>
+              <p className="small" style={{ margin: "0 0 3px" }}><a href="/messages">Messages</a></p>
+              <p className="small" style={{ margin: "0 0 3px" }}><a href="/venues">Venues</a></p>
             </div>
             <div>
-              <p className="eyebrow">Account</p>
-              <p className="small"><a href="/pricing">Pricing</a></p>
-              <p className="small"><a href="/profile">Profile</a></p>
-              <p className="small"><a href="/billing">Billing</a></p>
+              <p className="eyebrow" style={{ marginBottom: 6 }}>Account</p>
+              <p className="small" style={{ margin: "0 0 3px" }}><a href="/pricing">Pricing</a></p>
+              <p className="small" style={{ margin: "0 0 3px" }}><a href="/profile">Profile</a></p>
+              <p className="small" style={{ margin: "0 0 3px" }}><a href="/billing">Billing</a></p>
             </div>
             <div>
-              <p className="eyebrow">Legal</p>
-              <p className="small mute" style={{ opacity: .5 }}>build 7</p>
-              <p className="small"><a href="/legal/privacy">Privacy Policy</a></p>
-              <p className="small"><a href="/legal/terms">Terms of Service</a></p>
+              <p className="eyebrow" style={{ marginBottom: 6 }}>Legal</p>
+              <p className="small" style={{ margin: "0 0 3px" }}><a href="/legal/privacy">Privacy Policy</a></p>
+              <p className="small" style={{ margin: "0 0 3px" }}><a href="/legal/terms">Terms of Service</a></p>
             </div>
           </div>
         </footer>

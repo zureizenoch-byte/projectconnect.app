@@ -311,18 +311,9 @@ img, iframe, video { max-width: 100%; }
   /* dialogs and panels lose their desktop padding */
   .surf[style*="padding: 3"], .surf[style*="padding:3"] { padding: 20px !important; }
 
-  /* footer: two tight columns instead of four stacked ones */
-  footer .wrap { padding: 24px 16px 28px !important; }
-  footer .grid,
-  footer .g3,
-  footer .wrap.grid.g3 {
-    gap: 18px 16px !important;
-    grid-template-columns: 1fr 1fr !important;
-  }
-  footer .grid > div:first-child { grid-column: 1 / -1; }
-  footer .eyebrow { margin-bottom: 4px; }
-  footer .small { margin: 0 0 2px; line-height: 1.5; }
-  footer p { margin-top: 0; }
+  /* footer sizes its own columns, so it only needs tighter padding here */
+  footer .wrap { padding: 22px 16px 26px !important; }
+  footer .small { line-height: 1.5; }
 }
 
 /* -------- narrow phones */
