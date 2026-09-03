@@ -29,6 +29,7 @@ export function VenueSearch({
   const [loading, setLoading] = useState(false);
   const [picked, setPicked] = useState<Suggestion | null>(null);
   const [googleReady, setGoogleReady] = useState(false);
+  const [note, setNote] = useState<string | null>(null);
   const boxRef = useRef<HTMLDivElement>(null);
   const sessionToken = useRef<any>(null);
 
@@ -59,10 +60,28 @@ export function VenueSearch({
 
   useEffect(() => {
     const q = query.trim();
-    if (q.length < 3) { setRemote([]); setLoading(false); return; }
+    if (q.length < 3) { setRemote([]); setLoading(false); setNote(null); return; }
 
     let cancelled = false;
     setLoading(true);
+
+    // Photon (OpenStreetMap) — the safety net when Google is unavailable or
+    // its Places API is not enabled on the key
+    const searchOsm = async (): Promise<Suggestion[]> => {
+      const url = 'https://photon.komoot.io/api/?limit=8&lang=en&q=' + encodeURIComponent(q);
+      const res = await fetch(url);
+      const json = await res.json();
+      return (json.features ?? []).map((f: any, i: number) => {
+        const p = f.properties ?? {};
+        const line = [p.housenumber && p.street ? p.housenumber + ' ' + p.street : p.street,
+          p.city ?? p.district, p.state, p.country].filter(Boolean).join(', ');
+        return {
+          key: 'r' + i + (p.osm_id ?? ''),
+          name: p.name || p.street || q,
+          address: line || p.name || q,
+        };
+      });
+    };
 
     const timer = setTimeout(async () => {
       try {
@@ -87,27 +106,36 @@ export function VenueSearch({
                 placeId: p.placeId,
               };
             });
-          setRemote(items);
+
+          // Google answered but found nothing — try the open dataset before
+          // telling the user there is nothing there
+          if (items.length === 0) {
+            const osm = await searchOsm();
+            if (cancelled) return;
+            setRemote(osm);
+            setNote(osm.length ? 'OpenStreetMap' : null);
+          } else {
+            setRemote(items);
+            setNote(null);
+          }
         } else {
-          const url = 'https://photon.komoot.io/api/?limit=8&lang=en&q='
-            + encodeURIComponent(q);
-          const res = await fetch(url);
-          const json = await res.json();
+          const items = await searchOsm();
           if (cancelled) return;
-          const items: Suggestion[] = (json.features ?? []).map((f: any, i: number) => {
-            const p = f.properties ?? {};
-            const line = [p.housenumber && p.street ? p.housenumber + ' ' + p.street : p.street,
-              p.city ?? p.district, p.state, p.country].filter(Boolean).join(', ');
-            return {
-              key: 'r' + i + (p.osm_id ?? ''),
-              name: p.name || p.street || q,
-              address: line || p.name || q,
-            };
-          });
           setRemote(items);
+          setNote(null);
         }
       } catch {
-        if (!cancelled) setRemote([]);
+        // Google threw — most often the Places API is not enabled on the key.
+        // Fall back rather than leaving the field dead.
+        try {
+          const osm = await searchOsm();
+          if (!cancelled) {
+            setRemote(osm);
+            setNote(osm.length ? 'OpenStreetMap' : null);
+          }
+        } catch {
+          if (!cancelled) { setRemote([]); setNote(null); }
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -213,12 +241,12 @@ export function VenueSearch({
           {query.trim().length >= 3 && (
             <>
               <p className="eyebrow" style={{ padding: '12px 16px 6px', margin: 0 }}>
-                {loading ? 'Searching…' : googleReady ? 'Google Places' : 'Places'}
+                {loading ? 'Searching…' : note ?? (googleReady ? 'Google Places' : 'Places')}
               </p>
               {remote.map((s) => <Row key={s.key} s={s} onPick={choose} />)}
               {!loading && remote.length === 0 && (
                 <p className="mute small" style={{ padding: '8px 16px 14px', margin: 0 }}>
-                  Nothing found. Use the exact address below.
+                  Nothing found for that. Pick “Use as typed” below, then fill in the address yourself.
                 </p>
               )}
             </>
