@@ -18,8 +18,8 @@ export default async function EventPage({ params }: { params: { id: string } }) 
 
   const { data: e } = await supabase
     .from('events')
-    .select('id,title,kind,description,starts_at,duration_min,seat_cap,status,status_note,original_starts_at,host_id,created_by,chapter_id,venue_id,chapters(city),venues(name,address,notes),profiles:host_id(full_name,intro)')
-    .eq('id', params.id).single();
+    .select('id,title,kind,description,starts_at,duration_min,seat_cap,status,status_note,original_starts_at,host_id,created_by,chapter_id,venue_id,chapters(city),venues(name,address,notes)')
+    .eq('id', params.id).maybeSingle();
   if (!e) notFound();
 
   // People sharing a table are meant to see each other, but the RLS policy on
@@ -52,7 +52,7 @@ export default async function EventPage({ params }: { params: { id: string } }) 
   const hostId = e.host_id ?? e.created_by;
   if (hostId && !personById.has(hostId)) {
     const { data: host } = await db.from('profiles')
-      .select('id,full_name,photo_url,role_level,city,employer,role,speaker_approved')
+      .select('id,full_name,photo_url,role_level,city,employer,role,speaker_approved,intro')
       .eq('id', hostId).maybeSingle();
     if (host) personById.set(host.id, host);
   }
@@ -77,14 +77,19 @@ export default async function EventPage({ params }: { params: { id: string } }) 
     .map((s) => personById.get(s.profile_id)?.role_level)
     .filter(Boolean))] as string[];
 
-  const { data: notice } = e.venue_id
+  const notice = e.venue_id
     ? await db.from('venue_notifications')
-        .select('status,to_email').eq('event_id', e.id).maybeSingle()
-    : { data: null };
+        .select('status,to_email').eq('event_id', e.id)
+        .order('created_at', { ascending: false }).limit(1)
+        .then((r) => r.data?.[0] ?? null)
+        .catch(() => null)
+    : null;
 
-  const { data: venueContact } = e.venue_id
-    ? await db.from('venues').select('contact_email,notify').eq('id', e.venue_id).maybeSingle()
-    : { data: null };
+  const venueContact = e.venue_id
+    ? await db.from('venues').select('contact_email,notify').eq('id', e.venue_id).limit(1)
+        .then((r) => r.data?.[0] ?? null)
+        .catch(() => null)
+    : null;
 
   const canSeat = !!session && (
     session.profile.role === 'admin'
@@ -164,7 +169,7 @@ export default async function EventPage({ params }: { params: { id: string } }) 
             <dt className="eyebrow">Seats</dt>
             <dd style={{ margin: '6px 0 0' }}>{confirmed} confirmed of {e.seat_cap}</dd>
           </div>
-          {(personById.get(hostId ?? '')?.full_name || (e.profiles as any)?.full_name) && (
+          {personById.get(hostId ?? '')?.full_name && (
             <div>
               <dt className="eyebrow">Host</dt>
               <dd style={{ margin: '8px 0 0' }}>
@@ -174,14 +179,14 @@ export default async function EventPage({ params }: { params: { id: string } }) 
                     textDecoration: 'none', color: 'inherit',
                   }}>
                   <Avatar src={personById.get(hostId ?? '')?.photo_url}
-                    name={personById.get(hostId ?? '')?.full_name ?? (e.profiles as any)?.full_name}
+                    name={personById.get(hostId ?? '')?.full_name}
                     size={52} />
                   <span>
                     <span style={{ display: 'block', fontWeight: 600, fontSize: 16.5 }}>
-                      {personById.get(hostId ?? '')?.full_name ?? (e.profiles as any)?.full_name}
+                      {personById.get(hostId ?? '')?.full_name}
                     </span>
                     <span className="mute small">
-                      {[personById.get(hostId ?? '')?.role_level, (e.profiles as any)?.intro]
+                      {[personById.get(hostId ?? '')?.role_level, personById.get(hostId ?? '')?.intro]
                         .filter(Boolean).join(' · ')}
                     </span>
                   </span>
