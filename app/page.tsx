@@ -1,239 +1,133 @@
 import { getSession } from '@/lib/auth';
-import { createClient, createAdminClient } from '@/lib/supabase/server';
-import { isPaid } from '@/lib/tiers';
-import { RsvpButton } from '@/components/RsvpButton';
-import { EventLifecycle } from '@/components/EventLifecycle';
-import { VenuePhoto } from '@/components/VenuePhoto';
-import { LiveSeats } from '@/components/LiveSeats';
-import { EventFilters } from '@/components/EventFilters';
-import { canHostTalks } from '@/lib/permissions';
+import { redirect } from 'next/navigation';
 
-export const dynamic = 'force-dynamic';
+const FEATURES = [
+  ['01', 'Matched meetups', 'Small, real-world groups matched by role and domain — not another networking mixer where you talk to no one relevant.'],
+  ['02', 'Speaker Series', 'Small, matched sessions with senior leaders — direct access, not a broadcast webinar with a thousand other attendees.'],
+  ['03', 'Talent pipeline', "Opt in when you're ready. You control what other members can see, and who may contact you about matched rooms."],
+  ['04', 'City chapters', 'Vancouver and Toronto at launch, each with a Chapter Lead running the local schedule and keeping the room worth showing up to.'],
+];
 
-export const metadata = { title: 'Events — Project Connect' };
-
-const COLS = 'id,title,kind,description,starts_at,seat_cap,status,status_note,original_starts_at,chapters(city),venues(name,address,photo_url),event_seats(id,status,profile_id)';
-
-export default async function EventsPage({ searchParams }: { searchParams: { city?: string; kind?: string } }) {
+export default async function Home() {
   const session = await getSession();
-  const supabase = createClient();
-  const paid = session ? isPaid(session.subscription.tier, session.subscription.status, session.subscription.current_period_end) : false;
-  const isAdmin = session?.profile.role === 'admin';
-  const canTalk = session ? canHostTalks(session.profile) : false;
-
-  const query = isAdmin
-    ? supabase.from('events').select(COLS).order('starts_at')
-    : supabase.from('events').select(COLS)
-        .in('status', ['published', 'postponed'])
-        .gte('starts_at', new Date().toISOString())
-        .order('starts_at');
-
-  const { data: events } = await query;
-
-  // event_seats is RLS-scoped to your own row, so counts read past it
-  const db = createAdminClient();
-  const eventIds = (events ?? []).map((e: any) => e.id);
-  const { data: allSeats } = eventIds.length
-    ? await db.from('event_seats').select('id,event_id,status,profile_id').in('event_id', eventIds)
-    : { data: [] as any[] };
-  const seatsOf = new Map<string, any[]>();
-  for (const s of allSeats ?? []) {
-    if (!seatsOf.has(s.event_id)) seatsOf.set(s.event_id, []);
-    seatsOf.get(s.event_id)!.push(s);
-  }
-  const city = searchParams.city;
-  const kind = searchParams.kind;
-  const rows = (events ?? []).filter((e: any) =>
-    (!city || e.chapters?.city === city) && (!kind || e.kind === kind));
+  if (session) redirect('/dashboard');
 
   return (
-    <main className="wrap">
-      <LiveSeats />
-      <div style={{
-        display: 'flex', gap: 16, alignItems: 'flex-end',
-        justifyContent: 'space-between', flexWrap: 'wrap',
-      }}>
-        <div>
-          <h1>Events</h1>
-          <p className="mute" style={{ marginTop: 10, maxWidth: '58ch' }}>
-            Matched meetups and Speaker Series talks, in one schedule.
-          </p>
-        </div>
-        <div className="row" style={{ gap: 10 }}>
-          {canTalk && (
-            <a className="btn btn-dark" href="/events/new?kind=talk">Schedule a talk</a>
-          )}
-          {session && <a className="btn btn-gold" href="/events/new">Propose a meetup</a>}
-        </div>
-      </div>
-      {isAdmin && (
-        <p className="hint" style={{ marginTop: 8 }}>
-          You're seeing every event, including drafts and past ones, with management controls on each.
-        </p>
-      )}
-
-      <EventFilters city={city} kind={kind} count={rows.length} />
-
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fill, minmax(380px, 1fr))',
-        gap: 22, marginTop: 26, alignItems: 'stretch',
-      }}>
-        {rows.map((e: any) => {
-          const seatRows = seatsOf.get(e.id) ?? e.event_seats ?? [];
-          const confirmed = seatRows.filter((s: any) => s.status === 'confirmed').length;
-          const mine = session ? seatRows.find((s: any) => s.profile_id === session.user.id) : null;
-          const full = confirmed >= e.seat_cap;
-          const locked = e.kind === 'talk' && !paid;
-          const d = new Date(e.starts_at);
-          const cityName = e.chapters?.city ?? '';
-          const address = e.venues?.address
-            ? (e.venues.address.toLowerCase().includes(cityName.toLowerCase())
-                ? e.venues.address
-                : e.venues.address + ', ' + cityName)
-            : null;
-          const left = Math.max(0, e.seat_cap - confirmed);
-
-          return (
-            <article key={e.id} className="surf lift" style={{
-              padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column',
-            }}>
-              <div style={{ position: 'relative' }}>
-                <VenuePhoto photoUrl={e.venues?.photo_url} address={address}
-                  name={e.venues?.name ?? e.title} />
-
-                <div style={{
-                  position: 'absolute', top: 14, left: 14,
-                  width: 58, height: 58, borderRadius: 12, display: 'grid', placeItems: 'center',
-                  background: 'rgba(255,255,255,.94)', border: '1px solid var(--line)',
-                  boxShadow: 'var(--sh)', color: 'var(--gold-700)',
-                  fontFamily: 'var(--font-heading)',
-                }}>
-                  <span style={{ fontSize: 10.5, letterSpacing: '.1em', textTransform: 'uppercase' }}>
-                    {d.toLocaleDateString('en-CA', { month: 'short' })}
-                  </span>
-                  <span style={{ fontSize: 21, lineHeight: 1 }}>{d.getDate()}</span>
-                </div>
-
-                <div style={{
-                  position: 'absolute', top: 14, right: 14, display: 'flex', gap: 6, flexWrap: 'wrap',
-                  justifyContent: 'flex-end', maxWidth: '60%',
-                }}>
-                  <span className="pill" style={{
-                    background: 'rgba(255,255,255,.94)', border: '1px solid var(--line)',
-                    color: 'var(--gold-700)',
-                  }}>
-                    {e.kind === 'talk' ? 'Speaker Series' : 'Meetup'}
-                  </span>
-                  {e.status === 'postponed' && (
-                    <span className="pill" style={{
-                      background: 'rgba(255,255,255,.94)', border: '1px solid var(--line)',
-                      color: 'var(--mute)',
-                    }}>Postponed</span>
-                  )}
-                  {isAdmin && e.status !== 'published' && e.status !== 'postponed' && (
-                    <span className="pill" style={{
-                      background: 'rgba(255,255,255,.94)', border: '1px solid var(--line)',
-                      color: 'var(--gold-700)',
-                    }}>{e.status}</span>
-                  )}
-                  {e.status === 'published' && e.original_starts_at && (
-                    <span className="pill" style={{
-                      background: 'rgba(255,255,255,.94)', border: '1px solid var(--line)',
-                      color: 'var(--gold-700)',
-                    }}>New date</span>
-                  )}
-                </div>
-              </div>
-
-              <div style={{ padding: 22, display: 'flex', flexDirection: 'column', gap: 12, flex: 1 }}>
-                <div>
-                  <p className="eyebrow" style={{ margin: 0 }}>
-                    {cityName} · {d.toLocaleString('en-CA', { weekday: 'long', hour: 'numeric', minute: '2-digit' })}
-                  </p>
-                  <h3 style={{ marginTop: 8, fontSize: 24, lineHeight: 1.12 }}>
-                    <a href={'/events/' + e.id} style={{ textDecoration: 'none', color: 'var(--ink)' }}>
-                      {e.title}
-                    </a>
-                  </h3>
-                  {e.venues?.name && (
-                    <p className="mute small" style={{ marginTop: 6 }}>{e.venues.name}</p>
-                  )}
-                </div>
-
-                {e.status_note && (
-                  <p style={{
-                    margin: 0, padding: '8px 12px', borderRadius: 10, fontSize: 14,
-                    background: 'var(--gold-100)', border: '1px solid var(--gold-200)',
-                    color: 'var(--gold-700)',
-                  }}>{e.status_note}</p>
-                )}
-
-                {e.description && (
-                  <p className="mute" style={{
-                    margin: 0, fontSize: 15, lineHeight: 1.6,
-                    display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
-                    overflow: 'hidden',
-                  }}>{e.description}</p>
-                )}
-
-                <div style={{
-                  marginTop: 'auto', paddingTop: 16, borderTop: '1px solid var(--line)',
-                  display: 'flex', gap: 12, alignItems: 'center',
-                  justifyContent: 'space-between', flexWrap: 'wrap',
-                }}>
-                  <span className="mute small">
-                    {full ? 'Full — waitlist open' : left + (left === 1 ? ' seat left' : ' seats left')}
-                  </span>
-                  {e.status === 'postponed' ? (
-                    <span className="mute small">Awaiting a new date</span>
-                  ) : !session ? (
-                    <a className="btn btn-gold" href="/signup"
-                      style={{ minHeight: 40, padding: '0 16px', fontSize: 14 }}>Join to RSVP</a>
-                  ) : locked ? (
-                    <a className="btn btn-out" href="/pricing"
-                      style={{ minHeight: 40, padding: '0 16px', fontSize: 14 }}>Paid plans only</a>
-                  ) : (
-                    <RsvpButton eventId={e.id} address={address}
-                      status={mine?.status ?? null} full={full} />
-                  )}
-                </div>
-
-                {isAdmin && (
-                  <div style={{
-                    paddingTop: 12, borderTop: '1px dashed var(--line)', display: 'grid', gap: 8,
-                  }}>
-                    <span className="mute" style={{ fontSize: 11.5, letterSpacing: '.08em', textTransform: 'uppercase' }}>
-                      Admin
-                    </span>
-                    <EventLifecycle eventId={e.id} title={e.title} status={e.status}
-                      startsAt={e.starts_at} seatCount={seatRows.length}
-                      canDelete />
-                  </div>
-                )}
-              </div>
-            </article>
-          );
-        })}
-        {!rows.length && (
-          <div className="surf" style={{
-            gridColumn: '1 / -1', padding: 'clamp(28px,5vw,48px)', textAlign: 'center',
+    <main>
+      <section style={{ position: 'relative', overflow: 'hidden', background: 'var(--ink)', color: '#fff' }}>
+        <span aria-hidden style={{
+          position: 'absolute', top: -220, left: '50%', transform: 'translateX(-50%)',
+          width: 900, height: 520, borderRadius: '50%',
+          background: 'radial-gradient(closest-side, rgba(90,116,224,.36), transparent)',
+          filter: 'blur(20px)', pointerEvents: 'none',
+        }} />
+        <div style={{
+          position: 'relative', maxWidth: 1000, margin: '0 auto', textAlign: 'center',
+          padding: 'clamp(56px,8vw,120px) clamp(16px,4vw,40px) clamp(40px,5vw,72px)',
+        }}>
+          <span style={{
+            display: 'inline-flex', alignItems: 'center', gap: 8, whiteSpace: 'nowrap',
+            fontSize: 12.5, letterSpacing: '.06em', textTransform: 'uppercase', color: '#c6cef9',
+            background: 'rgba(255,255,255,.08)', border: '1px solid var(--line-d)',
+            borderRadius: 99, padding: '6px 14px',
+          }}>Vancouver · Toronto</span>
+          <h1 style={{
+            fontSize: 'clamp(44px,7.2vw,104px)', lineHeight: .98,
+            letterSpacing: '-0.025em', margin: '24px 0 0', color: '#fff',
           }}>
-            <h3 style={{ fontSize: 22 }}>
-              {city || kind ? 'No events match that filter' : 'No events yet'}
-            </h3>
-            <p className="mute" style={{ margin: '10px auto 0', maxWidth: '42ch' }}>
-              {city || kind
-                ? 'Try a different chapter or type — or propose one yourself.'
-                : 'Be the first. Pick a coffee shop, a time, and how many people you want around the table.'}
-            </p>
-            {session && (
-              <a className="btn btn-gold" href="/events/new"
-                style={{ marginTop: 18 }}>Propose a meetup</a>
-            )}
+            The network transformation professionals{' '}
+            <span style={{
+              background: 'linear-gradient(100deg,#b3c0f8,#4b62d8)',
+              WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent',
+            }}>actually need.</span>
+          </h1>
+          <p style={{
+            fontSize: 'clamp(16px,1.4vw,19px)', lineHeight: 1.6,
+            margin: '26px auto 0', maxWidth: '62ch', color: 'var(--mute-d)',
+          }}>
+            Matched real-world meetups, Speaker-led access, and a talent pipeline recruiters can
+            actually use — for PM, Product, Agile, QA, Data, Cyber, Cloud, and Delivery professionals.
+          </p>
+          <div className="row" style={{ justifyContent: 'center', marginTop: 34 }}>
+            <a className="btn btn-gold" href="/signup"
+              style={{ minHeight: 52, padding: '0 28px', fontSize: 16 }}>Join Project Connect</a>
+            <a className="btn btn-ondark" href="/pricing"
+              style={{ minHeight: 52, padding: '0 28px', fontSize: 16 }}>See pricing</a>
           </div>
-        )}
-      </div>
+        </div>
+
+        <div style={{ position: 'relative', maxWidth: 1160, margin: '0 auto', padding: '0 clamp(16px,4vw,40px)' }}>
+          <figure style={{
+            margin: 0, position: 'relative', overflow: 'hidden',
+            WebkitMaskImage: 'radial-gradient(120% 100% at 50% 0%, #000 42%, rgba(0,0,0,.55) 72%, transparent 100%)',
+            maskImage: 'radial-gradient(120% 100% at 50% 0%, #000 42%, rgba(0,0,0,.55) 72%, transparent 100%)',
+          }}>
+            <img src="/hero-chapter-meetup.png" alt=""
+              style={{ display: 'block', width: '100%', aspectRatio: '21 / 9',
+                objectFit: 'cover', filter: 'saturate(.85) contrast(1.02)',
+                background: 'linear-gradient(150deg,#1a2148,#3352cf)' }} />
+            <span aria-hidden style={{ position: 'absolute', inset: 0, pointerEvents: 'none',
+              background: 'linear-gradient(to bottom, rgba(13,19,48,.35) 0%, rgba(13,19,48,.05) 40%, rgba(13,19,48,.45) 100%)',
+              mixBlendMode: 'multiply' }} />
+            <span aria-hidden style={{ position: 'absolute', inset: 0, pointerEvents: 'none',
+              background: 'radial-gradient(90% 70% at 50% 10%, rgba(51,82,207,.24), transparent 70%)' }} />
+          </figure>
+        </div>
+      </section>
+
+      <section style={{ maxWidth: 1260, margin: '0 auto', padding: 'clamp(52px,7vw,104px) clamp(16px,4vw,40px)' }}>
+        <div style={{ maxWidth: '34ch' }}>
+          <p className="eyebrow">Why it's different</p>
+          <h2 style={{ fontSize: 'clamp(30px,3.6vw,50px)', lineHeight: 1.04, margin: '14px 0 0' }}>
+            Built for people who are tired of networking that goes nowhere.
+          </h2>
+        </div>
+        <div className="grid g2" style={{ marginTop: 44 }}>
+          {FEATURES.map(([num, title, body]) => (
+            <article key={num} className="surf lift" style={{
+              padding: 26, display: 'flex', flexDirection: 'column', gap: 12,
+              background: 'linear-gradient(180deg,#fff,#fdfcfa)',
+            }}>
+              <span style={{
+                width: 36, height: 36, borderRadius: 11, display: 'grid', placeItems: 'center',
+                background: 'var(--gold-100)', border: '1px solid var(--gold-200)',
+                fontFamily: 'var(--font-heading)', fontWeight: 600, color: 'var(--gold-700)', fontSize: 15,
+              }}>{num}</span>
+              <h3 style={{ margin: 0 }}>{title}</h3>
+              <p className="mute" style={{ fontSize: 14.5, lineHeight: 1.65, margin: 0 }}>{body}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section style={{ maxWidth: 1260, margin: '0 auto', padding: '0 clamp(16px,4vw,40px) clamp(52px,7vw,104px)' }}>
+        <div style={{
+          position: 'relative', overflow: 'hidden', borderRadius: 24,
+          background: 'var(--ink)', color: '#fff', padding: 'clamp(30px,4.5vw,64px)',
+          display: 'grid', gridTemplateColumns: 'minmax(0,7fr) minmax(0,5fr)', gap: 32, alignItems: 'center',
+        }}>
+          <span aria-hidden style={{
+            position: 'absolute', right: -160, bottom: -200, width: 520, height: 420,
+            borderRadius: '50%',
+            background: 'radial-gradient(closest-side, rgba(51,82,207,.32), transparent)',
+            pointerEvents: 'none',
+          }} />
+          <div style={{ position: 'relative' }}>
+            <h2 style={{ fontSize: 'clamp(28px,3.4vw,46px)', lineHeight: 1.03, margin: 0, color: '#fff' }}>
+              Your next meetup is one signup away.
+            </h2>
+            <p style={{ fontSize: 17, lineHeight: 1.6, margin: '16px 0 0', color: 'var(--mute-d)' }}>
+              Free to join. Map your experience once, and let matching do the rest.
+            </p>
+          </div>
+          <div className="row" style={{ position: 'relative', justifyContent: 'flex-end' }}>
+            <a className="btn btn-gold" href="/signup"
+              style={{ minHeight: 50, padding: '0 26px', fontSize: 15 }}>Join Project Connect</a>
+            <a className="btn btn-ondark" href="/pricing"
+              style={{ minHeight: 50, padding: '0 26px', fontSize: 15 }}>Compare plans</a>
+          </div>
+        </div>
+      </section>
     </main>
   );
 }

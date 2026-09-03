@@ -12,7 +12,7 @@ export const dynamic = 'force-dynamic';
 
 export const metadata = { title: 'Events — Project Connect' };
 
-const COLS = 'id,title,kind,description,starts_at,seat_cap,status,status_note,original_starts_at,chapters(city),venues(name,address,photo_url),event_seats(id,status,profile_id)';
+const COLS = 'id,title,kind,description,starts_at,seat_cap,status,status_note,original_starts_at,host_id,created_by,chapters(city),venues(name,address,photo_url),event_seats(id,status,profile_id)';
 
 export default async function EventsPage({ searchParams }: { searchParams: { city?: string; kind?: string } }) {
   const session = await getSession();
@@ -59,7 +59,12 @@ export default async function EventsPage({ searchParams }: { searchParams: { cit
             Matched meetups and Speaker Series talks, in one schedule.
           </p>
         </div>
-        <div className="row" style={{ gap: 10 }}>{canTalk && (<a className="btn btn-dark" href="/events/new?kind=talk">Schedule a talk</a>)}{session && <a className="btn btn-gold" href="/events/new">Propose a meetup</a>}</div>
+        <div className="row" style={{ gap: 10 }}>
+          {canTalk && (
+            <a className="btn btn-dark" href="/events/new?kind=talk">Schedule a talk</a>
+          )}
+          {session && <a className="btn btn-gold" href="/events/new">Propose a meetup</a>}
+        </div>
       </div>
       {isAdmin && (
         <p className="hint" style={{ marginTop: 8 }}>
@@ -76,7 +81,10 @@ export default async function EventsPage({ searchParams }: { searchParams: { cit
       }}>
         {rows.map((e: any) => {
           const seatRows = seatsOf.get(e.id) ?? e.event_seats ?? [];
-          const confirmed = seatRows.filter((s: any) => s.status === 'confirmed').length;
+          // a talk's speaker presents rather than attends, so is not a seat
+          const presenterId = e.kind === 'talk' ? (e.host_id ?? e.created_by) : null;
+          const confirmed = seatRows.filter((s: any) =>
+            s.status === 'confirmed' && s.profile_id !== presenterId).length;
           const mine = session ? seatRows.find((s: any) => s.profile_id === session.user.id) : null;
           const full = confirmed >= e.seat_cap;
           const locked = e.kind === 'talk' && !paid;
@@ -210,7 +218,24 @@ export default async function EventsPage({ searchParams }: { searchParams: { cit
             </article>
           );
         })}
-        {!rows.length && <p className="mute">No events yet. Propose one from the button above.</p>}
+        {!rows.length && (
+          <div className="surf" style={{
+            gridColumn: '1 / -1', padding: 'clamp(28px,5vw,48px)', textAlign: 'center',
+          }}>
+            <h3 style={{ fontSize: 22 }}>
+              {city || kind ? 'No events match that filter' : 'No events yet'}
+            </h3>
+            <p className="mute" style={{ margin: '10px auto 0', maxWidth: '42ch' }}>
+              {city || kind
+                ? 'Try a different chapter or type — or propose one yourself.'
+                : 'Be the first. Pick a coffee shop, a time, and how many people you want around the table.'}
+            </p>
+            {session && (
+              <a className="btn btn-gold" href="/events/new"
+                style={{ marginTop: 18 }}>Propose a meetup</a>
+            )}
+          </div>
+        )}
       </div>
     </main>
   );

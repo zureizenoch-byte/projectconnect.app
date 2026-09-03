@@ -280,8 +280,10 @@ export async function createEvent(formData: FormData) {
     await notifyVenue(created.id).catch(() => {});
   }
 
-  // The host is at their own table — take one of the seats for them.
-  if (created?.id) {
+  // A meetup host is one of the people at the table, so they take a seat.
+  // A Speaker Series speaker presents to the room — the seat cap is the
+  // audience, so they are listed as the speaker instead of occupying one.
+  if (created?.id && kind === 'meetup') {
     const db = createAdminClient();
     await db.from('event_seats').insert({
       event_id: created.id, profile_id: profile.id, status: 'confirmed',

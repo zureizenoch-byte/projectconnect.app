@@ -62,8 +62,15 @@ export default async function EventPage({ params }: { params: { id: string } }) 
     domainsOf.get(t.profile_id)!.push(t.value);
   }
 
-  const going = (seats ?? []).filter((s) => s.status === 'confirmed');
-  const waitlist = (seats ?? []).filter((s) => s.status === 'waitlist');
+  // On a talk the speaker presents rather than attends, so they sit outside
+  // the audience count. On a meetup the host is one of the people at the table.
+  const speakerId = e.kind === 'talk' ? (e.host_id ?? e.created_by) : null;
+  const isSpeakerSeat = (pid: string) => speakerId !== null && pid === speakerId;
+
+  const going = (seats ?? [])
+    .filter((s) => s.status === 'confirmed' && !isSpeakerSeat(s.profile_id));
+  const waitlist = (seats ?? [])
+    .filter((s) => s.status === 'waitlist' && !isSpeakerSeat(s.profile_id));
 
   const mixDomains = [...new Set(going.flatMap((s) => domainsOf.get(s.profile_id) ?? []))];
   const mixLevels = [...new Set(going
@@ -87,7 +94,7 @@ export default async function EventPage({ params }: { params: { id: string } }) 
   );
 
 
-  const confirmed = (seats ?? []).filter((s) => s.status === 'confirmed').length;
+  const confirmed = going.length;
   const mine = session ? (seats ?? []).find((s) => s.profile_id === session.user.id) : null;
   const paid = session ? isPaid(session.subscription.tier, session.subscription.status, session.subscription.current_period_end) : false;
   const d = new Date(e.starts_at);
@@ -224,9 +231,37 @@ export default async function EventPage({ params }: { params: { id: string } }) 
       </div>
 
       <section className="surf" style={{ padding: 'clamp(22px,3vw,30px)', marginTop: 18 }}>
+        {speakerId && personById.get(speakerId) && (
+          <div style={{
+            display: 'flex', gap: 14, alignItems: 'center', flexWrap: 'wrap',
+            padding: '16px 18px', marginBottom: 22, borderRadius: 14,
+            background: 'var(--gold-100)', border: '1px solid var(--gold-200)',
+          }}>
+            <a href={'/members/' + speakerId}
+              style={{ display: 'flex', gap: 12, alignItems: 'center', textDecoration: 'none', color: 'inherit' }}>
+              <Avatar src={personById.get(speakerId)?.photo_url}
+                name={personById.get(speakerId)?.full_name} size={56} />
+              <span>
+                <span className="eyebrow" style={{ margin: 0 }}>Hosted by</span>
+                <span style={{ display: 'block', fontWeight: 600, fontSize: 17, marginTop: 2 }}>
+                  {personById.get(speakerId)?.full_name ?? 'Speaker'}
+                </span>
+                {personById.get(speakerId)?.role_level && (
+                  <span className="mute small">{personById.get(speakerId)?.role_level}</span>
+                )}
+              </span>
+            </a>
+            <span className="mute small" style={{ marginLeft: 'auto', maxWidth: '30ch' }}>
+              Presenting, so not counted against the seats below.
+            </span>
+          </div>
+        )}
+
         <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-end' }}>
           <div>
-            <h2 style={{ fontSize: 26 }}>Who's coming</h2>
+            <h2 style={{ fontSize: 26 }}>
+              {e.kind === 'talk' ? 'Who\u2019s attending' : 'Who\u2019s coming'}
+            </h2>
             {going.length > 0 && (
               <p className="mute small" style={{ margin: '6px 0 0' }}>
                 {describeMix(mixDomains, mixLevels)}
@@ -238,7 +273,9 @@ export default async function EventPage({ params }: { params: { id: string } }) 
 
         {going.length === 0 ? (
           <p className="mute" style={{ marginTop: 16 }}>
-            Nobody yet. Take the first seat and others will be matched around you.
+            {e.kind === 'talk'
+              ? 'No seats taken yet. Be the first in the room.'
+              : 'Nobody yet. Take the first seat and others will be matched around you.'}
           </p>
         ) : (
           <div style={{

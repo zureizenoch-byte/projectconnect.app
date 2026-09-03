@@ -80,7 +80,7 @@ export default async function SpeakerPage() {
       <h2 style={{ marginTop: 34 }}>Talks you're hosting</h2>
       <div className="grid" style={{ marginTop: 16 }}>
         {upcoming.map((t: any) => {
-          const confirmed = (t.event_seats ?? []).filter((s: any) => s.status === 'confirmed').length;
+          const confirmed = (t.event_seats ?? []).filter((s: any) => s.status === 'confirmed' && s.profile_id !== profile.id).length;
           return (
             <section key={t.id} className="surf" style={{ padding: 22 }}>
               <div className="row" style={{ alignItems: 'flex-start' }}>
@@ -136,7 +136,7 @@ export default async function SpeakerPage() {
                 <td>{t.title}</td>
                 <td className="mute">{t.chapters?.city}</td>
                 <td className="mute">
-                  {(t.event_seats ?? []).filter((s: any) => s.status === 'confirmed').length} of {t.seat_cap}
+                  {(t.event_seats ?? []).filter((s: any) => s.status === 'confirmed' && s.profile_id !== profile.id).length} of {t.seat_cap}
                 </td>
               </tr>
             ))}
