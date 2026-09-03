@@ -35,7 +35,7 @@ export default async function VenuesPage() {
               padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column',
             }}>
               <div style={{ position: 'relative' }}>
-                <VenuePhoto photoUrl={v.photo_url} address={full} name={v.name} />
+                <VenuePhoto photoUrl={v.photo_url} address={full} name={v.name} city={city} />
                 <span className="pill" style={{
                   position: 'absolute', top: 12, left: 12,
                   background: 'rgba(255,255,255,.94)', border: '1px solid var(--line)',

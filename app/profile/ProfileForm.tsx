@@ -15,7 +15,7 @@ type Tag = { category: string; value: string; is_custom: boolean };
 
 export function ProfileForm({ profile, tags }: { profile: Profile; tags: Tag[] }) {
   const [photo, setPhoto] = useState<string | null>(profile.photo_url);
-  const [pending, start] = useTransition();
+  const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [isStudent, setIsStudent] = useState(profile.is_student);
   const [isImmigrant, setIsImmigrant] = useState(profile.is_immigrant);
@@ -28,9 +28,14 @@ export function ProfileForm({ profile, tags }: { profile: Profile; tags: Tag[] }
       onSubmit={(e) => {
         e.preventDefault();
         const fd = new FormData(e.currentTarget);
-        start(async () => {
-          const res = await saveProfile(fd);
+        setSaving(true);
+        setMsg(null);
+        saveProfile(fd).then((res) => {
+          setSaving(false);
           setMsg(res?.error ?? 'Saved.');
+        }).catch(() => {
+          setSaving(false);
+          setMsg('Could not save — check your connection and try again.');
         });
       }}>
 
@@ -172,10 +177,10 @@ export function ProfileForm({ profile, tags }: { profile: Profile; tags: Tag[] }
         </label>
       </div>
 
-      {msg && <p className={msg === 'Saved.' ? 'hint' : 'err'} style={msg === 'Saved.' ? { color: 'var(--ok)' } : undefined}>{msg}</p>}
+      {msg && msg !== 'Saved.' && <p className="err">{msg}</p>}
       <div className="row" style={{ paddingTop: 18, borderTop: '1px solid var(--line)' }}>
-        <button className="btn btn-primary" type="submit" disabled={pending}>
-          {pending ? 'Saving…' : 'Save profile'}
+        <button className="btn btn-primary" type="submit" disabled={saving}>
+          {saving ? 'Saving…' : msg === 'Saved.' ? 'Saved' : 'Save profile'}
         </button>
       </div>
     </form>
@@ -183,7 +188,7 @@ export function ProfileForm({ profile, tags }: { profile: Profile; tags: Tag[] }
 }
 
 function PhotoUpload({ current, onChange }: { current: string | null; onChange: (url: string | null) => void }) {
-  const [pending, start] = useTransition();
+  const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [isError, setIsError] = useState(false);
 

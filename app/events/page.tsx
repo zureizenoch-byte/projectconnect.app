@@ -103,7 +103,7 @@ export default async function EventsPage({ searchParams }: { searchParams: { cit
             }}>
               <div style={{ position: 'relative' }}>
                 <VenuePhoto photoUrl={e.venues?.photo_url} address={address}
-                  name={e.venues?.name ?? e.title} />
+                  name={e.venues?.name ?? e.title} city={cityName} kind={e.kind} />
 
                 <div style={{
                   position: 'absolute', top: 14, left: 14,
@@ -140,12 +140,16 @@ export default async function EventsPage({ searchParams }: { searchParams: { cit
                       color: 'var(--gold-700)',
                     }}>{e.status}</span>
                   )}
-                  {e.status === 'published' && e.original_starts_at && (
+                  {e.status === 'published' && e.status_note?.startsWith('Back on') ? (
+                    <span className="pill" style={{
+                      background: '#e8f6ed', border: '1px solid #bde5cb', color: 'var(--ok)',
+                    }}>Back on</span>
+                  ) : e.status === 'published' && e.original_starts_at ? (
                     <span className="pill" style={{
                       background: 'rgba(255,255,255,.94)', border: '1px solid var(--line)',
                       color: 'var(--gold-700)',
                     }}>New date</span>
-                  )}
+                  ) : null}
                 </div>
               </div>
 

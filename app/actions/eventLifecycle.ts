@@ -154,8 +154,11 @@ export async function restoreEvent(formData: FormData) {
   const { ev, profile, db } = ctx;
 
   const iso = new Date(newStart).toISOString();
+  const moved = new Date(iso).getTime() !== new Date(ev.starts_at).getTime();
+
   const { error } = await db.from('events').update({
-    status: 'published', starts_at: iso, status_note: null,
+    status: 'published', starts_at: iso,
+    status_note: 'Back on' + (moved ? ' \u2014 new date confirmed' : ''),
     status_changed_at: new Date().toISOString(), status_changed_by: profile.id,
   }).eq('id', eventId);
   if (error) return { error: error.message };
@@ -168,14 +171,34 @@ export async function restoreEvent(formData: FormData) {
   await db.rpc('notify_event_attendees', {
     ev_id: eventId,
     n_kind: 'event.restored',
-    n_title: ev.title + ' is back on',
-    n_body: whenText(iso) + '. Your seat is still yours.',
+    n_title: 'Good news \u2014 ' + ev.title + ' is back on',
+    n_body: (moved ? 'New date: ' : 'Still ') + whenText(iso)
+      + '. Your seat was held the whole time, so there is nothing to do but turn up.',
     actor: profile.id,
   });
 
+  // everyone else in the chapter gets told it is open again
+  await db.from('notifications').insert(
+    ((await db.from('profiles').select('id')
+      .eq('chapter_id', ev.chapter_id).neq('id', profile.id)).data ?? [])
+      .map((p: any) => ({
+        profile_id: p.id,
+        kind: 'event.restored',
+        title: ev.title + ' is back on the calendar',
+        body: whenText(iso) + '. Seats are open again.',
+        href: '/events/' + eventId,
+        actor_id: profile.id,
+      })),
+  );
+
   revalidatePath('/events');
   revalidatePath('/chapter');
-  return { ok: 'Back on the calendar.' };
+  revalidatePath('/dashboard');
+  return {
+    ok: moved
+      ? 'Back on for ' + whenText(iso) + '. Seat holders and the chapter have been told.'
+      : 'Back on. Seat holders and the chapter have been told.',
+  };
 }
 
 /**
