@@ -1,10 +1,12 @@
 'use client';
 import { useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import { VenueSearch } from '@/components/VenueSearch';
 import { saveVenue } from '@/app/actions/admin';
 import { mapsUrl } from '@/lib/matching';
 
 export function VenueForm({ chapters }: { chapters: { id: string; city: string }[] }) {
+  const router = useRouter();
   const [pending, start] = useTransition();
   const [msg, setMsg] = useState<string | null>(null);
   const [chapterId, setChapterId] = useState(chapters[0]?.id ?? '');
@@ -33,11 +35,11 @@ export function VenueForm({ chapters }: { chapters: { id: string; city: string }
         const form = e.currentTarget;
         start(async () => {
           const res = await saveVenue(fd);
-          setMsg(res?.error ?? 'Venue added.');
-          if (!res?.error) {
-            form.reset();
-            setPlace({ name: '', address: '' });
-          }
+          if (res?.error) { setMsg(res.error); return; }
+          setMsg('Venue added — it is in the table below. Search another to add one more.');
+          form.reset();
+          setPlace({ name: '', address: '' });
+          router.refresh();
         });
       }}>
 
@@ -58,10 +60,13 @@ export function VenueForm({ chapters }: { chapters: { id: string; city: string }
         <VenueSearch
           venues={[]}
           city={cityName}
-          onPick={(v: any) => setPlace({
-            name: v.name, address: v.address,
-            website: v.website, phone: v.phone, photoUrl: v.photoUrl,
-          })} />
+          onPick={(v: any) => {
+            setMsg(null);
+            setPlace({
+              name: v.name, address: v.address,
+              website: v.website, phone: v.phone, photoUrl: v.photoUrl,
+            });
+          }} />
         <span className="hint">
           Search by name or address. The name and address below fill in automatically, and you can edit them.
         </span>
@@ -154,7 +159,9 @@ export function VenueForm({ chapters }: { chapters: { id: string; city: string }
       </label>
 
       {msg && (
-        <p className="hint" style={{ color: msg === 'Venue added.' ? 'var(--ok)' : 'var(--err)' }}>{msg}</p>
+        <p className="hint" style={{ color: msg.startsWith('Venue added') ? 'var(--ok)' : 'var(--err)' }}>
+          {msg}
+        </p>
       )}
 
       <div className="row" style={{ gap: 12 }}>
