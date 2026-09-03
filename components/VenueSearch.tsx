@@ -65,84 +65,22 @@ export function VenueSearch({
     let cancelled = false;
     setLoading(true);
 
-    // Photon (OpenStreetMap) — the safety net when Google is unavailable or
-    // its Places API is not enabled on the key
-    const searchOsm = async (): Promise<Suggestion[]> => {
-      const url = 'https://photon.komoot.io/api/?limit=8&lang=en&q=' + encodeURIComponent(q);
-      const res = await fetch(url);
-      const json = await res.json();
-      return (json.features ?? []).map((f: any, i: number) => {
-        const p = f.properties ?? {};
-        const line = [p.housenumber && p.street ? p.housenumber + ' ' + p.street : p.street,
-          p.city ?? p.district, p.state, p.country].filter(Boolean).join(', ');
-        return {
-          key: 'r' + i + (p.osm_id ?? ''),
-          name: p.name || p.street || q,
-          address: line || p.name || q,
-        };
-      });
-    };
-
     const timer = setTimeout(async () => {
       try {
-        if (googleReady) {
-          const g = (window as any).google;
-          const { suggestions } = await g.maps.places.AutocompleteSuggestion
-            .fetchAutocompleteSuggestions({
-              input: q,
-              sessionToken: sessionToken.current,
-            });
-
-          if (cancelled) return;
-          const items: Suggestion[] = (suggestions ?? [])
-            .filter((s: any) => s.placePrediction)
-            .slice(0, 6)
-            .map((s: any, i: number) => {
-              const p = s.placePrediction;
-              return {
-                key: 'g' + i + p.placeId,
-                name: p.mainText?.text ?? p.text?.text ?? q,
-                address: p.secondaryText?.text ?? p.text?.text ?? '',
-                placeId: p.placeId,
-              };
-            });
-
-          // Google answered but found nothing — try the open dataset before
-          // telling the user there is nothing there
-          if (items.length === 0) {
-            const osm = await searchOsm();
-            if (cancelled) return;
-            setRemote(osm);
-            setNote(osm.length ? 'OpenStreetMap' : null);
-          } else {
-            setRemote(items);
-            setNote(null);
-          }
-        } else {
-          const items = await searchOsm();
-          if (cancelled) return;
-          setRemote(items);
-          setNote(null);
-        }
+        const res = await fetch('/api/places?q=' + encodeURIComponent(q), { cache: 'no-store' });
+        const json = await res.json();
+        if (cancelled) return;
+        setRemote(json.results ?? []);
+        setNote(json.error ? 'Lookup unavailable' : (json.source ?? null));
       } catch {
-        // Google threw — most often the Places API is not enabled on the key.
-        // Fall back rather than leaving the field dead.
-        try {
-          const osm = await searchOsm();
-          if (!cancelled) {
-            setRemote(osm);
-            setNote(osm.length ? 'OpenStreetMap' : null);
-          }
-        } catch {
-          if (!cancelled) { setRemote([]); setNote(null); }
-        }
+        if (!cancelled) { setRemote([]); setNote('Lookup unavailable'); }
       } finally {
         if (!cancelled) setLoading(false);
       }
     }, 300);
 
     return () => { cancelled = true; clearTimeout(timer); };
-  }, [query, googleReady]);
+  }, [query]);
 
   const q = query.trim().toLowerCase();
   const savedMatches: Suggestion[] = venues

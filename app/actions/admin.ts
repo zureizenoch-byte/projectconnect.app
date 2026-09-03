@@ -108,6 +108,25 @@ export async function decideAccessRequest(requestId: string, approve: boolean) {
   if (decideError) return { error: decideError.message };
 
   if (approve) {
+    // Chapter Leads pay like members — the role assumes an active plan
+    if (req.kind === 'chapter_lead') {
+      const { data: sub } = await admin.from('subscriptions')
+        .select('tier,status,current_period_end').eq('profile_id', req.profile_id).maybeSingle();
+      const { isPaid } = await import('@/lib/tiers');
+      const paid = sub ? isPaid(sub.tier, sub.status, sub.current_period_end) : false;
+
+      if (!paid) {
+        // leave the request pending so it can be approved once they subscribe
+        await admin.from('access_requests').update({
+          status: 'pending', decided_by: null, decided_at: null,
+        }).eq('id', requestId);
+        return {
+          error: 'Chapter Lead access needs an active paid plan. Ask them to subscribe, '
+            + 'then approve this again — the application stays in the queue.',
+        };
+      }
+    }
+
     const res = await applyRole(req.profile_id, req.kind, req.chapter_id);
     if (res.error) return res;
   }

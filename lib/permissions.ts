@@ -7,6 +7,10 @@ export function canHostTalks(p: Profile) {
 export function canRunChapter(p: Profile) {
   return (p.role === 'chapter_lead' && !!p.lead_chapter_id) || p.role === 'admin';
 }
+/** Chapter Leads pay like members, so a lapsed plan is worth surfacing. */
+export function leadNeedsPlan(p: Profile, paid: boolean) {
+  return p.role === 'chapter_lead' && !paid;
+}
 export function isAdmin(p: Profile) {
   return p.role === 'admin';
 }

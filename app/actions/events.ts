@@ -202,6 +202,31 @@ export async function matchAttendees(eventId: string) {
   };
 }
 
+/** Mark someone present at the door. Chapter Leads, hosts and admins. */
+export async function toggleCheckIn(seatId: string, present: boolean) {
+  const { profile } = await requireSession();
+  const db = createAdminClient();
+
+  const { data: seat } = await db.from('event_seats')
+    .select('id,event_id,events(chapter_id,host_id,created_by)').eq('id', seatId).maybeSingle();
+  if (!seat) return { error: 'Seat not found' };
+
+  const e = seat.events as any;
+  const allowed = isAdmin(profile)
+    || e?.host_id === profile.id
+    || e?.created_by === profile.id
+    || (canRunChapter(profile) && profile.lead_chapter_id === e?.chapter_id);
+  if (!allowed) return { error: 'Not your event' };
+
+  const { error } = await db.from('event_seats')
+    .update({ checked_in: present }).eq('id', seatId);
+  if (error) return { error: error.message };
+
+  revalidatePath('/chapter');
+  revalidatePath('/events/' + seat.event_id);
+  return { ok: true };
+}
+
 export async function setTable(seatId: string, tableNo: number | null) {
   const { profile } = await requireSession();
   if (!canRunChapter(profile)) return { error: 'Chapter Leads and admins only' };
