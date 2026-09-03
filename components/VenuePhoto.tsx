@@ -1,3 +1,7 @@
+'use client';
+
+import { useState } from 'react';
+
 /**
  * A photograph of a venue.
  *
@@ -16,6 +20,7 @@ export function VenuePhoto({
   height?: number;
 }) {
   const key = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+  const [broken, setBroken] = useState(false);
   // a venue with no street address still has a city worth showing
   const query = address ?? (city ? city + ', Canada' : null);
 
@@ -28,8 +33,11 @@ export function VenuePhoto({
     background: 'linear-gradient(140deg,var(--gold-100),#e6ebfb)',
   };
 
-  if (photoUrl) {
-    return <img src={photoUrl} alt={name} loading="lazy" style={frame} />;
+  if (photoUrl && !broken) {
+    return (
+      <img src={photoUrl} alt={name} loading="lazy" style={frame}
+        onError={() => setBroken(true)} />
+    );
   }
 
   if (query && key) {
@@ -37,7 +45,10 @@ export function VenuePhoto({
       + '?size=640x320&fov=80&pitch=5&source=outdoor'
       + '&location=' + encodeURIComponent(query)
       + '&key=' + key;
-    return <img src={streetView} alt={name} loading="lazy" style={frame} />;
+    return (
+      <img src={streetView} alt={name} loading="lazy" style={frame}
+        onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
+    );
   }
 
   if (query) {
