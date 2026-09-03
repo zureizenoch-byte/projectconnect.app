@@ -31,8 +31,20 @@ export function VenueForm({ chapters }: { chapters: { id: string; city: string }
       }}
       onSubmit={(e) => {
         e.preventDefault();
-        const fd = new FormData(e.currentTarget);
         const form = e.currentTarget;
+
+        if (!place.name.trim()) {
+          setMsg('Give the venue a name — search for it, or type it in the Venue name field.');
+          (form.querySelector('[name="name"]') as HTMLInputElement | null)?.focus();
+          return;
+        }
+        if (!place.address.trim()) {
+          setMsg('Add the street address so members can find it.');
+          (form.querySelector('[name="address"]') as HTMLInputElement | null)?.focus();
+          return;
+        }
+
+        const fd = new FormData(form);
         start(async () => {
           const res = await saveVenue(fd);
           if (res?.error) { setMsg(res.error); return; }
@@ -74,12 +86,12 @@ export function VenueForm({ chapters }: { chapters: { id: string; city: string }
 
       <div className="grid g2">
         <label className="fld"><span>Venue name</span>
-          <input name="name" required value={place.name}
-            onChange={(e) => setPlace((p) => ({ ...p, name: e.target.value }))} />
+          <input name="name" value={place.name} placeholder="Gastown Coffee Room"
+            onChange={(e) => { setMsg(null); setPlace((p) => ({ ...p, name: e.target.value })); }} />
         </label>
         <label className="fld"><span>Address</span>
-          <input name="address" required value={place.address}
-            onChange={(e) => setPlace((p) => ({ ...p, address: e.target.value }))} />
+          <input name="address" value={place.address} placeholder="300 Water St"
+            onChange={(e) => { setMsg(null); setPlace((p) => ({ ...p, address: e.target.value })); }} />
         </label>
       </div>
 
@@ -165,7 +177,7 @@ export function VenueForm({ chapters }: { chapters: { id: string; city: string }
       )}
 
       <div className="row" style={{ gap: 12 }}>
-        <button className="btn btn-primary" type="submit" disabled={pending || !ready}>
+        <button className="btn btn-primary" type="submit" disabled={pending}>
           {pending ? 'Adding…' : 'Add venue'}
         </button>
         <span className="mute" style={{ fontSize: 14 }}>
