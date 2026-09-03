@@ -105,7 +105,16 @@ export default async function DashboardPage() {
 
       <div className="grid" style={{ gridTemplateColumns: 'minmax(0,5fr) minmax(0,3fr) minmax(0,4fr)', marginTop: 26 }}>
         <div className="surf" style={{ padding: 24, background: 'linear-gradient(160deg,var(--gold-100),#fff)' }}>
-          <p className="eyebrow">Your next event</p>
+          <div className="row" style={{ gap: 8, justifyContent: 'space-between' }}>
+            <p className="eyebrow" style={{ margin: 0 }}>Your next event</p>
+            {next?.events && (
+              <span className="pill" style={{
+                background: '#fff', border: '1px solid var(--gold-200)', color: 'var(--gold-700)',
+              }}>
+                {next.events.kind === 'talk' ? 'Speaker Series' : 'Coffee meetup'}
+              </span>
+            )}
+          </div>
           {next ? (
             <>
               <h2 style={{ marginTop: 10, fontSize: 24 }}>
@@ -160,7 +169,8 @@ export default async function DashboardPage() {
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <strong style={{ fontSize: 15 }}>{s.events?.title}</strong>
                   <p className="small mute" style={{ margin: '2px 0 0' }}>
-                    {s.events && new Date(s.events.starts_at).toLocaleDateString('en-CA', { dateStyle: 'medium' })}
+                    {s.events?.kind === 'talk' ? 'Speaker Series' : 'Coffee meetup'}
+                    {s.events ? ' · ' + new Date(s.events.starts_at).toLocaleDateString('en-CA', { dateStyle: 'medium' }) : ''}
                   </p>
                 </div>
                 <span className={'pill ' + (
