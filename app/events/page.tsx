@@ -193,6 +193,10 @@ export default async function EventsPage({ searchParams }: { searchParams: { cit
                   ) : !session ? (
                     <a className="btn btn-gold" href="/signup"
                       style={{ minHeight: 40, padding: '0 16px', fontSize: 14 }}>Join to RSVP</a>
+                  ) : session && (e.host_id === session.user.id || e.created_by === session.user.id) ? (
+                    <span className="pill pill-ok" style={{ fontSize: 11.5 }}>
+                      {e.kind === 'talk' ? "You're speaking" : "You're hosting"}
+                    </span>
                   ) : locked ? (
                     <a className="btn btn-out" href="/pricing"
                       style={{ minHeight: 40, padding: '0 16px', fontSize: 14 }}>Paid plans only</a>

@@ -29,6 +29,19 @@ export async function rsvp(eventId: string) {
   const { user } = await requireSession();
   const supabase = createClient();
 
+  // Hosting is not an RSVP: a speaker presents to their own room and a meetup
+  // host is already at their table. Guarded here too, not just in the UI.
+  const { data: ev } = await createAdminClient()
+    .from('events').select('kind,host_id,created_by').eq('id', eventId).maybeSingle();
+
+  if (ev && (ev.host_id === user.id || ev.created_by === user.id)) {
+    return {
+      error: ev.kind === 'talk'
+        ? 'You are speaking at this one — your place is at the front.'
+        : 'You are hosting this one, so your seat is already held.',
+    };
+  }
+
   const { data: existing } = await supabase
     .from('event_seats').select('id,status')
     .eq('event_id', eventId).eq('profile_id', user.id).maybeSingle();

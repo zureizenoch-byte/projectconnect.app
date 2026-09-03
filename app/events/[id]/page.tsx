@@ -91,6 +91,12 @@ export default async function EventPage({ params }: { params: { id: string } }) 
         .catch(() => null)
     : null;
 
+  // Hosting is not an RSVP decision: a speaker presents to their own room, and
+  // a meetup host is already at their own table. Neither gets a seat button.
+  const isOwnEvent = !!session && (
+    e.host_id === session.user.id || e.created_by === session.user.id
+  );
+
   const canSeat = !!session && (
     session.profile.role === 'admin'
     || e.host_id === session.user.id
@@ -219,6 +225,17 @@ export default async function EventPage({ params }: { params: { id: string } }) 
         <div style={{ marginTop: 22, paddingTop: 20, borderTop: '1px solid var(--line)' }}>
           {!session ? (
             <a className="btn btn-gold" href="/signup">Join to RSVP</a>
+          ) : isOwnEvent ? (
+            <div>
+              <span className="pill pill-ok" style={{ fontSize: 12 }}>
+                {e.kind === 'talk' ? "You're speaking" : "You're hosting"}
+              </span>
+              <p className="hint">
+                {e.kind === 'talk'
+                  ? 'Your seat is at the front, so it is not counted against the audience. Manage the talk from your Speaker page.'
+                  : 'Your seat is held as the host. To step back, cancel the meetup rather than your seat.'}
+              </p>
+            </div>
           ) : e.status === 'postponed' ? (
             <p className="mute" style={{ margin: 0 }}>Awaiting a new date — your seat is held.</p>
           ) : e.status === 'cancelled' ? (
