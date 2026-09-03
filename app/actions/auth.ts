@@ -18,7 +18,7 @@ const SignupSchema = z.object({
   confirm: z.string(),
   full_name: z.string().min(2),
   pronouns: z.string().optional(),
-  role: z.enum(['member', 'student', 'speaker', 'chapter_lead']),
+  role: z.enum(['member', 'student', 'speaker']),
   city: z.string().min(2),
   is_immigrant: z.coerce.boolean().optional(),
   agree: z.literal('on', { errorMap: () => ({ message: 'You must agree to the Terms and Privacy Policy' }) }),
@@ -55,9 +55,7 @@ export async function signUp(_prev: ActionState, formData: FormData): Promise<Ac
       data: {
         full_name: d.full_name,
         pronouns: d.pronouns ?? null,
-        // Speaker and Chapter Lead are granted by an admin, so the account
-        // starts as an ordinary member and an application is filed below.
-        role: d.role === 'chapter_lead' ? 'member' : d.role,
+        role: d.role,
         city: d.city,
         is_student: d.role === 'student',
         is_immigrant: !!d.is_immigrant,
@@ -65,18 +63,6 @@ export async function signUp(_prev: ActionState, formData: FormData): Promise<Ac
     },
   });
   if (error) return { error: error.message };
-
-  // Chapter Lead applications go straight to the admin queue
-  if (data.user && d.role === 'chapter_lead') {
-    const { data: chapter } = await supabase
-      .from('chapters').select('id').eq('city', d.city).maybeSingle();
-    await supabase.from('access_requests').insert({
-      profile_id: data.user.id,
-      kind: 'chapter_lead',
-      chapter_id: chapter?.id ?? null,
-      note: (formData.get('lead_note') ? String(formData.get('lead_note')) : '').slice(0, 2000),
-    });
-  }
 
   // consent record — one row per document, with the version the user actually saw
   if (data.user) {

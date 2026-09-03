@@ -9,7 +9,6 @@ const JOIN_AS: [string, string, string][] = [
   ['member', 'Member', 'Matched meetups and Speaker Series talks in your chapter.'],
   ['student', 'Student', 'Same rooms, with student-specific profile fields.'],
   ['speaker', 'Speaker', 'Host Speaker Series talks. An admin approves speaker accounts.'],
-  ['chapter_lead', 'Chapter Lead', 'Run your city\u2019s calendar and seating. Needs a paid plan and admin approval.'],
 ];
 
 export function SignupForm() {
@@ -42,24 +41,6 @@ export function SignupForm() {
           ))}
         </div>
       </fieldset>
-
-      {role === 'chapter_lead' && (
-        <div style={{
-          padding: '16px 18px', marginBottom: 24, borderRadius: 14,
-          background: 'var(--gold-100)', border: '1px solid var(--gold-200)',
-        }}>
-          <p className="eyebrow" style={{ margin: 0 }}>Your application</p>
-          <p className="mute small" style={{ margin: '6px 0 12px' }}>
-            You\u2019ll join as a member straight away. An admin reads this and grants Chapter
-            Lead access, which needs a paid plan — that keeps leads invested in their own chapter.
-          </p>
-          <label className="fld" style={{ marginBottom: 0 }}>
-            <span>Why you, and what you\u2019d run</span>
-            <textarea name="lead_note" rows={5} required
-              placeholder="The city you'd lead, your experience convening people, and how often you'd run rooms." />
-          </label>
-        </div>
-      )}
 
       <label className="fld"><span>Pronouns</span>
         <input name="pronouns" placeholder="she/her, he/him, they/them" />
