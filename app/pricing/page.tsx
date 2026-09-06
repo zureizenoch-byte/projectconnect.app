@@ -23,7 +23,7 @@ export default async function PricingPage() {
       <h1>Pricing</h1>
       <p className="mute" style={{ marginTop: 10, maxWidth: '60ch' }}>
         Free covers one event per cycle. Paid plans open every meetup and every Speaker Series talk
-        in your chapter. Longer plans cost less per month — each card shows what it saves against
+        in your chapter. Longer plans cost less per month — each card shows the discount against
         paying monthly.
       </p>
 
@@ -39,12 +39,6 @@ export default async function PricingPage() {
                 borderColor: popular ? 'var(--gold)' : 'var(--line)',
                 boxShadow: popular ? '0 14px 34px -14px rgba(51,82,207,.5)' : 'var(--sh)',
               }}>
-              {value && value.saving > 0 && (
-                <span className="pill" style={{
-                  position: 'absolute', top: 14, right: 14,
-                  background: '#e8f6ed', border: '1px solid #bde5cb', color: 'var(--ok)',
-                }}>Save {value.saving}%</span>
-              )}
               {popular && (
                 <span className="pill" style={{
                   display: 'inline-flex', marginBottom: 12,
@@ -53,18 +47,23 @@ export default async function PricingPage() {
                 }}>Most popular</span>
               )}
               <p className="eyebrow">{plan.label}</p>
-              <p style={{ fontFamily: 'var(--font-heading)', fontSize: 38, margin: '10px 0 0' }}>{plan.price}</p>
-              <p className="mute small" style={{ margin: 0 }}>{plan.cadence}</p>
+              <div className="row" style={{ gap: 10, alignItems: 'baseline', marginTop: 10 }}>
+                <span style={{ fontFamily: 'var(--font-heading)', fontSize: 38, lineHeight: 1 }}>
+                  {plan.price}
+                </span>
+                {value && value.saving > 0 && (
+                  <span className="pill" style={{
+                    background: '#e8f6ed', border: '1px solid #bde5cb', color: 'var(--ok)',
+                  }}>Save {value.saving}%</span>
+                )}
+              </div>
+              <p className="mute small" style={{ margin: '6px 0 0' }}>{plan.cadence}</p>
               {value && value.saving > 0 && (
-                <p className="small" style={{ margin: '8px 0 0', color: 'var(--gold-700)' }}>
-                  {value.perMonth} a month · {value.savedTotal} less than paying monthly
+                <p className="small" style={{ margin: '6px 0 0', color: 'var(--gold-700)' }}>
+                  {value.perMonth} a month
                 </p>
               )}
-              {tier === 'monthly' && (
-                <p className="small mute" style={{ margin: '8px 0 0' }}>
-                  The baseline every other plan is measured against
-                </p>
-              )}
+
               <ul className="mute small" style={{ paddingLeft: 18, marginTop: 14, lineHeight: 1.8 }}>
                 {FEATURES[tier].map((f) => <li key={f}>{f}</li>)}
               </ul>
