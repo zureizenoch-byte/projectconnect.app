@@ -6,6 +6,7 @@ import { mapsUrl } from '@/lib/matching';
 import { RsvpButton } from '@/components/RsvpButton';
 import { MatchAttendeesButton } from '@/components/MatchAttendeesButton';
 import { Avatar } from '@/components/Avatar';
+import { MemberBadge } from '@/components/MemberBadge';
 import { LiveSeats } from '@/components/LiveSeats';
 import { VenueNotice } from '@/components/VenueNotice';
 import { describeMix } from '@/lib/matching';
@@ -47,6 +48,11 @@ export default async function EventPage({ params }: { params: { id: string } }) 
   ]);
 
   const personById = new Map((people ?? []).map((x: any) => [x.id, x]));
+
+  const { data: attendeePlans } = attendeeIds.length
+    ? await db.from('subscriptions').select('profile_id,tier,status').in('profile_id', attendeeIds)
+    : { data: [] as any[] };
+  const planOf = new Map((attendeePlans ?? []).map((s: any) => [s.profile_id, s]));
 
   // The host may predate having a seat, so fetch them regardless
   const hostId = e.host_id ?? e.created_by;
@@ -321,8 +327,10 @@ export default async function EventPage({ params }: { params: { id: string } }) 
                       {s.profile_id === hostId && (
                         <span className="pill pill-wait" style={{ marginLeft: 6, fontSize: 10 }}>Host</span>
                       )}
-                      {person?.speaker_approved && s.profile_id !== hostId && (
-                        <span className="pill pill-wait" style={{ marginLeft: 6, fontSize: 10 }}>Speaker</span>
+                      {s.profile_id !== hostId && (
+                        <MemberBadge role={person?.role} speakerApproved={person?.speaker_approved}
+                          tier={planOf.get(s.profile_id)?.tier}
+                          status={planOf.get(s.profile_id)?.status} size="sm" />
                       )}
                     </span>
                     {person?.role_level && (

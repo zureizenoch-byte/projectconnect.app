@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import { requireSession } from '@/lib/auth';
 import { createAdminClient } from '@/lib/supabase/server';
 import { Avatar } from '@/components/Avatar';
+import { isRecurring } from '@/components/MemberBadge';
 import { MessageButton } from '@/components/MessageButton';
 
 export const dynamic = 'force-dynamic';
@@ -46,6 +47,10 @@ export default async function MemberProfile({ params }: { params: { id: string }
   const showCity = isSelf || isAdmin || (privacy?.show_city ?? true);
   const allowContact = privacy?.allow_contact ?? true;
 
+  const { data: plan } = await db.from('subscriptions')
+    .select('tier,status').eq('profile_id', params.id).maybeSingle();
+  const premium = isRecurring(plan?.tier, plan?.status);
+
   const { data: tags } = await db.from('profile_tags')
     .select('category,value').eq('profile_id', params.id);
 
@@ -60,74 +65,108 @@ export default async function MemberProfile({ params }: { params: { id: string }
   }
 
   const roleLabel = person.role === 'admin' ? 'Admin'
-    : person.role === 'speaker' && person.speaker_approved ? 'Speaker'
+    : person.role === 'speaker' ? 'Speaker'
     : person.role === 'chapter_lead' ? 'Chapter Lead'
     : person.role === 'student' ? 'Student' : 'Member';
 
   return (
     <main className="wrap" style={{ maxWidth: 900 }}>
-      <a href="/dashboard" className="small mute">← Back to dashboard</a>
+      <a href="/dashboard" className="mute" style={{ fontSize: 15 }}>← Back to dashboard</a>
 
-      <header className="surf" style={{ padding: 'clamp(24px,3.5vw,36px)', marginTop: 16 }}>
-        <div className="row" style={{ gap: 22, alignItems: 'flex-start' }}>
-          <Avatar src={person.photo_url} name={person.full_name} email={person.email} size={112} />
-          <div style={{ flex: 1, minWidth: 240 }}>
-            <div className="row" style={{ gap: 10 }}>
-              <h1 style={{ fontSize: 'clamp(28px,3vw,38px)', margin: 0 }}>
-                {person.full_name || 'Member'}
-              </h1>
-              {person.pronouns && <span className="mute" style={{ fontSize: 15 }}>{person.pronouns}</span>}
-              <span className={'pill ' + (person.role === 'admin' ? 'pill-ok' : 'pill-wait')}>{roleLabel}</span>
-            </div>
-            {person.role_level && (
-              <p style={{ fontSize: 17, margin: '8px 0 0' }}>
-                {person.role_level}
-                {showEmployer && person.employer ? ' · ' + person.employer : ''}
-              </p>
+      <header className="surf" style={{ marginTop: 16, overflow: 'hidden' }}>
+        <div style={{
+          height: 132,
+          background: 'linear-gradient(120deg, var(--ink) 0%, var(--gold-700) 58%, var(--grn) 100%)',
+        }} />
+        <div style={{ padding: '0 clamp(22px,3.5vw,38px) clamp(26px,3.5vw,34px)' }}>
+          <div style={{ marginTop: -62, display: 'inline-block' }}>
+            <Avatar src={person.photo_url} name={person.full_name} email={person.email} size={136} ring />
+          </div>
+
+          <div className="row" style={{ gap: 12, marginTop: 16, alignItems: 'baseline' }}>
+            <h1 style={{ fontSize: 'clamp(34px,3.8vw,48px)', margin: 0 }}>
+              {person.full_name || 'Member'}
+            </h1>
+            {person.pronouns && (
+              <span className="mute" style={{ fontSize: 17 }}>{person.pronouns}</span>
             )}
+            <span className={'pill ' + (person.role === 'admin' ? 'pill-ok' : 'pill-wait')}>{roleLabel}</span>
+            {premium && (
+              <span className="pill" style={{
+                background: 'linear-gradient(100deg,var(--gold),var(--grn))',
+                border: '1px solid transparent', color: '#fff',
+              }}>Premium</span>
+            )}
+          </div>
+
+          {person.role_level && (
+            <p style={{ fontSize: 21, lineHeight: 1.4, margin: '10px 0 0', fontWeight: 500 }}>
+              {person.role_level}
+              {showEmployer && person.employer && (
+                <span className="mute" style={{ fontWeight: 400 }}> · {person.employer}</span>
+              )}
+            </p>
+          )}
+
+          <div className="row" style={{ gap: 16, marginTop: 10 }}>
             {showCity && person.city && (
-              <p className="mute small" style={{ margin: '4px 0 0' }}>{person.city} chapter</p>
+              <span className="mute" style={{ fontSize: 16 }}>{person.city} chapter</span>
             )}
-            {person.intro && (
-              <p style={{ fontSize: 16, lineHeight: 1.65, margin: '14px 0 0', maxWidth: '60ch' }}>
-                {person.intro}
-              </p>
+            {person.years_experience != null && (
+              <span className="mute" style={{ fontSize: 16 }}>{person.years_experience} years' experience</span>
             )}
-            <div className="row" style={{ gap: 10, marginTop: 18 }}>
-              {isSelf && <a className="btn btn-primary" href="/profile">Edit my profile</a>}
-              {!isSelf && allowContact && (
-                <MessageButton otherId={person.id} />
-              )}
-              {person.linkedin_url && (
-                <a className="btn btn-out" href={person.linkedin_url} target="_blank" rel="noopener noreferrer">
-                  LinkedIn
-                </a>
-              )}
-            </div>
+          </div>
+
+          {person.intro && (
+            <p style={{ fontSize: 18.5, lineHeight: 1.65, margin: '18px 0 0', maxWidth: '58ch' }}>
+              {person.intro}
+            </p>
+          )}
+
+          <div className="row" style={{ gap: 10, marginTop: 24 }}>
+            {isSelf && <a className="btn btn-primary" href="/profile">Edit my profile</a>}
+            {!isSelf && allowContact && <MessageButton otherId={person.id} />}
+            {person.linkedin_url && (
+              <a className="btn btn-out" href={person.linkedin_url} target="_blank" rel="noopener noreferrer">
+                LinkedIn
+              </a>
+            )}
           </div>
         </div>
       </header>
 
       {(person.open_to_mentoring || person.seeking_mentor) && (
-        <div className="row" style={{ gap: 8, marginTop: 16 }}>
-          {person.open_to_mentoring && <span className="tag">Open to mentoring</span>}
-          {person.seeking_mentor && <span className="tag">Looking for a mentor</span>}
+        <div className="row" style={{ gap: 10, marginTop: 18 }}>
+          {person.open_to_mentoring && (
+            <span className="tag" style={{ fontSize: 15, padding: '7px 15px' }}>Open to mentoring</span>
+          )}
+          {person.seeking_mentor && (
+            <span className="tag" style={{ fontSize: 15, padding: '7px 15px' }}>Looking for a mentor</span>
+          )}
         </div>
       )}
 
-      <section className="surf" style={{ padding: 'clamp(22px,3vw,32px)', marginTop: 18 }}>
-        <h2 style={{ fontSize: 24 }}>Experience</h2>
+      <section className="surf" style={{ padding: 'clamp(24px,3.2vw,36px)', marginTop: 18 }}>
+        <h2 style={{ fontSize: 30 }}>Experience</h2>
         {grouped.size === 0 ? (
-          <p className="mute" style={{ marginTop: 12 }}>
+          <p className="mute" style={{ marginTop: 14, fontSize: 17 }}>
             {isSelf ? "You haven't mapped your experience yet." : 'Nothing mapped yet.'}
           </p>
         ) : (
-          <div className="grid" style={{ gap: 20, marginTop: 18 }}>
+          <div style={{
+            display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(300px,1fr))',
+            gap: 28, marginTop: 24,
+          }}>
             {GROUPS.filter(([key]) => grouped.has(key)).map(([key, label]) => (
               <div key={key}>
-                <p className="eyebrow">{label}</p>
-                <div className="chips" style={{ marginTop: 8 }}>
-                  {grouped.get(key)!.map((v) => <span key={v} className="tag">{v}</span>)}
+                <p style={{
+                  fontSize: 13.5, fontWeight: 600, letterSpacing: '.09em',
+                  textTransform: 'uppercase', color: 'var(--gold-700)', margin: 0,
+                }}>{label}</p>
+                <div className="chips" style={{ marginTop: 11 }}>
+                  {grouped.get(key)!.map((v) => (
+                    <span key={v} className="tag" style={{ fontSize: 15, padding: '7px 14px' }}>{v}</span>
+                  ))}
                 </div>
               </div>
             ))}
@@ -136,15 +175,19 @@ export default async function MemberProfile({ params }: { params: { id: string }
       </section>
 
       {!!posts?.length && (
-        <section className="surf" style={{ padding: 'clamp(22px,3vw,32px)', marginTop: 18 }}>
-          <h2 style={{ fontSize: 24 }}>Recent posts</h2>
-          <div className="grid" style={{ gap: 14, marginTop: 16 }}>
+        <section className="surf" style={{ padding: 'clamp(24px,3.2vw,36px)', marginTop: 18 }}>
+          <h2 style={{ fontSize: 30 }}>Recent posts</h2>
+          <div className="grid" style={{ gap: 18, marginTop: 20 }}>
             {posts.map((p: any) => (
-              <article key={p.id} style={{ borderLeft: '2px solid var(--gold-200)', paddingLeft: 14 }}>
-                <p className="mute small" style={{ margin: 0 }}>
+              <article key={p.id} style={{
+                borderLeft: '3px solid var(--gold-200)', paddingLeft: 18,
+              }}>
+                <p className="mute" style={{ margin: 0, fontSize: 14.5 }}>
                   {new Date(p.created_at).toLocaleDateString('en-CA', { dateStyle: 'medium' })}
                 </p>
-                <p style={{ margin: '4px 0 0', whiteSpace: 'pre-wrap' }}>{p.body}</p>
+                <p style={{ margin: '6px 0 0', fontSize: 17, lineHeight: 1.65, whiteSpace: 'pre-wrap' }}>
+                  {p.body}
+                </p>
               </article>
             ))}
           </div>

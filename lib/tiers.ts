@@ -23,3 +23,32 @@ export function cycleBounds(now = new Date()) {
   const end = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
   return { start: start.toISOString(), end: end.toISOString() };
 }
+
+/** How many months each plan covers, for comparing like with like. */
+export const PLAN_MONTHS: Record<string, number> = {
+  monthly: 1, six_month: 6, annual: 12, twelve_month: 12,
+};
+
+const AMOUNT: Record<string, number> = {
+  free: 0, monthly: 7.99, six_month: 35, annual: 49, twelve_month: 49,
+};
+
+/**
+ * What a plan works out to per month, and what that saves against paying
+ * monthly — the only honest way to compare a pass with a subscription.
+ */
+export function planValue(tier: string) {
+  const months = PLAN_MONTHS[tier];
+  const amount = AMOUNT[tier];
+  if (!months || !amount) return null;
+
+  const perMonth = amount / months;
+  const baseline = AMOUNT.monthly;
+  const saving = Math.round((1 - perMonth / baseline) * 100);
+
+  return {
+    perMonth: '$' + perMonth.toFixed(2),
+    saving: saving > 0 ? saving : 0,
+    savedTotal: '$' + (baseline * months - amount).toFixed(2),
+  };
+}

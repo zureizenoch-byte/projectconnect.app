@@ -35,11 +35,11 @@ export default async function Home() {
             fontSize: 'clamp(44px,7.2vw,104px)', lineHeight: .98,
             letterSpacing: '-0.025em', margin: '24px 0 0', color: '#fff',
           }}>
-            Good coffee{" "}
             <span style={{
-              background: 'linear-gradient(100deg,#b3c0f8,#4b62d8)',
+              background: 'linear-gradient(100deg,#f0d9a8,#c9922f)',
               WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent',
-            }}>and the people who make projects happen.</span>
+            }}>Good coffee</span>{' '}
+            and the people who make projects happen.
           </h1>
           <p style={{
             fontSize: 'clamp(16px,1.4vw,19px)', lineHeight: 1.6,
@@ -79,7 +79,7 @@ export default async function Home() {
         <div style={{ maxWidth: '34ch' }}>
           <p className="eyebrow">Why it's different</p>
           <h2 style={{ fontSize: 'clamp(30px,3.6vw,50px)', lineHeight: 1.04, margin: '14px 0 0' }}>
-            Built for people who are tired of networking that goes nowhere.
+Built for people who are tired of networking that goes nowhere.
           </h2>
         </div>
         <div className="grid g2" style={{ marginTop: 44 }}>

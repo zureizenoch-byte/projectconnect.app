@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import { requireSession } from '@/lib/auth';
 import { createAdminClient } from '@/lib/supabase/server';
 import { Avatar } from '@/components/Avatar';
+import { isRecurring } from '@/components/MemberBadge';
 import { MessageButton } from '@/components/MessageButton';
 
 export const dynamic = 'force-dynamic';
@@ -46,6 +47,10 @@ export default async function MemberProfile({ params }: { params: { id: string }
   const showCity = isSelf || isAdmin || (privacy?.show_city ?? true);
   const allowContact = privacy?.allow_contact ?? true;
 
+  const { data: plan } = await db.from('subscriptions')
+    .select('tier,status').eq('profile_id', params.id).maybeSingle();
+  const premium = isRecurring(plan?.tier, plan?.status);
+
   const { data: tags } = await db.from('profile_tags')
     .select('category,value').eq('profile_id', params.id);
 
@@ -86,6 +91,12 @@ export default async function MemberProfile({ params }: { params: { id: string }
               <span className="mute" style={{ fontSize: 17 }}>{person.pronouns}</span>
             )}
             <span className={'pill ' + (person.role === 'admin' ? 'pill-ok' : 'pill-wait')}>{roleLabel}</span>
+            {premium && (
+              <span className="pill" style={{
+                background: 'linear-gradient(100deg,var(--gold),var(--grn))',
+                border: '1px solid transparent', color: '#fff',
+              }}>Premium</span>
+            )}
           </div>
 
           {person.role_level && (
