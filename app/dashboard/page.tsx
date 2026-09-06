@@ -1,298 +1,134 @@
-import { requireSession } from '@/lib/auth';
-import { createClient } from '@/lib/supabase/server';
-import { isPaid } from '@/lib/tiers';
-import { mapsUrl } from '@/lib/matching';
-import { TAG_CATEGORIES } from '@/lib/types';
-import { PostForm } from './PostForm';
-import { Avatar } from '@/components/Avatar';
-import { PostActions } from './PostActions';
-import { PostEngagement } from './PostEngagement';
+import { getSession } from '@/lib/auth';
+import { redirect } from 'next/navigation';
 
-export const dynamic = 'force-dynamic';
+const FEATURES = [
+  ['01', 'Matched meetups', 'Small, real-world groups matched by role and domain — not another networking mixer where you talk to no one relevant.'],
+  ['02', 'Speaker Series', 'Small, matched sessions with senior leaders — direct access, not a broadcast webinar with a thousand other attendees.'],
+  ['03', 'Talent pipeline', "Opt in when you're ready. You control what other members can see, and who may contact you about matched rooms."],
+  ['04', 'City chapters', 'Vancouver and Toronto at launch, each with a Chapter Lead running the local schedule and keeping the room worth showing up to.'],
+];
 
-export const metadata = { title: 'Dashboard — Project Connect' };
-
-export default async function DashboardPage() {
-  const { user, profile, subscription } = await requireSession();
-  const supabase = createClient();
-  const paid = isPaid(subscription.tier, subscription.status, subscription.current_period_end);
-
-  const [{ data: seats }, { data: tags }, { data: posts, error: postsError }] = await Promise.all([
-    supabase.from('event_seats')
-      .select('id,status,table_no,events(id,title,kind,starts_at,seat_cap,status,status_note,venues(name,address))')
-      .eq('profile_id', user.id).neq('status', 'cancelled')
-      .order('created_at', { ascending: false }),
-    supabase.from('profile_tags').select('category').eq('profile_id', user.id),
-    supabase.from('posts')
-      .select('id,body,created_at,author_id,chapter_id')
-      .order('created_at', { ascending: false }).limit(50),
-  ]);
-
-  const postIds = (posts ?? []).map((p: any) => p.id);
-  const authorIds = Array.from(new Set((posts ?? []).map((p: any) => p.author_id)));
-
-  const safe = async (fn: () => any): Promise<any[]> => {
-    try {
-      const res = await fn();
-      return res?.data ?? [];
-    } catch {
-      return [];
-    }
-  };
-
-  const PERSON = 'id,full_name,photo_url,role_level,city,role,speaker_approved';
-
-  const [authors, likes, comments] = await Promise.all([
-    authorIds.length
-      ? safe(() => supabase.from('profiles').select(PERSON).in('id', authorIds))
-      : Promise.resolve([] as any[]),
-    postIds.length
-      ? safe(() => supabase.from('post_likes').select('post_id,profile_id').in('post_id', postIds))
-      : Promise.resolve([] as any[]),
-    postIds.length
-      ? safe(() => supabase.from('post_comments').select('id,post_id,body,created_at,author_id').in('post_id', postIds))
-      : Promise.resolve([] as any[]),
-  ]);
-
-  const authorMap = new Map<string, any>((authors ?? []).map((a: any) => [a.id, a]));
-  // always trust the session for your own rows, even if the lookup is blocked
-  authorMap.set(user.id, {
-    id: user.id,
-    full_name: profile.full_name ?? authorMap.get(user.id)?.full_name ?? null,
-    photo_url: profile.photo_url ?? authorMap.get(user.id)?.photo_url ?? null,
-    role_level: profile.role_level ?? authorMap.get(user.id)?.role_level ?? null,
-    city: profile.city ?? authorMap.get(user.id)?.city ?? null,
-    role: profile.role,
-    speaker_approved: profile.speaker_approved,
-  });
-
-  const commenterIds = Array.from(new Set((comments ?? []).map((c: any) => c.author_id)))
-    .filter((id: any) => !authorMap.has(id));
-  if (commenterIds.length) {
-    const extra = await safe(() => supabase.from('profiles').select(PERSON).in('id', commenterIds));
-    for (const a of extra) authorMap.set(a.id, a);
-  }
-
-  // A speaker holds no seat at their own talk, so hosted events were invisible
-  // here and the next event was whichever one they had a seat at.
-  const { data: hosted } = await supabase
-    .from('events')
-    .select('id,title,kind,starts_at,seat_cap,status,status_note,venues(name,address)')
-    .or('host_id.eq.' + user.id + ',created_by.eq.' + user.id)
-    .neq('status', 'cancelled')
-    .gte('starts_at', new Date().toISOString())
-    .order('starts_at');
-
-  const seatEventIds = new Set((seats ?? []).map((s: any) => s.events?.id).filter(Boolean));
-
-  const hostedRows: any[] = (hosted ?? [])
-    .filter((e: any) => !seatEventIds.has(e.id))
-    .map((e: any) => ({
-      id: 'host-' + e.id,
-      status: e.kind === 'talk' ? 'speaking' : 'hosting',
-      table_no: null,
-      events: e,
-    }));
-
-  const allRows: any[] = [...(seats ?? []), ...hostedRows];
-
-  const upcoming: any[] = allRows
-    .filter((s: any) => s.events && new Date(s.events.starts_at) > new Date())
-    .sort((a: any, b: any) => +new Date(a.events.starts_at) - +new Date(b.events.starts_at));
-  const next = upcoming[0];
-
-  const filledGroups = new Set((tags ?? []).map((t: any) => t.category)).size;
-  const strength = Math.round((filledGroups / TAG_CATEGORIES.length) * 100);
+export default async function Home() {
+  const session = await getSession();
+  if (session) redirect('/dashboard');
 
   return (
-    <main className="wrap">
-      <div style={{
-        display: 'flex', gap: 18, alignItems: 'center',
-        justifyContent: 'space-between', flexWrap: 'wrap',
-      }}>
-        <h1>Dashboard</h1>
-
-        <a href={'/members/' + user.id}
-          style={{ display: 'flex', gap: 16, alignItems: 'center', color: 'inherit', textDecoration: 'none' }}>
-          <Avatar src={profile.photo_url} name={profile.full_name} email={profile.email} size={104} />
-          <div style={{ minWidth: 0 }}>
-            <p style={{ margin: 0, fontSize: 21, fontWeight: 600 }}>
-              {profile.full_name || 'Your profile'}
-            </p>
-            <p className="mute" style={{ margin: '4px 0 0', fontSize: 15 }}>
-              {[profile.role_level, profile.city].filter(Boolean).join(' · ')}
-            </p>
-          </div>
-        </a>
-      </div>
-
-      <div className="grid" style={{ gridTemplateColumns: 'minmax(0,5fr) minmax(0,3fr) minmax(0,4fr)', marginTop: 26 }}>
-        <div className="surf" style={{ padding: 24, background: 'linear-gradient(160deg,var(--gold-100),#fff)' }}>
-          <div className="row" style={{ gap: 8, justifyContent: 'space-between' }}>
-            <p className="eyebrow" style={{ margin: 0 }}>Your next event</p>
-            {next?.events && (
-              <span className="pill" style={{
-                background: '#fff', border: '1px solid var(--gold-200)', color: 'var(--gold-700)',
-              }}>
-                {next.status === 'speaking' ? 'You are speaking'
-                  : next.status === 'hosting' ? 'You are hosting'
-                    : next.events.kind === 'talk' ? 'Speaker Series' : 'Coffee meetup'}
-              </span>
-            )}
-          </div>
-          {next ? (
-            <>
-              <h2 style={{ marginTop: 10, fontSize: 24 }}>
-                <a href={'/events/' + next.events.id} className="evlink"
-                  style={{ color: 'inherit' }}>
-                  {next.events.title}
-                </a>
-              </h2>
-              <p className="mute" style={{ marginTop: 8 }}>
-                {new Date(next.events.starts_at).toLocaleString('en-CA', { dateStyle: 'full', timeStyle: 'short' })}
-              </p>
-              <p className="mute">{next.events.venues?.name}{next.table_no ? ' · Table ' + next.table_no : ''}</p>
-              <div className="row" style={{ marginTop: 18 }}>
-                {next.events.venues?.address && (
-                  <a className="btn btn-out" target="_blank" rel="noopener noreferrer"
-                    href={mapsUrl(next.events.venues.address)}>Directions</a>
-                )}
-                <a className="btn btn-gold" href="/events">See all events</a>
-              </div>
-            </>
-          ) : (
-            <>
-              <p style={{ marginTop: 10 }}>Nothing booked yet.</p>
-              <a className="btn btn-gold" href="/events" style={{ marginTop: 14 }}>Find an event</a>
-            </>
-          )}
-        </div>
-
-        <div className="surf" style={{ padding: 24 }}>
-          <p className="eyebrow">Profile strength</p>
-          <p style={{ fontFamily: 'var(--font-heading)', fontSize: 40, margin: '10px 0 0' }}>{strength}%</p>
-          <div style={{ height: 8, borderRadius: 99, background: 'var(--gold-100)', marginTop: 12, overflow: 'hidden' }}>
-            <span style={{ display: 'block', width: strength + '%', height: '100%',
-              background: 'linear-gradient(90deg,var(--gold),var(--gold-700))' }} />
-          </div>
-          <p className="small mute" style={{ marginTop: 10 }}>
-            {strength < 100 ? 'Fill in more groups under Your experience to sharpen matching.' : 'Fully mapped.'}
+    <main>
+      <section style={{ position: 'relative', overflow: 'hidden', background: 'var(--ink)', color: '#fff' }}>
+        <span aria-hidden style={{
+          position: 'absolute', top: -220, left: '50%', transform: 'translateX(-50%)',
+          width: 900, height: 520, borderRadius: '50%',
+          background: 'radial-gradient(closest-side, rgba(185,138,46,.30), rgba(90,116,224,.22), transparent)',
+          filter: 'blur(20px)', pointerEvents: 'none',
+        }} />
+        <div style={{
+          position: 'relative', maxWidth: 1000, margin: '0 auto', textAlign: 'center',
+          padding: 'clamp(56px,8vw,120px) clamp(16px,4vw,40px) clamp(40px,5vw,72px)',
+        }}>
+          <span style={{
+            display: 'inline-flex', alignItems: 'center', gap: 8, whiteSpace: 'nowrap',
+            fontSize: 12.5, letterSpacing: '.06em', textTransform: 'uppercase', color: '#c6cef9',
+            background: 'rgba(255,255,255,.08)', border: '1px solid var(--line-d)',
+            borderRadius: 99, padding: '6px 14px',
+          }}>Vancouver · Toronto · twelve to fifteen at a table</span>
+          <h1 style={{
+            fontSize: 'clamp(44px,7.2vw,104px)', lineHeight: .98,
+            letterSpacing: '-0.025em', margin: '24px 0 0', color: '#fff',
+          }}>
+            <span style={{
+              background: 'linear-gradient(100deg,#f0d9a8,#c9922f)',
+              WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent',
+            }}>Good coffee</span>{' '}
+            with the people who make projects happen.
+          </h1>
+          <p style={{
+            fontSize: 'clamp(16px,1.4vw,19px)', lineHeight: 1.6,
+            margin: '26px auto 0', maxWidth: '62ch', color: 'var(--mute-d)',
+          }}>
+            Small tables, matched by what you actually deliver, for PM, Product, Agile, QA,
+            Data, Cyber, Cloud and Delivery professionals. Plus Speaker Series sessions you can
+            ask questions in.
           </p>
-          <a className="btn btn-out" href="/profile" style={{ marginTop: 14, width: '100%' }}>Edit profile</a>
-        </div>
-
-        <div className="surf" style={{ padding: 24 }}>
-          <p className="eyebrow">My RSVPs</p>
-          <div className="grid" style={{ gap: 10, marginTop: 14 }}>
-            {allRows
-              .filter((s: any) => s.events)
-              .sort((a: any, b: any) => +new Date(a.events.starts_at) - +new Date(b.events.starts_at))
-              .slice(0, 5).map((s: any) => (
-              <a key={s.id} href={s.events?.id ? '/events/' + s.events.id : '#'}
-                className="row evrow"
-                style={{
-                  border: '1px solid var(--line)', borderRadius: 12, padding: '10px 12px',
-                  color: 'inherit', textDecoration: 'none',
-                }}>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <strong style={{ fontSize: 15 }}>{s.events?.title}</strong>
-                  <p className="small mute" style={{ margin: '2px 0 0' }}>
-                    {s.events?.kind === 'talk' ? 'Speaker Series' : 'Coffee meetup'}
-                    {s.events ? ' · ' + new Date(s.events.starts_at).toLocaleDateString('en-CA', { dateStyle: 'medium' }) : ''}
-                  </p>
-                </div>
-                <span className={'pill ' + (
-                  s.events?.status === 'postponed' ? 'pill-off'
-                    : s.status === 'confirmed' || s.status === 'speaking' || s.status === 'hosting'
-                      ? 'pill-ok'
-                      : s.status === 'waitlist' ? 'pill-off' : 'pill-wait')}>
-                  {s.events?.status === 'postponed' ? 'postponed' : s.status}
-                </span>
-              </a>
-            ))}
-            {!allRows.length && <p className="small mute">No RSVPs yet.</p>}
+          <div className="row" style={{ justifyContent: 'center', marginTop: 34 }}>
+            <a className="btn btn-gold" href="/signup"
+              style={{ minHeight: 52, padding: '0 28px', fontSize: 16 }}>Join Project Connect</a>
+            <a className="btn btn-ondark" href="/pricing"
+              style={{ minHeight: 52, padding: '0 28px', fontSize: 16 }}>See pricing</a>
           </div>
         </div>
-      </div>
 
-      <h2 style={{ marginTop: 34 }}>Feed</h2>
-      <div className="grid" style={{ gridTemplateColumns: 'minmax(0,7fr) minmax(0,4fr)', marginTop: 16, alignItems: 'start' }}>
-        <div className="grid" style={{ gap: 14 }}>
-          <PostForm />
-          {(posts ?? []).map((p: any) => (
-            <article key={p.id} id={'post-' + p.id} className="surf lift" style={{ padding: 24 }}>
-              <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-                <a href={'/members/' + p.author_id} aria-label="View profile" style={{ flex: 'none' }}>
-                  <Avatar src={authorMap.get(p.author_id)?.photo_url}
-                    name={authorMap.get(p.author_id)?.full_name} size={64} />
-                </a>
-                <div style={{ minWidth: 0, flex: 1 }}>
-                  <a href={'/members/' + p.author_id}
-                    style={{ fontWeight: 600, fontSize: 19, color: 'var(--ink)', textDecoration: 'none' }}>
-                    {authorMap.get(p.author_id)?.full_name ?? 'Member'}
-                  </a>
-                  {(authorMap.get(p.author_id)?.speaker_approved
-                    || authorMap.get(p.author_id)?.role === 'speaker') && (
-                    <span className="pill pill-wait" style={{ marginLeft: 8 }}>Speaker</span>
-                  )}
-                  {authorMap.get(p.author_id)?.role_level && (
-                    <p className="mute" style={{ fontSize: 15, margin: '3px 0 0' }}>
-                      {authorMap.get(p.author_id).role_level}
-                    </p>
-                  )}
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
-                  {authorMap.get(p.author_id)?.city && (
-                    <span className="pill pill-wait" style={{ whiteSpace: 'nowrap' }}>
-                      {authorMap.get(p.author_id).city}
-                    </span>
-                  )}
-                  <span className="mute" style={{ fontSize: 13.5, whiteSpace: 'nowrap' }}>
-                    {new Date(p.created_at).toLocaleDateString('en-CA', { month: 'short', day: 'numeric' })}
-                  </span>
-                </div>
-              </div>
-              <p style={{ fontSize: 16.5, lineHeight: 1.7, margin: '18px 0 0', whiteSpace: 'pre-wrap' }}>{p.body}</p>
-              <footer className="row" style={{ gap: 6, marginTop: 18, paddingTop: 14, borderTop: '1px solid var(--line)' }}>
-                <span style={{ marginRight: 'auto' }} />
-                {(p.author_id === user.id || profile.role === 'admin') && <PostActions postId={p.id} />}
-              </footer>
-              <PostEngagement
-                postId={p.id}
-                likeCount={(likes ?? []).filter((l: any) => l.post_id === p.id).length}
-                liked={(likes ?? []).some((l: any) => l.post_id === p.id && l.profile_id === user.id)}
-                comments={(comments ?? [])
-                  .filter((c: any) => c.post_id === p.id)
-                  .sort((a: any, b: any) => +new Date(a.created_at) - +new Date(b.created_at))
-                  .map((c: any) => ({ ...c, commenter: authorMap.get(c.author_id) }))}
-                userId={user.id}
-                isAdmin={profile.role === 'admin'}
-              />
+        <div style={{ position: 'relative', maxWidth: 1160, margin: '0 auto', padding: '0 clamp(16px,4vw,40px)' }}>
+          <figure style={{
+            margin: 0, position: 'relative', overflow: 'hidden',
+            WebkitMaskImage: 'radial-gradient(120% 100% at 50% 0%, #000 42%, rgba(0,0,0,.55) 72%, transparent 100%)',
+            maskImage: 'radial-gradient(120% 100% at 50% 0%, #000 42%, rgba(0,0,0,.55) 72%, transparent 100%)',
+          }}>
+            <img src="/hero-chapter-meetup.png" alt=""
+              style={{ display: 'block', width: '100%', aspectRatio: '21 / 9',
+                objectFit: 'cover', filter: 'saturate(.85) contrast(1.02)',
+                background: 'linear-gradient(150deg,#1a2148,#3352cf)' }} />
+            <span aria-hidden style={{ position: 'absolute', inset: 0, pointerEvents: 'none',
+              background: 'linear-gradient(to bottom, rgba(13,19,48,.35) 0%, rgba(13,19,48,.05) 40%, rgba(13,19,48,.45) 100%)',
+              mixBlendMode: 'multiply' }} />
+            <span aria-hidden style={{ position: 'absolute', inset: 0, pointerEvents: 'none',
+              background: 'radial-gradient(90% 70% at 50% 10%, rgba(51,82,207,.24), transparent 70%)' }} />
+          </figure>
+        </div>
+      </section>
+
+      <section style={{ maxWidth: 1260, margin: '0 auto', padding: 'clamp(52px,7vw,104px) clamp(16px,4vw,40px)' }}>
+        <div style={{ maxWidth: '34ch' }}>
+          <p className="eyebrow">Why it's different</p>
+          <h2 style={{ fontSize: 'clamp(30px,3.6vw,50px)', lineHeight: 1.04, margin: '14px 0 0' }}>
+Built for people who are tired of networking that goes nowhere.
+          </h2>
+        </div>
+        <div className="grid g2" style={{ marginTop: 44 }}>
+          {FEATURES.map(([num, title, body]) => (
+            <article key={num} className="surf lift" style={{
+              padding: 26, display: 'flex', flexDirection: 'column', gap: 12,
+              background: 'linear-gradient(180deg,#fff,#fdfcfa)',
+            }}>
+              <span style={{
+                width: 36, height: 36, borderRadius: 11, display: 'grid', placeItems: 'center',
+                background: 'var(--gold-100)', border: '1px solid var(--gold-200)',
+                fontFamily: 'var(--font-heading)', fontWeight: 600, color: 'var(--gold-700)', fontSize: 15,
+              }}>{num}</span>
+              <h3 style={{ margin: 0 }}>{title}</h3>
+              <p className="mute" style={{ fontSize: 14.5, lineHeight: 1.65, margin: 0 }}>{body}</p>
             </article>
           ))}
-          {postsError && (
-            <div className="surf" style={{ padding: 18, borderColor: 'var(--err)' }}>
-              <strong style={{ color: 'var(--err)' }}>Feed could not load</strong>
-              <p className="small mute" style={{ marginTop: 6, whiteSpace: 'pre-wrap' }}>{postsError.message}</p>
-            </div>
-          )}
-          {!postsError && !posts?.length && <p className="mute">No posts yet. Write the first one above.</p>}
         </div>
+      </section>
 
-        <aside className="surf" style={{ padding: 22, position: 'sticky', top: 84 }}>
-          <p className="eyebrow">Your chapter</p>
-          <h3 style={{ marginTop: 10 }}>{profile.city ?? 'Pick a chapter'}</h3>
-          <p className="small mute" style={{ marginTop: 8 }}>
-            {paid ? 'Unlimited events and Speaker Series talks.' : 'Free covers one event per cycle. Talks need a paid plan.'}
-          </p>
-          <div className="grid" style={{ gap: 8, marginTop: 16 }}>
-            <a className="btn btn-gold" href="/events">See events</a>
-            <a className="btn btn-out" href="/events/new">Propose a meetup</a>
-            <a className="btn btn-out" href="/venues">Chapter venues</a>
-            {!paid && <a className="btn btn-out" href="/pricing">Compare plans</a>}
+      <section style={{ maxWidth: 1260, margin: '0 auto', padding: '0 clamp(16px,4vw,40px) clamp(52px,7vw,104px)' }}>
+        <div style={{
+          position: 'relative', overflow: 'hidden', borderRadius: 24,
+          background: 'var(--ink)', color: '#fff', padding: 'clamp(30px,4.5vw,64px)',
+          display: 'grid', gridTemplateColumns: 'minmax(0,7fr) minmax(0,5fr)', gap: 32, alignItems: 'center',
+        }}>
+          <span aria-hidden style={{
+            position: 'absolute', right: -160, bottom: -200, width: 520, height: 420,
+            borderRadius: '50%',
+            background: 'radial-gradient(closest-side, rgba(51,82,207,.32), transparent)',
+            pointerEvents: 'none',
+          }} />
+          <div style={{ position: 'relative' }}>
+            <h2 style={{ fontSize: 'clamp(28px,3.4vw,46px)', lineHeight: 1.03, margin: 0, color: '#fff' }}>
+              Your next meetup is one signup away.
+            </h2>
+            <p style={{ fontSize: 17, lineHeight: 1.6, margin: '16px 0 0', color: 'var(--mute-d)' }}>
+              Free to join. Map your experience once, and let matching do the rest.
+            </p>
           </div>
-        </aside>
-      </div>
+          <div className="row" style={{ position: 'relative', justifyContent: 'flex-end' }}>
+            <a className="btn btn-gold" href="/signup"
+              style={{ minHeight: 50, padding: '0 26px', fontSize: 15 }}>Join Project Connect</a>
+            <a className="btn btn-ondark" href="/pricing"
+              style={{ minHeight: 50, padding: '0 26px', fontSize: 15 }}>Compare plans</a>
+          </div>
+        </div>
+      </section>
     </main>
   );
 }
