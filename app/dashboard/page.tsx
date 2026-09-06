@@ -73,7 +73,30 @@ export default async function DashboardPage() {
     for (const a of extra) authorMap.set(a.id, a);
   }
 
-  const upcoming: any[] = (seats ?? [])
+  // A speaker holds no seat at their own talk, so hosted events were invisible
+  // here and the next event was whichever one they had a seat at.
+  const { data: hosted } = await supabase
+    .from('events')
+    .select('id,title,kind,starts_at,seat_cap,status,status_note,venues(name,address)')
+    .or('host_id.eq.' + user.id + ',created_by.eq.' + user.id)
+    .neq('status', 'cancelled')
+    .gte('starts_at', new Date().toISOString())
+    .order('starts_at');
+
+  const seatEventIds = new Set((seats ?? []).map((s: any) => s.events?.id).filter(Boolean));
+
+  const hostedRows: any[] = (hosted ?? [])
+    .filter((e: any) => !seatEventIds.has(e.id))
+    .map((e: any) => ({
+      id: 'host-' + e.id,
+      status: e.kind === 'talk' ? 'speaking' : 'hosting',
+      table_no: null,
+      events: e,
+    }));
+
+  const allRows: any[] = [...(seats ?? []), ...hostedRows];
+
+  const upcoming: any[] = allRows
     .filter((s: any) => s.events && new Date(s.events.starts_at) > new Date())
     .sort((a: any, b: any) => +new Date(a.events.starts_at) - +new Date(b.events.starts_at));
   const next = upcoming[0];
@@ -111,7 +134,9 @@ export default async function DashboardPage() {
               <span className="pill" style={{
                 background: '#fff', border: '1px solid var(--gold-200)', color: 'var(--gold-700)',
               }}>
-                {next.events.kind === 'talk' ? 'Speaker Series' : 'Coffee meetup'}
+                {next.status === 'speaking' ? 'You are speaking'
+                  : next.status === 'hosting' ? 'You are hosting'
+                    : next.events.kind === 'talk' ? 'Speaker Series' : 'Coffee meetup'}
               </span>
             )}
           </div>
@@ -159,7 +184,10 @@ export default async function DashboardPage() {
         <div className="surf" style={{ padding: 24 }}>
           <p className="eyebrow">My RSVPs</p>
           <div className="grid" style={{ gap: 10, marginTop: 14 }}>
-            {(seats ?? []).slice(0, 5).map((s: any) => (
+            {allRows
+              .filter((s: any) => s.events)
+              .sort((a: any, b: any) => +new Date(a.events.starts_at) - +new Date(b.events.starts_at))
+              .slice(0, 5).map((s: any) => (
               <a key={s.id} href={s.events?.id ? '/events/' + s.events.id : '#'}
                 className="row evrow"
                 style={{
@@ -175,13 +203,14 @@ export default async function DashboardPage() {
                 </div>
                 <span className={'pill ' + (
                   s.events?.status === 'postponed' ? 'pill-off'
-                    : s.status === 'confirmed' ? 'pill-ok'
+                    : s.status === 'confirmed' || s.status === 'speaking' || s.status === 'hosting'
+                      ? 'pill-ok'
                       : s.status === 'waitlist' ? 'pill-off' : 'pill-wait')}>
                   {s.events?.status === 'postponed' ? 'postponed' : s.status}
                 </span>
               </a>
             ))}
-            {!seats?.length && <p className="small mute">No RSVPs yet.</p>}
+            {!allRows.length && <p className="small mute">No RSVPs yet.</p>}
           </div>
         </div>
       </div>
