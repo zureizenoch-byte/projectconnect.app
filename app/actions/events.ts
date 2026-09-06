@@ -273,7 +273,16 @@ export async function createEvent(formData: FormData) {
     }
   }
   const minSeats = organiser ? 12 : 2;
-  const seatCap = Math.min(15, Math.max(minSeats, Number(formData.get('seat_cap') ?? (organiser ? 15 : 6))));
+  const format = String(formData.get('format') ?? 'in_person') === 'online' ? 'online' : 'in_person';
+  const meetingUrl = String(formData.get('meeting_url') ?? '').trim();
+
+  if (format === 'online' && !/^https?:\/\//i.test(meetingUrl)) {
+    return { error: 'Add the meeting link — the full https:// address.' };
+  }
+
+  // online rooms are not bound by a venue's furniture
+  const ceiling = format === 'online' ? 100 : 15;
+  const seatCap = Math.min(ceiling, Math.max(minSeats, Number(formData.get('seat_cap') ?? (organiser ? 15 : 6))));
   const supabase = createClient();
   const chapterId = String(formData.get('chapter_id'));
 

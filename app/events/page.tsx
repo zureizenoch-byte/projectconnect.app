@@ -4,6 +4,9 @@ import { isPaid } from '@/lib/tiers';
 import { RsvpButton } from '@/components/RsvpButton';
 import { EventLifecycle } from '@/components/EventLifecycle';
 import { VenuePhoto } from '@/components/VenuePhoto';
+import { detectPlatform, PLATFORM_LABEL } from '@/lib/meeting';
+
+const platformLabel = (url?: string | null) => PLATFORM_LABEL[detectPlatform(url)];
 import { LiveSeats } from '@/components/LiveSeats';
 import { EventFilters } from '@/components/EventFilters';
 import { canHostTalks } from '@/lib/permissions';
@@ -44,7 +47,9 @@ export default async function EventsPage({ searchParams }: { searchParams: { cit
   const city = searchParams.city;
   const kind = searchParams.kind;
   const rows = (events ?? []).filter((e: any) =>
-    (!city || e.chapters?.city === city) && (!kind || e.kind === kind));
+    (!city || e.chapters?.city === city)
+    && (!kind
+      || (kind === 'online' ? e.format === 'online' : e.kind === kind)));
 
   return (
     <main className="wrap">
@@ -128,6 +133,12 @@ export default async function EventsPage({ searchParams }: { searchParams: { cit
                   }}>
                     {e.kind === 'talk' ? 'Speaker Series' : 'Meetup'}
                   </span>
+                  {e.format === 'online' && (
+                    <span className="pill" style={{
+                      background: 'rgba(255,255,255,.94)', border: '1px solid var(--line)',
+                      color: 'var(--ink)',
+                    }}>Online</span>
+                  )}
                   {e.status === 'postponed' && (
                     <span className="pill" style={{
                       background: 'rgba(255,255,255,.94)', border: '1px solid var(--line)',
@@ -163,9 +174,13 @@ export default async function EventsPage({ searchParams }: { searchParams: { cit
                       {e.title}
                     </a>
                   </h3>
-                  {e.venues?.name && (
+                  {e.format === 'online' ? (
+                    <p className="mute small" style={{ marginTop: 6 }}>
+                      {platformLabel(e.meeting_url)} · link shared when you take a seat
+                    </p>
+                  ) : e.venues?.name ? (
                     <p className="mute small" style={{ marginTop: 6 }}>{e.venues.name}</p>
-                  )}
+                  ) : null}
                 </div>
 
                 {e.status_note && (

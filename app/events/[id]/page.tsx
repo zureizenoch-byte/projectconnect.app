@@ -7,6 +7,7 @@ import { RsvpButton } from '@/components/RsvpButton';
 import { MatchAttendeesButton } from '@/components/MatchAttendeesButton';
 import { Avatar } from '@/components/Avatar';
 import { MemberBadge } from '@/components/MemberBadge';
+import { JoinPanel } from '@/components/JoinPanel';
 import { LiveSeats } from '@/components/LiveSeats';
 import { VenueNotice } from '@/components/VenueNotice';
 import { describeMix } from '@/lib/matching';
@@ -19,7 +20,7 @@ export default async function EventPage({ params }: { params: { id: string } }) 
 
   const { data: e } = await supabase
     .from('events')
-    .select('id,title,kind,description,starts_at,duration_min,seat_cap,status,status_note,original_starts_at,host_id,created_by,chapter_id,venue_id,chapters(city),venues(name,address,notes)')
+    .select('id,title,kind,description,starts_at,duration_min,seat_cap,status,status_note,original_starts_at,host_id,created_by,chapter_id,venue_id,format,meeting_url,meeting_note,chapters(city),venues(name,address,notes)')
     .eq('id', params.id).maybeSingle();
   if (!e) notFound();
 
@@ -72,6 +73,11 @@ export default async function EventPage({ params }: { params: { id: string } }) 
   // the audience count. On a meetup the host is one of the people at the table.
   const speakerId = e.kind === 'talk' ? (e.host_id ?? e.created_by) : null;
   const isSpeakerSeat = (pid: string) => speakerId !== null && pid === speakerId;
+
+  const myLiveSeat = session
+    ? (seats ?? []).find((s: any) => s.profile_id === session.user.id
+        && (s.status === 'confirmed' || s.status === 'waitlist'))
+    : null;
 
   const going = (seats ?? [])
     .filter((s) => s.status === 'confirmed' && !isSpeakerSeat(s.profile_id));
@@ -172,7 +178,7 @@ export default async function EventPage({ params }: { params: { id: string } }) 
           <div>
             <dt className="eyebrow">Venue</dt>
             <dd style={{ margin: '6px 0 0' }}>
-              {venue?.name ?? 'To be confirmed'}
+              {e.format === 'online' ? 'Online' : (venue?.name ?? 'To be confirmed')}
               {venue?.address && <><br /><span className="mute small">{venue.address}</span></>}
               {venue?.notes && <><br /><span className="mute small">{venue.notes}</span></>}
             </dd>
@@ -257,6 +263,10 @@ export default async function EventPage({ params }: { params: { id: string } }) 
           )}
         </div>
       </div>
+
+      <JoinPanel format={(e as any).format} meetingUrl={(e as any).meeting_url}
+        meetingNote={(e as any).meeting_note}
+        canSee={!!myLiveSeat || canSeat} startsAt={e.starts_at} />
 
       <section className="surf" style={{ padding: 'clamp(22px,3vw,30px)', marginTop: 18 }}>
         {speakerId && personById.get(speakerId) && (
@@ -378,7 +388,7 @@ export default async function EventPage({ params }: { params: { id: string } }) 
         )}
       </section>
 
-      {mapQuery && (
+      {(e as any).format !== 'online' && mapQuery && (
         <section className="surf" style={{ marginTop: 18, overflow: 'hidden' }}>
           <header className="row" style={{
             justifyContent: 'space-between', padding: '16px 20px',

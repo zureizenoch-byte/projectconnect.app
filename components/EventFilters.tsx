@@ -13,6 +13,7 @@ const TYPES: [string, string][] = [
   ['Everything', ''],
   ['Meetups', 'meetup'],
   ['Speaker Series', 'talk'],
+  ['Online', 'online'],
 ];
 
 /**
@@ -66,7 +67,9 @@ export function EventFilters({
               ? 'Updating…'
               : count + ' ' + (count === 1 ? 'event' : 'events')
                 + (city ? ' in ' + city : '')
-                + (kind ? (kind === 'talk' ? ' · Speaker Series' : ' · Meetups') : '')}
+                + (kind === 'talk' ? ' · Speaker Series'
+                  : kind === 'meetup' ? ' · Meetups'
+                    : kind === 'online' ? ' · Online' : '')}
           </span>
           <button type="button" className="btn btn-quiet"
             style={{ marginLeft: 'auto', minHeight: 34, padding: '0 12px', fontSize: 14 }}

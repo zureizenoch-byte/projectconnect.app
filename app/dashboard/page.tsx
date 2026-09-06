@@ -6,6 +6,7 @@ import { TAG_CATEGORIES } from '@/lib/types';
 import { PostForm } from './PostForm';
 import { Avatar } from '@/components/Avatar';
 import { MemberBadge } from '@/components/MemberBadge';
+import { MemberBadge } from '@/components/MemberBadge';
 import { PostActions } from './PostActions';
 import { PostEngagement } from './PostEngagement';
 

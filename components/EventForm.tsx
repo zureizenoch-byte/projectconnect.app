@@ -19,8 +19,13 @@ export function EventForm({ kind, chapters, venues, minSeats = 12, defaultSeats 
     { venueId: null, name: '', address: '' });
   const [title, setTitle] = useState('');
   const [startsAt, setStartsAt] = useState('');
+  const [format, setFormat] = useState<'in_person' | 'online'>('in_person');
+  const [meetingUrl, setMeetingUrl] = useState('');
 
-  const ready = title.trim().length > 0 && startsAt.length > 0;
+  const online = format === 'online';
+  const linkOk = !online || /^https?:\/\//i.test(meetingUrl.trim());
+  const ready = title.trim().length > 0 && startsAt.length > 0 && linkOk;
+  const maxSeats = online ? 100 : 15;
 
   const chapterVenues = venues.filter((v) => v.chapter_id === chapterId);
   const cityName = chapters.find((c) => c.id === chapterId)?.city ?? '';
@@ -46,11 +51,35 @@ export function EventForm({ kind, chapters, venues, minSeats = 12, defaultSeats 
           if (!res?.error) {
             form.reset();
             setVenue({ venueId: null, name: '', address: '' });
-            setTitle(''); setStartsAt('');
+            setTitle(''); setStartsAt(''); setMeetingUrl(''); setFormat('in_person');
           }
         });
       }}>
       <input type="hidden" name="kind" value={kind} />
+      <input type="hidden" name="format" value={format} />
+
+      <fieldset style={{ border: 0, padding: 0, margin: '0 0 22px' }}>
+        <legend style={{ fontSize: 17.5, fontWeight: 600, marginBottom: 10 }}>Where it happens</legend>
+        <div className="row" style={{ gap: 10 }}>
+          {([
+            ['in_person', 'In person', 'A coffee shop or room, with directions'],
+            ['online', 'Online', 'A video call, open to any chapter'],
+          ] as const).map(([value, label, note]) => (
+            <button key={value} type="button"
+              onClick={() => setFormat(value)}
+              style={{
+                flex: '1 1 200px', textAlign: 'left', cursor: 'pointer',
+                padding: '14px 16px', borderRadius: 14, font: 'inherit',
+                border: '1px solid ' + (format === value ? 'var(--gold)' : 'var(--line)'),
+                background: format === value ? 'var(--gold-100)' : '#fff',
+                color: 'var(--ink)',
+              }}>
+              <strong style={{ display: 'block', fontSize: 16 }}>{label}</strong>
+              <span className="mute small">{note}</span>
+            </button>
+          ))}
+        </div>
+      </fieldset>
 
       <div className="grid g2">
         <label className="fld"><span>Title</span>
@@ -75,11 +104,30 @@ export function EventForm({ kind, chapters, venues, minSeats = 12, defaultSeats 
             </span>
           )}
         </label>
-        <label className="fld"><span>Seats ({minSeats}–15)</span>
-          <input name="seat_cap" type="number" min={minSeats} max={15} defaultValue={defaultSeats} />
+        <label className="fld"><span>Seats ({minSeats}–{maxSeats})</span>
+          <input name="seat_cap" type="number" min={minSeats} max={maxSeats}
+            defaultValue={defaultSeats} key={format} />
+          {online && (
+            <span className="hint">Online rooms are not limited by furniture — up to 100.</span>
+          )}
         </label>
       </div>
 
+      {online ? (
+        <>
+          <label className="fld"><span>Meeting link</span>
+            <input name="meeting_url" type="url" placeholder="https://meet.google.com/…"
+              value={meetingUrl} onChange={(e) => setMeetingUrl(e.target.value)} />
+            {meetingUrl.trim().length > 0 && !linkOk
+              ? <span className="err">Include the full address, starting with https://</span>
+              : <span className="hint">Shared with people who take a seat. Zoom, Meet, Teams — whatever you use.</span>}
+          </label>
+          <label className="fld"><span>Joining note</span>
+            <input name="meeting_note" maxLength={300}
+              placeholder="Passcode, dial-in, or how early to join" />
+          </label>
+        </>
+      ) : (
       <div className="fld" style={{ marginBottom: 16 }}>
         <span>Venue</span>
         <VenueSearch venues={chapterVenues} city={cityName} onPick={setVenue} />
@@ -90,8 +138,9 @@ export function EventForm({ kind, chapters, venues, minSeats = 12, defaultSeats 
           Type a place name or address. Saved venues appear first; anything new is added to your chapter.
         </span>
       </div>
+      )}
 
-      {fullAddress && (
+      {!online && fullAddress && (
         <div style={{
           marginBottom: 20, borderRadius: 14, overflow: 'hidden',
           border: '1px solid var(--line)',
@@ -133,7 +182,7 @@ export function EventForm({ kind, chapters, venues, minSeats = 12, defaultSeats 
         {ready && (
           <button type="button" className="btn btn-quiet" disabled={pending}
             onClick={() => {
-              setTitle(''); setStartsAt('');
+              setTitle(''); setStartsAt(''); setMeetingUrl('');
               setVenue({ venueId: null, name: '', address: '' });
               setMsg(null);
             }}>Clear</button>
@@ -142,7 +191,11 @@ export function EventForm({ kind, chapters, venues, minSeats = 12, defaultSeats 
         <span className="mute" style={{ fontSize: 14, marginLeft: 'auto' }}>
           {ready
             ? (kind === 'talk' ? 'Goes to an admin for approval.' : 'Goes to an admin for approval.')
-            : 'Add a title and a date to continue.'}
+            : online && !linkOk && meetingUrl.trim()
+              ? 'Check the meeting link.'
+              : online
+                ? 'Add a title, a date and the meeting link.'
+                : 'Add a title and a date to continue.'}
         </span>
       </div>
     </form>
