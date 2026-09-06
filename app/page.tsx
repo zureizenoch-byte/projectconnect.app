@@ -35,7 +35,7 @@ export default async function Home() {
             fontSize: 'clamp(44px,7.2vw,104px)', lineHeight: .98,
             letterSpacing: '-0.025em', margin: '24px 0 0', color: '#fff',
           }}>
-            Good coffee
+            Good coffee{" "}
             <span style={{
               background: 'linear-gradient(100deg,#b3c0f8,#4b62d8)',
               WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent',
