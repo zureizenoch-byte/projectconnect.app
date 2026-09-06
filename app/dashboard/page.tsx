@@ -18,7 +18,7 @@ export default async function Home() {
         <span aria-hidden style={{
           position: 'absolute', top: -220, left: '50%', transform: 'translateX(-50%)',
           width: 900, height: 520, borderRadius: '50%',
-          background: 'radial-gradient(closest-side, rgba(185,138,46,.30), rgba(90,116,224,.22), transparent)',
+          background: 'radial-gradient(closest-side, rgba(90,116,224,.36), transparent)',
           filter: 'blur(20px)', pointerEvents: 'none',
         }} />
         <div style={{
@@ -30,7 +30,7 @@ export default async function Home() {
             fontSize: 12.5, letterSpacing: '.06em', textTransform: 'uppercase', color: '#c6cef9',
             background: 'rgba(255,255,255,.08)', border: '1px solid var(--line-d)',
             borderRadius: 99, padding: '6px 14px',
-          }}>Vancouver · Toronto · twelve to fifteen at a table</span>
+          }}>Vancouver · Toronto</span>
           <h1 style={{
             fontSize: 'clamp(44px,7.2vw,104px)', lineHeight: .98,
             letterSpacing: '-0.025em', margin: '24px 0 0', color: '#fff',
@@ -39,15 +39,14 @@ export default async function Home() {
               background: 'linear-gradient(100deg,#f0d9a8,#c9922f)',
               WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent',
             }}>Good coffee</span>{' '}
-            with the people who make projects happen.
+            and the people who make projects happen.
           </h1>
           <p style={{
             fontSize: 'clamp(16px,1.4vw,19px)', lineHeight: 1.6,
             margin: '26px auto 0', maxWidth: '62ch', color: 'var(--mute-d)',
           }}>
-            Small tables, matched by what you actually deliver, for PM, Product, Agile, QA,
-            Data, Cyber, Cloud and Delivery professionals. Plus Speaker Series sessions you can
-            ask questions in.
+            Matched real-world meetups, Speaker-led access, and a talent pipeline recruiters can
+            actually use — for PM, Product, Agile, QA, Data, Cyber, Cloud, and Delivery professionals.
           </p>
           <div className="row" style={{ justifyContent: 'center', marginTop: 34 }}>
             <a className="btn btn-gold" href="/signup"
