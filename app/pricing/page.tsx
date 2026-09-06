@@ -32,6 +32,9 @@ export default async function PricingPage() {
           const plan = PLANS[tier];
           const popular = tier === 'annual';
           const value = planValue(tier);
+          const badge = tier === 'monthly' || tier === 'annual' ? 'Premium'
+            : tier === 'six_month' || tier === 'twelve_month' ? 'Pro'
+              : null;
           return (
             <div key={tier} className="surf"
               style={{
@@ -46,7 +49,20 @@ export default async function PricingPage() {
                   color: '#fff', border: 0,
                 }}>Most popular</span>
               )}
-              <p className="eyebrow">{plan.label}</p>
+              <div className="row" style={{ gap: 8, justifyContent: 'space-between' }}>
+                <p className="eyebrow" style={{ margin: 0 }}>{plan.label}</p>
+                {badge && (
+                  <span className="pill" style={badge === 'Premium'
+                    ? {
+                        background: 'linear-gradient(100deg,var(--gold),var(--grn))',
+                        border: '1px solid transparent', color: '#fff',
+                      }
+                    : {
+                        background: 'var(--gold-100)',
+                        border: '1px solid var(--gold)', color: 'var(--gold-700)',
+                      }}>{badge}</span>
+                )}
+              </div>
               <div className="row" style={{ gap: 10, alignItems: 'baseline', marginTop: 10 }}>
                 <span style={{ fontFamily: 'var(--font-heading)', fontSize: 38, lineHeight: 1 }}>
                   {plan.price}
@@ -81,6 +97,28 @@ export default async function PricingPage() {
             </div>
           );
         })}
+      </div>
+
+      <div className="surf" style={{
+        padding: 18, marginTop: 26, display: 'flex', gap: 20,
+        alignItems: 'center', flexWrap: 'wrap',
+      }}>
+        <span className="row" style={{ gap: 8 }}>
+          <span className="pill" style={{
+            background: 'linear-gradient(100deg,var(--gold),var(--grn))',
+            border: '1px solid transparent', color: '#fff',
+          }}>Premium</span>
+          <span className="mute small">Monthly and Annual members</span>
+        </span>
+        <span className="row" style={{ gap: 8 }}>
+          <span className="pill" style={{
+            background: 'var(--gold-100)', border: '1px solid var(--gold)', color: 'var(--gold-700)',
+          }}>Pro</span>
+          <span className="mute small">6- and 12-Month Pass holders</span>
+        </span>
+        <span className="mute small" style={{ marginLeft: 'auto' }}>
+          Your badge appears next to your name on posts, events and your profile.
+        </span>
       </div>
 
       <p className="hint" style={{ marginTop: 22 }}>
