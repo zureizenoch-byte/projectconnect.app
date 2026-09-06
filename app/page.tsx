@@ -35,11 +35,11 @@ export default async function Home() {
             fontSize: 'clamp(44px,7.2vw,104px)', lineHeight: .98,
             letterSpacing: '-0.025em', margin: '24px 0 0', color: '#fff',
           }}>
-            The network transformation professionals{' '}
+            Good coffee
             <span style={{
               background: 'linear-gradient(100deg,#b3c0f8,#4b62d8)',
               WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent',
-            }}>actually need.</span>
+            }}>and the people who make projects happen.</span>
           </h1>
           <p style={{
             fontSize: 'clamp(16px,1.4vw,19px)', lineHeight: 1.6,
