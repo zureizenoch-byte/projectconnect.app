@@ -188,7 +188,7 @@ export function ProfileForm({ profile, tags }: { profile: Profile; tags: Tag[] }
 }
 
 function PhotoUpload({ current, onChange }: { current: string | null; onChange: (url: string | null) => void }) {
-  const [saving, setSaving] = useState(false);
+  const [pending, start] = useTransition();
   const [msg, setMsg] = useState<string | null>(null);
   const [isError, setIsError] = useState(false);
 
