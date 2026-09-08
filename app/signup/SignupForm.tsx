@@ -80,15 +80,6 @@ export function SignupForm() {
         </select>
       </label>
 
-      <label className="row" style={{ marginBottom: 22, alignItems: 'flex-start', gap: 10 }}>
-        <input type="checkbox" name="is_immigrant" style={{ marginTop: 4 }} />
-        <span>
-          <strong>I'm an immigrant to Canada</strong>
-          <span className="small mute" style={{ display: 'block' }}>
-            Unlocks credential-recognition and work-authorisation fields on your profile. Never shown publicly.
-          </span>
-        </span>
-      </label>
 
       <label className="row" style={{ marginBottom: 22, alignItems: 'flex-start', gap: 10 }}>
         <input type="checkbox" name="agree" required style={{ marginTop: 4 }} />
