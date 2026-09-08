@@ -167,8 +167,11 @@ export default async function EventsPage({ searchParams }: { searchParams: { cit
               <div style={{ padding: 22, display: 'flex', flexDirection: 'column', gap: 12, flex: 1 }}>
                 <div>
                   <p className="eyebrow" style={{ margin: 0 }}>
-                    {cityName} · {d.toLocaleString('en-CA', { weekday: 'long', hour: 'numeric', minute: '2-digit' })}
+                    {d.toLocaleDateString('en-CA', { weekday: 'long', month: 'long', day: 'numeric' })}
+                    {' · '}
+                    {d.toLocaleTimeString('en-CA', { hour: 'numeric', minute: '2-digit' })}
                   </p>
+                  <p className="mute small" style={{ margin: '4px 0 0' }}>{cityName}</p>
                   <h3 style={{ marginTop: 8, fontSize: 24, lineHeight: 1.12 }}>
                     <a href={'/events/' + e.id} style={{ textDecoration: 'none', color: 'var(--ink)' }}>
                       {e.title}
