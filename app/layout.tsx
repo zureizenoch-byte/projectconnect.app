@@ -52,7 +52,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               <p className="mute small" style={{ margin: '8px 0 0', maxWidth: '52ch', lineHeight: 1.6 }}>
                 Connect. Share. Grow.
               </p>
-              <p className="mute small" style={{ margin: '6px 0 0', maxWidth: '52ch', lineHeight: 1.6 }}>
+              <p style={{
+                margin: '6px 0 0', maxWidth: '52ch', lineHeight: 1.6,
+                fontSize: 13.5, fontWeight: 500, color: 'var(--gold-700)',
+              }}>
                 Project Connect — real conversations, real people, real growth.
                 Coffee meetups for project delivery professionals.
               </p>
