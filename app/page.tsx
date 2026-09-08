@@ -162,10 +162,19 @@ export default async function Home() {
             background: 'radial-gradient(closest-side, rgba(51,82,207,.32), transparent)',
             pointerEvents: 'none',
           }} />
-          <div style={{ position: 'relative' }}>
+          <div style={{
+            position: 'relative', display: 'flex', gap: 24, flexWrap: 'wrap',
+            alignItems: 'center', justifyContent: 'space-between',
+          }}>
             <h2 style={{ fontSize: 'clamp(28px,3.4vw,46px)', lineHeight: 1.03, margin: 0, color: '#fff' }}>
               Your next meetup is one signup away.
             </h2>
+            <div className="row" style={{ gap: 12 }}>
+              <a className="btn btn-gold" href="/signup"
+                style={{ minHeight: 50, padding: '0 26px', fontSize: 15 }}>Sign up</a>
+              <a className="btn btn-ondark" href="/events"
+                style={{ minHeight: 50, padding: '0 26px', fontSize: 15 }}>Browse events</a>
+            </div>
           </div>
         </div>
       </section>
