@@ -103,6 +103,77 @@ export default async function Home() {
           </div>
         </div>
       </section>
+
+      <section style={{
+        maxWidth: 1260, margin: '0 auto',
+        padding: 'clamp(64px,8vw,120px) clamp(16px,4vw,40px) clamp(52px,7vw,96px)',
+      }}>
+        <div style={{
+          display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+          gap: 'clamp(28px,4vw,56px)', alignItems: 'start',
+        }}>
+          <div>
+            <p className="eyebrow">What we are</p>
+            <h2 style={{
+              fontSize: 'clamp(30px,3.6vw,50px)', lineHeight: 1.04, margin: '14px 0 0',
+            }}>
+              Project Connect is built around three things: connect, share and grow.
+            </h2>
+            <p className="mute" style={{
+              fontSize: 17, lineHeight: 1.7, margin: '20px 0 0', maxWidth: '46ch',
+            }}>
+              We bring together the people who make projects happen — Project Managers,
+              Product Managers, Scrum Masters, Analysts, Coordinators, and every
+              professional who keeps delivery moving.
+            </p>
+          </div>
+
+          <div style={{ display: 'grid', gap: 22 }}>
+            <p style={{ fontSize: 17.5, lineHeight: 1.7, margin: 0 }}>
+              Our community starts with something simple: good coffee and real
+              conversations. No stiff networking. No corporate scripts. Just project
+              people meeting in real life, sharing experiences, and building
+              relationships that actually matter.
+            </p>
+
+            <div>
+              <p className="mute" style={{ fontSize: 16.5, lineHeight: 1.7, margin: '0 0 14px' }}>
+                Project Connect hosts open coffee meetups where you can:
+              </p>
+              <div style={{ display: 'grid', gap: 12 }}>
+                {[
+                  ['Connect', 'with peers who understand your work'],
+                  ['Share', 'project stories, lessons, and insights'],
+                  ['Grow', 'your career through community, mentorship, and meaningful connection.'],
+                ].map(([verb, rest]) => (
+                  <p key={verb} style={{
+                    margin: 0, fontSize: 16.5, lineHeight: 1.6,
+                    paddingLeft: 16, borderLeft: '2px solid var(--gold-200)',
+                  }}>
+                    <strong style={{ color: 'var(--gold-700)' }}>{verb}</strong>{' '}
+                    <span className="mute">{rest}</span>
+                  </p>
+                ))}
+              </div>
+            </div>
+
+            <p className="mute" style={{ fontSize: 16.5, lineHeight: 1.7, margin: 0 }}>
+              This isn’t another online forum or generic professional network. It’s a
+              space designed for project delivery professionals who want meaningful
+              connection, practical learning, and a community that feels human.
+            </p>
+
+            <p style={{
+              margin: 0, paddingTop: 20, borderTop: '1px solid var(--line)',
+              fontFamily: 'var(--font-heading)', fontWeight: 500,
+              fontSize: 'clamp(20px,2vw,26px)', lineHeight: 1.3, letterSpacing: '-0.01em',
+            }}>
+              Project Connect is more than an app — it’s a movement to bring project
+              people together.
+            </p>
+          </div>
+        </div>
+      </section>
     </main>
   );
 }
