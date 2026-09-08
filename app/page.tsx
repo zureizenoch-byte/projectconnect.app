@@ -90,12 +90,6 @@ export default async function Home() {
               Free to join. Map your experience once, and let matching do the rest.
             </p>
           </div>
-          <div className="row" style={{ position: 'relative', justifyContent: 'flex-end' }}>
-            <a className="btn btn-gold" href="/signup"
-              style={{ minHeight: 50, padding: '0 26px', fontSize: 15 }}>Join Project Connect</a>
-            <a className="btn btn-ondark" href="/events"
-              style={{ minHeight: 50, padding: '0 26px', fontSize: 15 }}>Browse events</a>
-          </div>
         </div>
       </section>
     </main>
