@@ -97,9 +97,6 @@ export default async function Home() {
             <h2 style={{ fontSize: 'clamp(28px,3.4vw,46px)', lineHeight: 1.03, margin: 0, color: '#fff' }}>
               Your next meetup is one signup away.
             </h2>
-            <p style={{ fontSize: 17, lineHeight: 1.6, margin: '16px 0 0', color: 'var(--mute-d)' }}>
-              Free to join. Map your experience once, and let matching do the rest.
-            </p>
           </div>
         </div>
       </section>
