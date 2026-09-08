@@ -50,7 +50,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 <span>Project<span style={{ color: 'var(--gold-700)' }}>Connect</span></span>
               </span>
               <p className="mute small" style={{ margin: '8px 0 0', maxWidth: '32ch' }}>
-                Matched small-group meetups by city chapter.
+                Connect. Share. Grow.
               </p>
             </div>
             <div>
