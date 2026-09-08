@@ -62,7 +62,7 @@ export default async function EventsPage({ searchParams }: { searchParams: { cit
         <div>
           <h1>Events</h1>
           <p className="mute" style={{ marginTop: 10, maxWidth: '58ch' }}>
-            Matched meetups and Speaker Series talks, in one schedule.
+            Project Connect — real conversations, real people, real growth. Coffee meetups for project delivery professionals.
           </p>
         </div>
         <div className="row" style={{ gap: 10 }}>
