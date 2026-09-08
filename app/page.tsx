@@ -50,6 +50,16 @@ export default async function Home() {
           </div>
         </div>
 
+        <p style={{
+          position: 'relative', margin: '0 auto', padding: '0 clamp(16px,4vw,40px) clamp(30px,4.5vw,52px)',
+          maxWidth: 900, textAlign: 'center',
+          fontFamily: 'var(--font-heading)', fontWeight: 500,
+          fontSize: 'clamp(20px,2.2vw,30px)', lineHeight: 1.25, letterSpacing: '-0.01em',
+          color: '#fff',
+        }}>
+          We’re redefining networking — one coffee at a time.
+        </p>
+
         <div style={{
           position: 'relative', maxWidth: 1160, margin: '0 auto',
           padding: '0 clamp(16px,4vw,40px)', marginBottom: 'clamp(-120px,-9vw,-40px)',
