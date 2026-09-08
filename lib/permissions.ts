@@ -29,7 +29,5 @@ export function navFor(p: Profile) {
   if (canHostTalks(p)) base.push(['Speaker', '/speaker']);
   if (canRunChapter(p)) base.push(['Chapter', '/chapter']);
   if (isAdmin(p)) base.push(['Admin', '/admin']);
-  // Speakers host rather than subscribe — pricing is not part of their journey
-  if (p.role !== 'speaker') base.push(['Pricing', '/pricing']);
   return base;
 }

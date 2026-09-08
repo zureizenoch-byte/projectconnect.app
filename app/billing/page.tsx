@@ -45,9 +45,6 @@ export default async function BillingPage({ searchParams }: { searchParams: { st
         <p className="mute small" style={{ marginTop: 12 }}>
           {paid ? 'Unlimited events and Speaker Series talks.' : 'Free covers one event per cycle; talks need a paid plan.'}
         </p>
-        <div className="row" style={{ marginTop: 18 }}>
-          <a className="btn btn-primary" href="/billing/plans">{paid ? 'Change plan' : 'Upgrade'}</a>
-        </div>
         {!stripeEnabled && (
           <p className="hint">Stripe keys are not set, so checkout is stubbed. Add them to <code>.env</code> to take payments.</p>
         )}

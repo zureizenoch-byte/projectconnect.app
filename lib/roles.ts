@@ -20,7 +20,7 @@ export type Capabilities = {
   hostTalks: boolean;
   /** May post to the chapter feed. */
   postToFeed: boolean;
-  /** Sees the pricing and billing pages. */
+  /** Sees the billing page. */
   billing: boolean;
   /** May apply to lead a chapter. */
   canApplyForLead: boolean;
@@ -55,7 +55,7 @@ const PAID: Capabilities = {
 const STUDENT: Capabilities = {
   ...FREE,
   label: 'Student',
-  blurb: 'Same rooms as members, with student profile fields and student pricing.',
+  blurb: 'Same rooms as members, with student profile fields.',
   canApplyForLead: false,
 };
 

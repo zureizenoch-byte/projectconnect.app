@@ -31,7 +31,7 @@ export async function POST(request: Request) {
     customer: customerId,
     line_items: [{ price, quantity: 1 }],
     success_url: site + '/billing?status=success',
-    cancel_url: site + '/billing/plans?status=cancelled',
+    cancel_url: site + '/billing?status=cancelled',
     client_reference_id: user.id,
     metadata: { profile_id: user.id, tier },
   });
