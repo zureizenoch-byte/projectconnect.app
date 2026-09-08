@@ -297,7 +297,6 @@ export default async function DashboardPage() {
           <div className="grid" style={{ gap: 8, marginTop: 16 }}>
             <a className="btn btn-gold" href="/events">See events</a>
             <a className="btn btn-out" href="/events/new">Propose a meetup</a>
-            <a className="btn btn-out" href="/venues">Chapter venues</a>
           </div>
         </aside>
       </div>

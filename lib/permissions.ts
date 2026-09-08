@@ -24,7 +24,6 @@ export function navFor(p: Profile) {
     ['Dashboard', '/dashboard'],
     ['Events', '/events'],
     ['Messages', '/messages'],
-    ['Venues', '/venues'],
   ];
   if (canHostTalks(p)) base.push(['Speaker', '/speaker']);
   if (canRunChapter(p)) base.push(['Chapter', '/chapter']);

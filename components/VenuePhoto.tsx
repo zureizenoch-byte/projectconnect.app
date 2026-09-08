@@ -34,8 +34,13 @@ export function VenuePhoto({
   };
 
   if (photoUrl && !broken) {
+    // locally stored artwork is a logo — frame it whole rather than cropping it
+    const contain = photoUrl.startsWith('/');
     return (
-      <img src={photoUrl} alt={name} loading="lazy" style={frame}
+      <img src={photoUrl} alt={name} loading="lazy"
+        style={contain
+          ? { ...frame, objectFit: 'contain', background: '#fff', padding: 16 }
+          : frame}
         onError={() => setBroken(true)} />
     );
   }
