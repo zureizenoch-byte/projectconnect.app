@@ -50,8 +50,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 <span>Project<span style={{ color: 'var(--gold-700)' }}>Connect</span></span>
               </span>
               <p className="mute small" style={{ margin: '8px 0 0', maxWidth: '52ch', lineHeight: 1.6 }}>
+                Connect. Share. Grow.
+              </p>
+              <p className="mute small" style={{ margin: '6px 0 0', maxWidth: '52ch', lineHeight: 1.6 }}>
                 Project Connect — real conversations, real people, real growth.
-                Coffee meetups for project delivery professionals. © 2026 Project Connect
+                Coffee meetups for project delivery professionals.
+              </p>
+              <p className="mute small" style={{ margin: '6px 0 0' }}>
+                © 2026 Project Connect
               </p>
             </div>
             <div>
