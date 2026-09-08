@@ -29,14 +29,17 @@ export default async function Home() {
             fontSize: 'clamp(44px,7.2vw,104px)', lineHeight: .98,
             letterSpacing: '-0.025em', margin: '24px 0 0', color: '#fff',
           }}>
-            Good coffee{" "}
+            <span style={{
+              background: 'linear-gradient(100deg,#f0d9a8,#c9922f)',
+              WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent',
+            }}>Good coffee</span>{' '}
             and the people who make projects happen.
           </h1>
           <p style={{
             fontSize: 'clamp(16px,1.4vw,19px)', lineHeight: 1.6,
             margin: '26px auto 0', maxWidth: '62ch', color: 'var(--mute-d)',
           }}>
-            Matched real-world meetups, Speaker-led access for Project professionals
+            Matched real-world meetups and Speaker-led access for Project professionals
           </p>
           <div className="row" style={{ justifyContent: 'center', marginTop: 34 }}>
             <a className="btn btn-gold" href="/signup"
