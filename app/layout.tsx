@@ -49,8 +49,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 <img src="/pc-mark-2026.png" alt="" />
                 <span>Project<span style={{ color: 'var(--gold-700)' }}>Connect</span></span>
               </span>
-              <p className="mute small" style={{ margin: '8px 0 0', maxWidth: '32ch' }}>
-                Connect. Share. Grow.
+              <p className="mute small" style={{ margin: '8px 0 0', maxWidth: '52ch', lineHeight: 1.6 }}>
+                Project Connect — real conversations, real people, real growth.
+                Coffee meetups for project delivery professionals. © 2026 Project Connect
               </p>
             </div>
             <div>
