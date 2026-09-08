@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation';
 const CHAPTERS: [string, string][] = [
   ['All', ''],
   ['Vancouver', 'Vancouver'],
-  ['Toronto', 'Toronto'],
 ];
 
 const TYPES: [string, string][] = [

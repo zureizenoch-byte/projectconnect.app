@@ -1,5 +1,5 @@
 /** Chip/select option lists — the same vocabulary as the prototype. */
-export const CITIES = ['Vancouver', 'Toronto'];
+export const CITIES = ['Vancouver'];
 
 export const ROLE_LEVELS = ['Student', 'Analyst', 'Manager', 'Senior Manager', 'Director', 'Executive'];
 
