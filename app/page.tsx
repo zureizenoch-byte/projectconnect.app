@@ -39,7 +39,8 @@ export default async function Home() {
             fontSize: 'clamp(16px,1.4vw,19px)', lineHeight: 1.6,
             margin: '26px auto 0', maxWidth: '62ch', color: 'var(--mute-d)',
           }}>
-            Matched real-world meetups and Speaker-led access for project delivery professionals
+            Real-world coffee meetups, speaker-led sessions, and genuine connections
+            for project delivery professionals.
           </p>
           <div className="row" style={{ justifyContent: 'center', marginTop: 34 }}>
             <a className="btn btn-gold" href="/signup"
