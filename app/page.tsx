@@ -29,14 +29,14 @@ export default async function Home() {
             fontSize: 'clamp(44px,7.2vw,104px)', lineHeight: .98,
             letterSpacing: '-0.025em', margin: '24px 0 0', color: '#fff',
           }}>
-            Matched real-world meetups, Speaker-led access for Project professionals
+            Good coffee{" "}
+            and the people who make projects happen.
           </h1>
           <p style={{
             fontSize: 'clamp(16px,1.4vw,19px)', lineHeight: 1.6,
             margin: '26px auto 0', maxWidth: '62ch', color: 'var(--mute-d)',
           }}>
-            Matched real-world meetups, Speaker-led access, and a talent pipeline recruiters can
-            actually use — for PM, Product, Agile, QA, Data, Cyber, Cloud, and Delivery professionals.
+            Matched real-world meetups, Speaker-led access for Project professionals
           </p>
           <div className="row" style={{ justifyContent: 'center', marginTop: 34 }}>
             <a className="btn btn-gold" href="/signup"
