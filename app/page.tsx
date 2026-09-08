@@ -49,11 +49,14 @@ export default async function Home() {
           </div>
         </div>
 
-        <div style={{ position: 'relative', maxWidth: 1160, margin: '0 auto', padding: '0 clamp(16px,4vw,40px)' }}>
+        <div style={{
+          position: 'relative', maxWidth: 1160, margin: '0 auto',
+          padding: '0 clamp(16px,4vw,40px)', marginBottom: 'clamp(-120px,-9vw,-40px)',
+        }}>
           <figure style={{
             margin: 0, position: 'relative', overflow: 'hidden',
-            WebkitMaskImage: 'radial-gradient(120% 100% at 50% 0%, #000 42%, rgba(0,0,0,.55) 72%, transparent 100%)',
-            maskImage: 'radial-gradient(120% 100% at 50% 0%, #000 42%, rgba(0,0,0,.55) 72%, transparent 100%)',
+            WebkitMaskImage: 'linear-gradient(to bottom, #000 0%, #000 38%, rgba(0,0,0,.55) 68%, transparent 100%)',
+            maskImage: 'linear-gradient(to bottom, #000 0%, #000 38%, rgba(0,0,0,.55) 68%, transparent 100%)',
           }}>
             <img src="/hero-chapter-meetup.png" alt=""
               style={{ display: 'block', width: '100%', aspectRatio: '21 / 9',
@@ -66,18 +69,17 @@ export default async function Home() {
               background: 'radial-gradient(90% 70% at 50% 10%, rgba(51,82,207,.24), transparent 70%)' }} />
           </figure>
         </div>
-      </section>
 
-      <section style={{ maxWidth: 1260, margin: '0 auto', padding: '0 clamp(16px,4vw,40px) clamp(52px,7vw,104px)' }}>
         <div style={{
-          position: 'relative', overflow: 'hidden', borderRadius: 24,
-          background: 'var(--ink)', color: '#fff', padding: 'clamp(30px,4.5vw,64px)',
-          display: 'grid', gridTemplateColumns: 'minmax(0,7fr) minmax(0,5fr)', gap: 32, alignItems: 'center',
+          position: 'relative', maxWidth: 1260, margin: '0 auto',
+          padding: 'clamp(20px,3vw,40px) clamp(16px,4vw,40px) clamp(52px,7vw,96px)',
+          display: 'grid', gridTemplateColumns: 'minmax(0,7fr) minmax(0,5fr)',
+          gap: 32, alignItems: 'center',
         }}>
           <span aria-hidden style={{
-            position: 'absolute', right: -160, bottom: -200, width: 520, height: 420,
+            position: 'absolute', right: -200, bottom: -240, width: 620, height: 460,
             borderRadius: '50%',
-            background: 'radial-gradient(closest-side, rgba(51,82,207,.32), transparent)',
+            background: 'radial-gradient(closest-side, rgba(51,82,207,.28), transparent)',
             pointerEvents: 'none',
           }} />
           <div style={{ position: 'relative' }}>
