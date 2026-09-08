@@ -270,10 +270,14 @@ export default async function EventPage({ params }: { params: { id: string } }) 
       </div>
 
       {canSeat && (
-        <div className="surf" style={{ padding: 'clamp(18px,2.5vw,24px)', marginTop: 18 }}>
-          <p className="eyebrow" style={{ margin: 0 }}>Organiser</p>
-          <p className="mute small" style={{ margin: '6px 0 12px' }}>
-            Fix a detail here. Moving the date tells everyone holding a seat.
+        <div className="surf" style={{
+          padding: 'clamp(18px,2.5vw,24px)', marginTop: 18,
+          borderColor: 'var(--gold)', background: 'var(--gold-100)',
+        }}>
+          <p className="eyebrow" style={{ margin: 0 }}>You organise this event</p>
+          <p className="mute small" style={{ margin: '6px 0 14px' }}>
+            Change the title, description, date, seats or venue. Moving the date tells everyone
+            holding a seat.
           </p>
           <EditEvent event={e} venues={venueOptions ?? []} />
         </div>

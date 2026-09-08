@@ -3,6 +3,7 @@ import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { isPaid } from '@/lib/tiers';
 import { RsvpButton } from '@/components/RsvpButton';
 import { EventLifecycle } from '@/components/EventLifecycle';
+import { EditEvent } from '@/components/EditEvent';
 import { VenuePhoto } from '@/components/VenuePhoto';
 import { detectPlatform, PLATFORM_LABEL } from '@/lib/meeting';
 
@@ -216,9 +217,13 @@ export default async function EventsPage({ searchParams }: { searchParams: { cit
                     <a className="btn btn-gold" href="/signup"
                       style={{ minHeight: 40, padding: '0 16px', fontSize: 14 }}>Join to RSVP</a>
                   ) : session && (e.host_id === session.user.id || e.created_by === session.user.id) ? (
-                    <span className="pill pill-ok" style={{ fontSize: 11.5 }}>
-                      {e.kind === 'talk' ? "You're speaking" : "You're hosting"}
-                    </span>
+                    <div className="row" style={{ gap: 8 }}>
+                      <span className="pill pill-ok" style={{ fontSize: 11.5 }}>
+                        {e.kind === 'talk' ? "You're speaking" : "You're hosting"}
+                      </span>
+                      <a className="btn btn-out" href={'/events/' + e.id}
+                        style={{ minHeight: 36, padding: '0 14px', fontSize: 13.5 }}>Edit</a>
+                    </div>
                   ) : locked ? (
                     <span className="mute small">Paid members only</span>
                   ) : (
