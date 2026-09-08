@@ -6,6 +6,7 @@ import { TAG_CATEGORIES } from '@/lib/types';
 import { PostForm } from './PostForm';
 import { Avatar } from '@/components/Avatar';
 import { MemberBadge } from '@/components/MemberBadge';
+import { MemberBadge } from '@/components/MemberBadge';
 import { PostActions } from './PostActions';
 import { PostEngagement } from './PostEngagement';
 
@@ -298,7 +299,6 @@ export default async function DashboardPage() {
             <a className="btn btn-gold" href="/events">See events</a>
             <a className="btn btn-out" href="/events/new">Propose a meetup</a>
             <a className="btn btn-out" href="/venues">Chapter venues</a>
-            {!paid && <a className="btn btn-out" href="/pricing">Compare plans</a>}
           </div>
         </aside>
       </div>

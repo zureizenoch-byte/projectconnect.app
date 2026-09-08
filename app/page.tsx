@@ -1,12 +1,6 @@
 import { getSession } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 
-const FEATURES = [
-  ['01', 'Matched meetups', 'Small, real-world groups matched by role and domain — not another networking mixer where you talk to no one relevant.'],
-  ['02', 'Speaker Series', 'Small, matched sessions with senior leaders — direct access, not a broadcast webinar with a thousand other attendees.'],
-  ['03', 'Talent pipeline', "Opt in when you're ready. You control what other members can see, and who may contact you about matched rooms."],
-  ['04', 'City chapters', 'Vancouver and Toronto at launch, each with a Chapter Lead running the local schedule and keeping the room worth showing up to.'],
-];
 
 export default async function Home() {
   const session = await getSession();
@@ -35,11 +29,7 @@ export default async function Home() {
             fontSize: 'clamp(44px,7.2vw,104px)', lineHeight: .98,
             letterSpacing: '-0.025em', margin: '24px 0 0', color: '#fff',
           }}>
-            <span style={{
-              background: 'linear-gradient(100deg,#f0d9a8,#c9922f)',
-              WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent',
-            }}>Good coffee</span>{' '}
-            and the people who make projects happen.
+            Matched real-world meetups, Speaker-led access for Project professionals
           </h1>
           <p style={{
             fontSize: 'clamp(16px,1.4vw,19px)', lineHeight: 1.6,
@@ -51,8 +41,8 @@ export default async function Home() {
           <div className="row" style={{ justifyContent: 'center', marginTop: 34 }}>
             <a className="btn btn-gold" href="/signup"
               style={{ minHeight: 52, padding: '0 28px', fontSize: 16 }}>Join Project Connect</a>
-            <a className="btn btn-ondark" href="/pricing"
-              style={{ minHeight: 52, padding: '0 28px', fontSize: 16 }}>See pricing</a>
+            <a className="btn btn-ondark" href="/events"
+              style={{ minHeight: 52, padding: '0 28px', fontSize: 16 }}>See events</a>
           </div>
         </div>
 
@@ -72,31 +62,6 @@ export default async function Home() {
             <span aria-hidden style={{ position: 'absolute', inset: 0, pointerEvents: 'none',
               background: 'radial-gradient(90% 70% at 50% 10%, rgba(51,82,207,.24), transparent 70%)' }} />
           </figure>
-        </div>
-      </section>
-
-      <section style={{ maxWidth: 1260, margin: '0 auto', padding: 'clamp(52px,7vw,104px) clamp(16px,4vw,40px)' }}>
-        <div style={{ maxWidth: '34ch' }}>
-          <p className="eyebrow">Why it's different</p>
-          <h2 style={{ fontSize: 'clamp(30px,3.6vw,50px)', lineHeight: 1.04, margin: '14px 0 0' }}>
-Built for people who are tired of networking that goes nowhere.
-          </h2>
-        </div>
-        <div className="grid g2" style={{ marginTop: 44 }}>
-          {FEATURES.map(([num, title, body]) => (
-            <article key={num} className="surf lift" style={{
-              padding: 26, display: 'flex', flexDirection: 'column', gap: 12,
-              background: 'linear-gradient(180deg,#fff,#fdfcfa)',
-            }}>
-              <span style={{
-                width: 36, height: 36, borderRadius: 11, display: 'grid', placeItems: 'center',
-                background: 'var(--gold-100)', border: '1px solid var(--gold-200)',
-                fontFamily: 'var(--font-heading)', fontWeight: 600, color: 'var(--gold-700)', fontSize: 15,
-              }}>{num}</span>
-              <h3 style={{ margin: 0 }}>{title}</h3>
-              <p className="mute" style={{ fontSize: 14.5, lineHeight: 1.65, margin: 0 }}>{body}</p>
-            </article>
-          ))}
         </div>
       </section>
 
@@ -123,8 +88,8 @@ Built for people who are tired of networking that goes nowhere.
           <div className="row" style={{ position: 'relative', justifyContent: 'flex-end' }}>
             <a className="btn btn-gold" href="/signup"
               style={{ minHeight: 50, padding: '0 26px', fontSize: 15 }}>Join Project Connect</a>
-            <a className="btn btn-ondark" href="/pricing"
-              style={{ minHeight: 50, padding: '0 26px', fontSize: 15 }}>Compare plans</a>
+            <a className="btn btn-ondark" href="/events"
+              style={{ minHeight: 50, padding: '0 26px', fontSize: 15 }}>Browse events</a>
           </div>
         </div>
       </section>

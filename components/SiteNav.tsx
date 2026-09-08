@@ -7,7 +7,7 @@ export function SiteNav({ profile, inboxCount = 0, unreadCount = 0, alertCount =
   { profile: Profile | null; inboxCount?: number; unreadCount?: number; alertCount?: number }) {
   const links: [string, string][] = profile
     ? navFor(profile)
-    : [['Events', '/events'], ['Venues', '/venues'], ['Pricing', '/pricing']];
+    : [['Events', '/events'], ['Venues', '/venues']];
 
   return (
     <nav className="nav">

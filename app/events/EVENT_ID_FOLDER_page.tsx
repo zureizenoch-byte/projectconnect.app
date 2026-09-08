@@ -254,7 +254,7 @@ export default async function EventPage({ params }: { params: { id: string } }) 
             <p className="mute" style={{ margin: 0 }}>This event is off.</p>
           ) : e.kind === 'talk' && !paid ? (
             <div>
-              <a className="btn btn-out" href="/pricing">Speaker Series needs a paid plan</a>
+              <span className="mute small">Speaker Series is for paid members</span>
               <p className="hint">Free membership covers one meetup per cycle.</p>
             </div>
           ) : (

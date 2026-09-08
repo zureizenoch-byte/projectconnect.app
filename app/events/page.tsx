@@ -217,8 +217,7 @@ export default async function EventsPage({ searchParams }: { searchParams: { cit
                       {e.kind === 'talk' ? "You're speaking" : "You're hosting"}
                     </span>
                   ) : locked ? (
-                    <a className="btn btn-out" href="/pricing"
-                      style={{ minHeight: 40, padding: '0 16px', fontSize: 14 }}>Paid plans only</a>
+                    <span className="mute small">Paid members only</span>
                   ) : (
                     <RsvpButton eventId={e.id} address={address}
                       status={mine?.status ?? null} full={full} />

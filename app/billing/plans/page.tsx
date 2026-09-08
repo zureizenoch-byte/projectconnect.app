@@ -2,7 +2,7 @@ import { getSession } from '@/lib/auth';
 import { PLANS, planValue } from '@/lib/tiers';
 import { CheckoutButton } from './CheckoutButton';
 
-export const metadata = { title: 'Pricing — Project Connect' };
+export const metadata = { title: 'Plans — Project Connect' };
 
 const ORDER = ['free', 'monthly', 'six_month', 'annual', 'twelve_month'] as const;
 

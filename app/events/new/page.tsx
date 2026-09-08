@@ -67,9 +67,9 @@ export default async function NewEventPage({ searchParams }: { searchParams: { k
               : 'Schedule as many as you like on a paid plan.'}
           </p>
           {atLimit && (
-            <a className="btn btn-gold" href="/pricing"
+            <a className="btn btn-gold" href="/billing"
               style={{ marginTop: 12, minHeight: 40, padding: '0 16px', fontSize: 14 }}>
-              See plans
+              Manage membership
             </a>
           )}
         </div>

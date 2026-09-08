@@ -93,8 +93,8 @@ export default async function ChapterPage() {
             Chapter Lead access assumes an active paid plan. Your tools still work, but renew
             so your own seat limits do not get in the way of running rooms.
           </p>
-          <a className="btn btn-gold" href="/pricing"
-            style={{ marginTop: 12, minHeight: 40, padding: '0 16px', fontSize: 14 }}>See plans</a>
+          <a className="btn btn-gold" href="/billing"
+            style={{ marginTop: 12, minHeight: 40, padding: '0 16px', fontSize: 14 }}>Manage membership</a>
         </div>
       )}
 
