@@ -354,7 +354,6 @@ export default async function EventPage({ params }: { params: { id: string } }) 
                   <Avatar src={person?.photo_url} name={person?.full_name} size={52} />
                   <div style={{ minWidth: 0 }}>
                     <span style={{ display: 'block', fontWeight: 600, fontSize: 16 }}>
-                      {person?.full_name ?? 'Member'}
                       {s.profile_id === hostId && (
                         <span className="pill pill-wait" style={{ marginLeft: 6, fontSize: 10 }}>Host</span>
                       )}
@@ -400,7 +399,6 @@ export default async function EventPage({ params }: { params: { id: string } }) 
                     title={(person?.full_name ?? 'Member') + ' — position ' + (i + 1)}
                     style={{ display: 'flex', gap: 8, alignItems: 'center', textDecoration: 'none', color: 'inherit' }}>
                     <Avatar src={person?.photo_url} name={person?.full_name} size={34} />
-                    <span className="small">{person?.full_name ?? 'Member'}</span>
                   </a>
                 );
               })}
