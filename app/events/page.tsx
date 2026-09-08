@@ -197,8 +197,8 @@ export default async function EventsPage({ searchParams }: { searchParams: { cit
 
                 {e.description && (
                   <p className="mute" style={{
-                    margin: 0, fontSize: 15, lineHeight: 1.6,
-                    display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
+                    margin: 0, fontSize: 15, lineHeight: 1.6, whiteSpace: 'pre-line',
+                    display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical',
                     overflow: 'hidden',
                   }}>{e.description}</p>
                 )}

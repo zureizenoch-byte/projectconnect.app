@@ -178,7 +178,9 @@ export default async function EventPage({ params }: { params: { id: string } }) 
       )}
 
       <div className="surf" style={{ padding: 24, marginTop: 24 }}>
-        {e.description && <p style={{ marginTop: 0 }}>{e.description}</p>}
+        {e.description && (
+          <p style={{ marginTop: 0, whiteSpace: 'pre-wrap', lineHeight: 1.65 }}>{e.description}</p>
+        )}
         <dl className="grid g2" style={{ marginTop: 8 }}>
           <div>
             <dt className="eyebrow">Venue</dt>
