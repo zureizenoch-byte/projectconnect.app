@@ -183,7 +183,10 @@ export default async function EventsPage({ searchParams }: { searchParams: { cit
                       {platformLabel(e.meeting_url)} · link shared when you take a seat
                     </p>
                   ) : e.venues?.name ? (
-                    <p className="mute small" style={{ marginTop: 6 }}>{e.venues.name}</p>
+                    <p className="mute small" style={{ marginTop: 6, lineHeight: 1.5 }}>
+                      <strong style={{ fontWeight: 600, color: 'var(--ink)' }}>{e.venues.name}</strong>
+                      {e.venues.address && <><br />{e.venues.address}</>}
+                    </p>
                   ) : null}
                 </div>
 
