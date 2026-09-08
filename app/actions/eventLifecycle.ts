@@ -10,12 +10,14 @@ async function assertCanManage(eventId: string) {
   const { profile } = await requireSession();
   const db = createAdminClient();
   const { data: ev } = await db.from('events')
-    .select('id,title,starts_at,chapter_id,host_id,status,venue_id').eq('id', eventId).maybeSingle();
+    .select('id,title,description,starts_at,chapter_id,host_id,created_by,status,venue_id,seat_cap,format,meeting_url,meeting_note,original_starts_at')
+    .eq('id', eventId).maybeSingle();
   if (!ev) return { error: 'Event not found' as const };
 
   const allowed = isAdmin(profile)
     || (canRunChapter(profile) && profile.lead_chapter_id === ev.chapter_id)
-    || (canHostTalks(profile) && ev.host_id === profile.id);
+    || ev.host_id === profile.id
+    || ev.created_by === profile.id;
   if (!allowed) return { error: 'You cannot change this event' as const };
 
   return { ev, profile, db };
@@ -241,4 +243,96 @@ export async function deleteEvent(formData: FormData) {
   revalidatePath('/admin');
   revalidatePath('/dashboard');
   return { ok: 'Event deleted, and everyone holding a seat has been told.' };
+}
+
+/**
+ * Edit an event's details. Open to whoever scheduled it, its host, that
+ * chapter's lead, or an admin.
+ *
+ * Changing the date here goes through the same path as a reschedule, so seat
+ * holders are told rather than quietly moved. Everything else — title, blurb,
+ * seats, venue, meeting link — is a silent correction, since nobody needs a
+ * notification about a fixed typo.
+ */
+export async function editEvent(formData: FormData) {
+  const eventId = String(formData.get('event_id') ?? '');
+  const ctx = await assertCanManage(eventId);
+  if ('error' in ctx) return ctx;
+  const { ev, profile, db } = ctx;
+
+  const title = String(formData.get('title') ?? '').trim().slice(0, 200);
+  if (!title) return { error: 'An event needs a title.' };
+
+  const startsAt = String(formData.get('starts_at') ?? '');
+  const iso = startsAt ? new Date(startsAt).toISOString() : ev.starts_at;
+  const moved = new Date(iso).getTime() !== new Date(ev.starts_at).getTime();
+
+  const format = String(formData.get('format') ?? ev.format ?? 'in_person') === 'online'
+    ? 'online' : 'in_person';
+  const meetingUrl = String(formData.get('meeting_url') ?? '').trim();
+  if (format === 'online' && !/^https?:\/\//i.test(meetingUrl)) {
+    return { error: 'Online events need a meeting link starting with https://' };
+  }
+
+  const ceiling = format === 'online' ? 100 : 15;
+  const rawSeats = Number(formData.get('seat_cap') ?? ev.seat_cap);
+  const seatCap = Math.min(ceiling, Math.max(2, Number.isFinite(rawSeats) ? rawSeats : ev.seat_cap));
+
+  // never strand people already holding a seat
+  const { count: takenCount } = await db.from('event_seats')
+    .select('id', { count: 'exact', head: true })
+    .eq('event_id', eventId).eq('status', 'confirmed');
+  if ((takenCount ?? 0) > seatCap) {
+    return { error: (takenCount ?? 0) + ' people are already confirmed. Set seats to at least that.' };
+  }
+
+  const patch: Record<string, unknown> = {
+    title,
+    description: String(formData.get('description') ?? '').slice(0, 4000) || null,
+    seat_cap: seatCap,
+    format,
+    meeting_url: format === 'online' ? meetingUrl : null,
+    meeting_note: format === 'online'
+      ? String(formData.get('meeting_note') ?? '').slice(0, 300) || null
+      : null,
+    venue_id: format === 'online'
+      ? null
+      : (String(formData.get('venue_id') || '') || ev.venue_id),
+  };
+
+  if (moved) {
+    patch.starts_at = iso;
+    patch.original_starts_at = ev.original_starts_at ?? ev.starts_at;
+    patch.status_changed_at = new Date().toISOString();
+    patch.status_changed_by = profile.id;
+  }
+
+  const { error } = await db.from('events').update(patch).eq('id', eventId);
+  if (error) return { error: error.message };
+
+  if (moved) {
+    await db.from('event_changes').insert({
+      event_id: eventId, kind: 'rescheduled',
+      from_starts_at: ev.starts_at, to_starts_at: iso, actor_id: profile.id,
+    });
+    await db.rpc('notify_event_attendees', {
+      ev_id: eventId,
+      n_kind: 'event.rescheduled',
+      n_title: title + ' has moved',
+      n_body: 'Now ' + whenText(iso) + '. Your seat carries over.',
+      actor: profile.id,
+    });
+  }
+
+  revalidatePath('/events');
+  revalidatePath('/events/' + eventId);
+  revalidatePath('/chapter');
+  revalidatePath('/speaker');
+  revalidatePath('/dashboard');
+
+  return {
+    ok: moved
+      ? 'Saved, and seat holders have been told about the new time.'
+      : 'Saved.',
+  };
 }

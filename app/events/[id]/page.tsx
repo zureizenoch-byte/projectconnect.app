@@ -8,6 +8,7 @@ import { MatchAttendeesButton } from '@/components/MatchAttendeesButton';
 import { Avatar } from '@/components/Avatar';
 import { MemberBadge } from '@/components/MemberBadge';
 import { JoinPanel } from '@/components/JoinPanel';
+import { EditEvent } from '@/components/EditEvent';
 import { LiveSeats } from '@/components/LiveSeats';
 import { VenueNotice } from '@/components/VenueNotice';
 import { describeMix } from '@/lib/matching';
@@ -27,6 +28,9 @@ export default async function EventPage({ params }: { params: { id: string } }) 
   // People sharing a table are meant to see each other, but the RLS policy on
   // event_seats only exposes your own row — read the roster past it.
   const db = createAdminClient();
+
+  const { data: venueOptions } = await db.from('venues')
+    .select('id,name,chapter_id').eq('chapter_id', e.chapter_id).eq('active', true).order('name');
 
   const { data: seats } = await db
     .from('event_seats').select('id,status,profile_id,table_no,created_at')
@@ -111,6 +115,7 @@ export default async function EventPage({ params }: { params: { id: string } }) 
 
   const canSeat = !!session && (
     session.profile.role === 'admin'
+    || e.created_by === session.user.id
     || e.host_id === session.user.id
     || e.created_by === session.user.id
     || (session.profile.lead_chapter_id && session.profile.lead_chapter_id === e.chapter_id)
@@ -263,6 +268,16 @@ export default async function EventPage({ params }: { params: { id: string } }) 
           )}
         </div>
       </div>
+
+      {canSeat && (
+        <div className="surf" style={{ padding: 'clamp(18px,2.5vw,24px)', marginTop: 18 }}>
+          <p className="eyebrow" style={{ margin: 0 }}>Organiser</p>
+          <p className="mute small" style={{ margin: '6px 0 12px' }}>
+            Fix a detail here. Moving the date tells everyone holding a seat.
+          </p>
+          <EditEvent event={e} venues={venueOptions ?? []} />
+        </div>
+      )}
 
       <JoinPanel format={(e as any).format} meetingUrl={(e as any).meeting_url}
         meetingNote={(e as any).meeting_note}
