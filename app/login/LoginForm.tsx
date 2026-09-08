@@ -10,9 +10,12 @@ export function LoginForm({ next }: { next: string }) {
       <label className="fld"><span>Email</span>
         <input name="email" type="email" required autoComplete="email" />
       </label>
-      <label className="fld"><span>Password</span>
+      <label className="fld" style={{ marginBottom: 10 }}><span>Password</span>
         <input name="password" type="password" required autoComplete="current-password" />
       </label>
+      <p className="small" style={{ margin: '0 0 20px' }}>
+        <a href="/login/forgot">Forgot your password?</a>
+      </p>
       {state.error && <p className="err">{state.error}</p>}
       <Submit />
     </form>
