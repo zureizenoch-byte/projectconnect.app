@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
+import { requireRole } from '@/lib/auth';
 import { mapsUrl } from '@/lib/matching';
 import { VenuePhoto } from '@/components/VenuePhoto';
 
@@ -6,6 +7,7 @@ export const metadata = { title: 'Venues — Project Connect' };
 export const dynamic = 'force-dynamic';
 
 export default async function VenuesPage() {
+  await requireRole('admin');
   const supabase = createClient();
   const { data: venues } = await supabase
     .from('venues')
