@@ -47,7 +47,7 @@ export function VenuePhoto({
           <img src={photoUrl} alt={name} loading="lazy"
             style={{
               display: 'block', width: '100%', height: '100%',
-              objectFit: 'contain', transform: 'scale(2.5)',
+              objectFit: 'contain', transform: 'scale(1.35)',
             }}
             onError={() => setBroken(true)} />
         </div>
