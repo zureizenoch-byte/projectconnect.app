@@ -34,13 +34,27 @@ export function VenuePhoto({
   };
 
   if (photoUrl && !broken) {
-    // locally stored artwork is a logo — frame it whole rather than cropping it
-    const contain = photoUrl.startsWith('/');
+    // Locally stored artwork is a logo, usually with generous white margins
+    // baked in — scale into it inside a clipping frame so the mark itself
+    // fills the card rather than the whitespace around it.
+    if (photoUrl.startsWith('/')) {
+      return (
+        <div style={{
+          height, overflow: 'hidden', background: '#fff',
+          borderBottom: '1px solid var(--line)',
+          display: 'grid', placeItems: 'center',
+        }}>
+          <img src={photoUrl} alt={name} loading="lazy"
+            style={{
+              display: 'block', width: '100%', height: '100%',
+              objectFit: 'contain', transform: 'scale(2.5)',
+            }}
+            onError={() => setBroken(true)} />
+        </div>
+      );
+    }
     return (
-      <img src={photoUrl} alt={name} loading="lazy"
-        style={contain
-          ? { ...frame, objectFit: 'contain', background: '#fff', padding: 4, transform: 'scale(1.55)' }
-          : frame}
+      <img src={photoUrl} alt={name} loading="lazy" style={frame}
         onError={() => setBroken(true)} />
     );
   }
