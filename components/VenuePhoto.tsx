@@ -40,14 +40,15 @@ export function VenuePhoto({
     if (photoUrl.startsWith('/')) {
       return (
         <div style={{
-          height, overflow: 'hidden', background: '#fff',
+          height, background: '#fff',
           borderBottom: '1px solid var(--line)',
-          display: 'grid', placeItems: 'center',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          padding: 0,
         }}>
           <img src={photoUrl} alt={name} loading="lazy"
             style={{
-              display: 'block', width: '100%', height: '100%',
-              objectFit: 'contain', transform: 'scale(1.35)',
+              display: 'block', maxWidth: '100%',
+              width: 'auto', height: '100%', objectFit: 'contain',
             }}
             onError={() => setBroken(true)} />
         </div>
