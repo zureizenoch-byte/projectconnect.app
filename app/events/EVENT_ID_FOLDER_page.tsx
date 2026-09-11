@@ -6,6 +6,7 @@ import { mapsUrl } from '@/lib/matching';
 import { RsvpButton } from '@/components/RsvpButton';
 import { MatchAttendeesButton } from '@/components/MatchAttendeesButton';
 import { Avatar } from '@/components/Avatar';
+import { VenuePhoto } from '@/components/VenuePhoto';
 import { MemberBadge } from '@/components/MemberBadge';
 import { JoinPanel } from '@/components/JoinPanel';
 import { EditEvent } from '@/components/EditEvent';
@@ -21,7 +22,7 @@ export default async function EventPage({ params }: { params: { id: string } }) 
 
   const { data: e } = await supabase
     .from('events')
-    .select('id,title,kind,description,starts_at,duration_min,seat_cap,status,status_note,original_starts_at,host_id,created_by,chapter_id,venue_id,format,meeting_url,meeting_note,chapters(city),venues(name,address,notes)')
+    .select('id,title,kind,description,starts_at,duration_min,seat_cap,status,status_note,original_starts_at,host_id,created_by,chapter_id,venue_id,format,meeting_url,meeting_note,chapters(city),venues(name,address,notes,photo_url)')
     .eq('id', params.id).maybeSingle();
   if (!e) notFound();
 
@@ -149,6 +150,18 @@ export default async function EventPage({ params }: { params: { id: string } }) 
   return (
     <main className="wrap" style={{ maxWidth: 860 }}>
       <LiveSeats eventId={e.id} />
+      {venue?.photo_url && (
+        <div className="surf venuebrand" style={{ padding: 0, overflow: 'hidden', marginBottom: 18 }}>
+          <VenuePhoto photoUrl={venue.photo_url} address={mapQuery ?? null}
+            name={venue.name} height={140} />
+          <div style={{ padding: '18px 22px', display: 'grid', alignContent: 'center', gap: 3 }}>
+            <span className="eyebrow" style={{ margin: 0 }}>Hosted at</span>
+            <strong style={{ fontSize: 19, lineHeight: 1.25 }}>{venue.name}</strong>
+            {venue.address && <span className="mute small">{venue.address}</span>}
+          </div>
+        </div>
+      )}
+
       <p className="eyebrow">{city} · {e.kind === 'talk' ? 'Speaker Series' : 'Meetup'}</p>
       <h1 style={{ marginTop: 12 }}>{e.title}</h1>
       <p className="mute" style={{ marginTop: 12, fontSize: 17 }}>

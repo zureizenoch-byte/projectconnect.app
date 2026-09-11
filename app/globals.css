@@ -409,3 +409,13 @@ img, iframe, video { max-width: 100%; }
   .brand span { font-size: 19px; }
   .nav-in { padding-block: 9px; gap: 12px; }
 }
+
+/* the venue's mark beside its name at the head of an event */
+.venuebrand {
+  display: grid;
+  grid-template-columns: minmax(0, 200px) minmax(0, 1fr);
+  align-items: stretch;
+}
+@media (max-width: 560px) {
+  .venuebrand { grid-template-columns: 1fr; }
+}

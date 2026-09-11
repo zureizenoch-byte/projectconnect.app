@@ -62,7 +62,8 @@ export default async function EventsPage({ searchParams }: { searchParams: { cit
         <div>
           <h1>Events</h1>
           <p className="mute" style={{ marginTop: 10, maxWidth: '58ch' }}>
-            Project Connect — real conversations, real people, real growth. Coffee meetups for project delivery professionals.
+            Project Connect — real conversations, real people, real growth.
+            Coffee meetups for project delivery professionals.
           </p>
         </div>
         <div className="row" style={{ gap: 10 }}>
@@ -107,7 +108,9 @@ export default async function EventsPage({ searchParams }: { searchParams: { cit
             <article key={e.id} className="surf lift" style={{
               padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column',
             }}>
-              <div style={{ position: 'relative' }}>
+              <a href={'/events/' + e.id} aria-label={e.title} style={{
+                position: 'relative', display: 'block', textDecoration: 'none',
+              }}>
                 <VenuePhoto photoUrl={e.venues?.photo_url} address={address}
                   name={e.venues?.name ?? e.title} city={cityName} kind={e.kind} />
 
@@ -163,7 +166,7 @@ export default async function EventsPage({ searchParams }: { searchParams: { cit
                     }}>New date</span>
                   ) : null}
                 </div>
-              </div>
+              </a>
 
               <div style={{ padding: 22, display: 'flex', flexDirection: 'column', gap: 12, flex: 1 }}>
                 <div>
