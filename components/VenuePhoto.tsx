@@ -39,7 +39,7 @@ export function VenuePhoto({
     return (
       <img src={photoUrl} alt={name} loading="lazy"
         style={contain
-          ? { ...frame, objectFit: 'contain', background: '#fff', padding: 16 }
+          ? { ...frame, objectFit: 'contain', background: '#fff', padding: 4, transform: 'scale(1.55)' }
           : frame}
         onError={() => setBroken(true)} />
     );
