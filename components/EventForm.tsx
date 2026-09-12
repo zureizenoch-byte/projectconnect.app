@@ -20,6 +20,7 @@ export function EventForm({ kind, chapters, venues, minSeats = 12, defaultSeats 
   const [title, setTitle] = useState('');
   const [startsAt, setStartsAt] = useState('');
   const [format, setFormat] = useState<'in_person' | 'online'>('in_person');
+  const [venueLater, setVenueLater] = useState(false);
   const [meetingUrl, setMeetingUrl] = useState('');
 
   const online = format === 'online';
@@ -52,6 +53,7 @@ export function EventForm({ kind, chapters, venues, minSeats = 12, defaultSeats 
             form.reset();
             setVenue({ venueId: null, name: '', address: '' });
             setTitle(''); setStartsAt(''); setMeetingUrl(''); setFormat('in_person');
+            setVenueLater(false);
           }
         });
       }}>
@@ -130,17 +132,47 @@ export function EventForm({ kind, chapters, venues, minSeats = 12, defaultSeats 
       ) : (
       <div className="fld" style={{ marginBottom: 16 }}>
         <span>Venue</span>
-        <VenueSearch venues={chapterVenues} city={cityName} onPick={setVenue} />
-        <input type="hidden" name="venue_id" value={venue.venueId ?? (venue.name ? '__new' : '')} />
-        <input type="hidden" name="new_venue_name" value={venue.venueId ? '' : venue.name} />
-        <input type="hidden" name="new_venue_address" value={venue.venueId ? '' : fullAddress} />
-        <span className="hint">
-          Type a place name or address. Saved venues appear first; anything new is added to your chapter.
-        </span>
+
+        {venueLater ? (
+          <div style={{
+            padding: '14px 16px', borderRadius: 12,
+            border: '1px dashed var(--line)', background: '#fcfcff',
+          }}>
+            <strong style={{ display: 'block', fontSize: 15.5 }}>To be confirmed</strong>
+            <span className="mute small">
+              The event will say "venue to be confirmed" until you set one from its page.
+            </span>
+          </div>
+        ) : (
+          <VenueSearch venues={chapterVenues} city={cityName} onPick={setVenue} />
+        )}
+
+        <input type="hidden" name="venue_id"
+          value={venueLater ? '' : (venue.venueId ?? (venue.name ? '__new' : ''))} />
+        <input type="hidden" name="new_venue_name"
+          value={venueLater || venue.venueId ? '' : venue.name} />
+        <input type="hidden" name="new_venue_address"
+          value={venueLater || venue.venueId ? '' : fullAddress} />
+
+        <label className="row" style={{ gap: 10, marginTop: 12, cursor: 'pointer' }}>
+          <input type="checkbox" checked={venueLater}
+            onChange={(e) => {
+              setVenueLater(e.target.checked);
+              if (e.target.checked) setVenue({ venueId: null, name: '', address: '' });
+            }} />
+          <span style={{ fontSize: 15 }}>Decide the venue later</span>
+        </label>
+
+        {!venueLater && (
+          <span className="hint">
+            Type a place name or address. Saved venues appear first; anything new is added to
+            your chapter. Or tick the box above and set it nearer the time.
+          </span>
+        )}
       </div>
       )}
 
-      {!online && fullAddress && (
+      {!online && !venueLater && fullAddress && (
         <div style={{
           marginBottom: 20, borderRadius: 14, overflow: 'hidden',
           border: '1px solid var(--line)',
