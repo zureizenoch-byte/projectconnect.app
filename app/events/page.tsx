@@ -25,8 +25,8 @@ export default async function EventsPage({ searchParams }: { searchParams: { cit
   const isAdmin = session?.profile.role === 'admin';
   const canSchedule = !!session && (isAdmin
     || (session.profile.role === 'chapter_lead' && !!session.profile.lead_chapter_id));
-  const canTalkHere = !!session
-    && (session.profile.role === 'speaker' && session.profile.speaker_approved);
+  const canTalkHere = !!session && (isAdmin
+    || (session.profile.role === 'speaker' && session.profile.speaker_approved));
   const canTalk = session ? canHostTalks(session.profile) : false;
 
   const query = isAdmin
