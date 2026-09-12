@@ -269,9 +269,13 @@ export default async function DashboardPage() {
                   style={{
                     display: 'block', marginTop: 16, borderRadius: 14,
                     overflow: 'hidden', border: '1px solid var(--line)',
+                    background: 'var(--gold-100)',
                   }}>
                   <img src={p.image_url} alt="" loading="lazy"
-                    style={{ display: 'block', width: '100%', maxHeight: 460, objectFit: 'cover' }} />
+                    style={{
+                      display: 'block', width: '100%', height: 'auto',
+                      maxHeight: 620, objectFit: 'contain',
+                    }} />
                 </a>
               )}
               <footer className="row" style={{ gap: 6, marginTop: 18, paddingTop: 14, borderTop: '1px solid var(--line)' }}>

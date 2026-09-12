@@ -48,7 +48,10 @@ export function PostForm() {
           overflow: 'hidden', border: '1px solid var(--line)',
         }}>
           <img src={preview} alt=""
-            style={{ display: 'block', width: '100%', maxHeight: 340, objectFit: 'cover' }} />
+            style={{
+              display: 'block', width: '100%', height: 'auto',
+              maxHeight: 420, objectFit: 'contain',
+            }} />
           <button type="button" onClick={clearPhoto} aria-label="Remove photo"
             style={{
               position: 'absolute', top: 10, right: 10,
