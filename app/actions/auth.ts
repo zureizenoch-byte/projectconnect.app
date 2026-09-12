@@ -6,6 +6,7 @@ import { headers } from 'next/headers';
 import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
 import { CURRENT_PRIVACY_VERSION, CURRENT_TERMS_VERSION } from '@/lib/legal';
+import { DISCLAIMER_VERSION } from '@/lib/disclaimer';
 
 const SignupSchema = z.object({
   email: z.string().email(),
@@ -22,6 +23,7 @@ const SignupSchema = z.object({
   city: z.string().min(2),
   is_immigrant: z.coerce.boolean().optional(),
   agree: z.literal('on', { errorMap: () => ({ message: 'You must agree to the Terms and Privacy Policy' }) }),
+  disclaimer: z.literal('on', { errorMap: () => ({ message: 'You must agree to the Member Disclaimer' }) }),
 }).refine((d) => d.password === d.confirm, { path: ['confirm'], message: 'Passwords do not match' });
 
 export type ActionState = { error?: string; fieldErrors?: Record<string, string>; ok?: boolean; checkEmail?: string };
@@ -71,6 +73,7 @@ export async function signUp(_prev: ActionState, formData: FormData): Promise<Ac
     await supabase.from('consents').insert([
       { profile_id: data.user.id, doc: 'privacy', version: CURRENT_PRIVACY_VERSION, user_agent: ua, ip },
       { profile_id: data.user.id, doc: 'terms', version: CURRENT_TERMS_VERSION, user_agent: ua, ip },
+      { profile_id: data.user.id, doc: 'disclaimer', version: DISCLAIMER_VERSION, user_agent: ua, ip },
     ]);
   }
 

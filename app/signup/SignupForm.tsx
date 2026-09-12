@@ -4,6 +4,7 @@ import { useFormState, useFormStatus } from 'react-dom';
 import { useState } from 'react';
 import { signUp, resendConfirmation, type ActionState } from '@/app/actions/auth';
 import { CITIES } from '@/lib/options';
+import { DisclaimerCheckbox } from '@/components/DisclaimerCheckbox';
 
 const JOIN_AS: [string, string, string][] = [
   ['member', 'Member', 'Matched meetups and Speaker Series talks in your chapter.'],
@@ -80,6 +81,8 @@ export function SignupForm() {
         </select>
       </label>
 
+
+      <DisclaimerCheckbox />
 
       <label className="row" style={{ marginBottom: 22, alignItems: 'flex-start', gap: 10 }}>
         <input type="checkbox" name="agree" required style={{ marginTop: 4 }} />
