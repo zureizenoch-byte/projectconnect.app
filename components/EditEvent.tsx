@@ -17,6 +17,7 @@ export function EditEvent({ event, venues = [] }: {
   const [pending, start] = useTransition();
   const [msg, setMsg] = useState<string | null>(null);
   const [isError, setIsError] = useState(false);
+  const [when, setWhen] = useState('');
   const [format, setFormat] = useState<'in_person' | 'online'>(
     event.format === 'online' ? 'online' : 'in_person');
 
@@ -71,8 +72,16 @@ export function EditEvent({ event, venues = [] }: {
 
       <div className="grid g2">
         <label className="fld"><span>Date and time</span>
-          <input name="starts_at" type="datetime-local" defaultValue={localStart} required />
-          <span className="hint">Change this and everyone holding a seat is told.</span>
+          <input name="starts_at" type="datetime-local" defaultValue={localStart} required
+            onChange={(e) => setWhen(e.target.value)} />
+          <span className="hint">
+            {when
+              ? new Date(when).toLocaleString('en-CA', {
+                  dateStyle: 'full', timeStyle: 'short', timeZoneName: 'long',
+                })
+              : 'Your time zone (' + Intl.DateTimeFormat().resolvedOptions().timeZone + ').'}
+            {' '}Change this and everyone holding a seat is told.
+          </span>
         </label>
         <label className="fld"><span>Seats</span>
           <input name="seat_cap" type="number" min={2} max={online ? 100 : 15}

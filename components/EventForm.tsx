@@ -24,6 +24,8 @@ export function EventForm({ kind, chapters, venues, minSeats = 12, defaultSeats 
   const [meetingUrl, setMeetingUrl] = useState('');
 
   const online = format === 'online';
+  // A time means nothing without its zone, and members may be anywhere
+  const localZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const linkOk = !online || /^https?:\/\//i.test(meetingUrl.trim());
   const ready = title.trim().length > 0 && startsAt.length > 0 && linkOk;
   const maxSeats = online ? 100 : 15;
@@ -100,10 +102,14 @@ export function EventForm({ kind, chapters, venues, minSeats = 12, defaultSeats 
         <label className="fld"><span>Date and time</span>
           <input name="starts_at" type="datetime-local" required
             value={startsAt} onChange={(e) => setStartsAt(e.target.value)} />
-          {startsAt && (
+          {startsAt ? (
             <span className="hint" style={{ color: 'var(--ok)' }}>
-              {new Date(startsAt).toLocaleString('en-CA', { dateStyle: 'full', timeStyle: 'short' })}
+              {new Date(startsAt).toLocaleString('en-CA', {
+                dateStyle: 'full', timeStyle: 'short', timeZoneName: 'long',
+              })}
             </span>
+          ) : (
+            <span className="hint">Entered in your own time zone ({localZone}).</span>
           )}
         </label>
         <label className="fld"><span>Seats ({minSeats}–{maxSeats})</span>
@@ -128,6 +134,15 @@ export function EventForm({ kind, chapters, venues, minSeats = 12, defaultSeats 
             <input name="meeting_note" maxLength={300}
               placeholder="Passcode, dial-in, or how early to join" />
           </label>
+          {startsAt && (
+            <p className="hint" style={{ marginTop: -8, marginBottom: 18 }}>
+              Online rooms draw people from other chapters. Everyone sees this time in their
+              own zone — yours reads{' '}
+              <strong>{new Date(startsAt).toLocaleTimeString('en-CA', {
+                hour: 'numeric', minute: '2-digit', timeZoneName: 'short',
+              })}</strong>.
+            </p>
+          )}
         </>
       ) : (
       <div className="fld" style={{ marginBottom: 16 }}>

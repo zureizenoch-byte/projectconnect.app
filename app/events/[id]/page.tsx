@@ -127,8 +127,12 @@ export default async function EventPage({ params }: { params: { id: string } }) 
   const mine = session ? (seats ?? []).find((s) => s.profile_id === session.user.id) : null;
   const paid = session ? isPaid(session.subscription.tier, session.subscription.status, session.subscription.current_period_end) : false;
   const d = new Date(e.starts_at);
-  const venue = e.venues as any;
-  const city = (e.chapters as any)?.city;
+  // PostgREST returns an embed as an object or an array depending on the
+  // relationship it infers — and an empty array when there is no venue at all.
+  const venueRaw = (e as any).venues;
+  const venue = (Array.isArray(venueRaw) ? venueRaw[0] : venueRaw) ?? null;
+  const chapterRaw = (e as any).chapters;
+  const city = (Array.isArray(chapterRaw) ? chapterRaw[0] : chapterRaw)?.city;
 
   // A full address geocodes far better than a bare street line
   const mapQuery = venue?.address
@@ -165,7 +169,9 @@ export default async function EventPage({ params }: { params: { id: string } }) 
       <p className="eyebrow">{city} · {e.kind === 'talk' ? 'Speaker Series' : 'Meetup'}</p>
       <h1 style={{ marginTop: 12 }}>{e.title}</h1>
       <p className="mute" style={{ marginTop: 12, fontSize: 17 }}>
-        {d.toLocaleString('en-CA', { dateStyle: 'full', timeStyle: 'short' })} · {e.duration_min} minutes
+        {d.toLocaleString('en-CA', {
+          dateStyle: 'full', timeStyle: 'short', timeZoneName: 'short',
+        })} · {e.duration_min} minutes
       </p>
 
       {(e.status === 'postponed' || e.status === 'cancelled' || e.original_starts_at) && (
@@ -420,7 +426,7 @@ export default async function EventPage({ params }: { params: { id: string } }) 
         )}
       </section>
 
-      {(e as any).format !== 'online' && mapQuery && (
+      {(e as any).format !== 'online' && mapQuery && finalSrc && (
         <section className="surf" style={{ marginTop: 18, overflow: 'hidden' }}>
           <header className="row" style={{
             justifyContent: 'space-between', padding: '16px 20px',
