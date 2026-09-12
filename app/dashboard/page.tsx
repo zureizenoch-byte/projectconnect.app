@@ -234,10 +234,14 @@ export default async function DashboardPage() {
                     name={authorMap.get(p.author_id)?.full_name} size={64} />
                 </a>
                 <div style={{ minWidth: 0, flex: 1 }}>
-                  <a href={'/members/' + p.author_id}
-                    style={{ fontWeight: 600, fontSize: 19, color: 'var(--ink)', textDecoration: 'none' }}>
-                    {authorMap.get(p.author_id)?.full_name ?? 'Member'}
-                  </a>
+                  {authorMap.get(p.author_id) ? (
+                    <a href={'/members/' + p.author_id}
+                      style={{ fontWeight: 600, fontSize: 19, color: 'var(--ink)', textDecoration: 'none' }}>
+                      {authorMap.get(p.author_id)?.full_name ?? 'Member'}
+                    </a>
+                  ) : (
+                    <span className="mute" style={{ fontWeight: 600, fontSize: 19 }}>Former member</span>
+                  )}
                   <MemberBadge
                     role={authorMap.get(p.author_id)?.role}
                     speakerApproved={authorMap.get(p.author_id)?.speaker_approved

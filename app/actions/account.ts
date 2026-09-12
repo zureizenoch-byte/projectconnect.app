@@ -59,6 +59,16 @@ export async function deleteAccount(_prev: AccountState, formData: FormData): Pr
 
   await admin.from('event_seats').update({ status: 'cancelled' }).eq('profile_id', user.id);
 
+  // Posts and comments survive with no author, so threads stay readable — but
+  // the person's own uploads go with them.
+  for (const bucket of ['avatars', 'post-images']) {
+    const { data: files } = await admin.storage.from(bucket).list(user.id);
+    if (files?.length) {
+      await admin.storage.from(bucket)
+        .remove(files.map((f: any) => user.id + '/' + f.name));
+    }
+  }
+
   // cascades handle profile_tags, privacy_settings, subscriptions,
   // consents, access_requests, role_grants, posts and comments
   const { error } = await admin.auth.admin.deleteUser(user.id);

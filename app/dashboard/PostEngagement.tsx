@@ -99,7 +99,7 @@ export function PostEngagement({
                   backgroundImage: c.commenter?.photo_url ? 'url(' + c.commenter.photo_url + ')' : undefined,
                   backgroundSize: 'cover' }} />
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <span style={{ fontWeight: 600, fontSize: 14.5 }}>{c.commenter?.full_name ?? 'Member'}</span>
+                  <span style={{ fontWeight: 600, fontSize: 14.5 }}>{c.commenter?.full_name ?? 'Former member'}</span>
                   {(c.commenter?.speaker_approved || c.commenter?.role === 'speaker') && (
                     <span className="pill pill-wait" style={{ marginLeft: 6, fontSize: 10 }}>Speaker</span>
                   )}
