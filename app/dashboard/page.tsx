@@ -25,7 +25,7 @@ export default async function DashboardPage() {
       .order('created_at', { ascending: false }),
     supabase.from('profile_tags').select('category').eq('profile_id', user.id),
     supabase.from('posts')
-      .select('id,body,created_at,author_id,chapter_id')
+      .select('id,body,image_url,created_at,author_id,chapter_id')
       .order('created_at', { ascending: false }).limit(50),
   ]);
 
@@ -261,7 +261,19 @@ export default async function DashboardPage() {
                   </span>
                 </div>
               </div>
-              <p style={{ fontSize: 16.5, lineHeight: 1.7, margin: '18px 0 0', whiteSpace: 'pre-wrap' }}>{p.body}</p>
+              {p.body && (
+                <p style={{ fontSize: 16.5, lineHeight: 1.7, margin: '18px 0 0', whiteSpace: 'pre-wrap' }}>{p.body}</p>
+              )}
+              {p.image_url && (
+                <a href={p.image_url} target="_blank" rel="noopener noreferrer"
+                  style={{
+                    display: 'block', marginTop: 16, borderRadius: 14,
+                    overflow: 'hidden', border: '1px solid var(--line)',
+                  }}>
+                  <img src={p.image_url} alt="" loading="lazy"
+                    style={{ display: 'block', width: '100%', maxHeight: 460, objectFit: 'cover' }} />
+                </a>
+              )}
               <footer className="row" style={{ gap: 6, marginTop: 18, paddingTop: 14, borderTop: '1px solid var(--line)' }}>
                 <span style={{ marginRight: 'auto' }} />
                 {(p.author_id === user.id || profile.role === 'admin') && <PostActions postId={p.id} />}
