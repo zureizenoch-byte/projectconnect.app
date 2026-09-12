@@ -122,8 +122,17 @@ export async function requestPasswordReset(_prev: ActionState, formData: FormDat
   const email = String(formData.get('email') ?? '');
   const supabase = createClient();
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: siteUrl() + '/auth/callback?next=' + encodeURIComponent('/auth/reset'),
+    redirectTo: siteUrl() + '/auth/reset',
   });
-  if (error) return { error: error.message };
+  if (error) {
+    const m = error.message.toLowerCase();
+    if (m.includes('rate limit') || m.includes('too many')) {
+      return {
+        error: 'Too many reset emails just now. Wait a few minutes and try again — '
+          + 'and check your spam folder, the earlier one may have arrived.',
+      };
+    }
+    return { error: error.message };
+  }
   return { ok: true };
 }
