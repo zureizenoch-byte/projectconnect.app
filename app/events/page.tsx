@@ -23,6 +23,10 @@ export default async function EventsPage({ searchParams }: { searchParams: { cit
   const supabase = createClient();
   const paid = session ? isPaid(session.subscription.tier, session.subscription.status, session.subscription.current_period_end) : false;
   const isAdmin = session?.profile.role === 'admin';
+  const canSchedule = !!session && (isAdmin
+    || (session.profile.role === 'chapter_lead' && !!session.profile.lead_chapter_id));
+  const canTalkHere = !!session
+    && (session.profile.role === 'speaker' && session.profile.speaker_approved);
   const canTalk = session ? canHostTalks(session.profile) : false;
 
   const query = isAdmin
@@ -70,7 +74,11 @@ export default async function EventsPage({ searchParams }: { searchParams: { cit
           {canTalk && (
             <a className="btn btn-dark" href="/events/new?kind=talk">Schedule a talk</a>
           )}
-          {session && <a className="btn btn-gold" href="/events/new">Propose a meetup</a>}
+          {session && (canSchedule || canTalkHere) && (
+          <a className="btn btn-gold" href={canSchedule ? '/events/new' : '/events/new?kind=talk'}>
+            {canSchedule ? 'Schedule a meetup' : 'Schedule a talk'}
+          </a>
+        )}
         </div>
       </div>
       {isAdmin && (

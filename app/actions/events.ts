@@ -244,44 +244,12 @@ export async function createEvent(formData: FormData) {
   if (kind === 'talk' && !canHostTalks(profile)) {
     return { error: 'Speaker Series talks are hosted by approved speakers.' };
   }
-  // Any member may propose a coffee meetup; it goes to an admin for approval.
-  // Chapter Leads and admins run the larger matched meetups.
+  // Meetups are run by Chapter Leads. Members attend rather than convene.
   const organiser = canRunChapter(profile);
-
-  // Free membership covers hosting one meetup per cycle.
-  if (!organiser && !isAdmin(profile)) {
-    const { isPaid } = await import('@/lib/tiers');
-    const db0 = createAdminClient();
-    const { data: sub } = await db0.from('subscriptions')
-      .select('tier,status,current_period_end').eq('profile_id', profile.id).maybeSingle();
-    const paidMember = sub ? isPaid(sub.tier, sub.status, sub.current_period_end) : false;
-
-    if (!paidMember) {
-      const cycleStart = new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth(), 1));
-      const { count } = await db0.from('events')
-        .select('id', { count: 'exact', head: true })
-        .eq('created_by', profile.id)
-        .neq('status', 'cancelled')
-        .gte('starts_at', cycleStart.toISOString());
-
-      if ((count ?? 0) >= 1) {
-        return {
-          error: 'Free membership covers hosting one meetup per cycle. '
-            + 'Upgrade to schedule more, or wait until next month.',
-        };
-      }
-    }
-  }
-  const minSeats = organiser ? 12 : 2;
-  const format = String(formData.get('format') ?? 'in_person') === 'online' ? 'online' : 'in_person';
-  const meetingUrl = String(formData.get('meeting_url') ?? '').trim();
-
-  if (format === 'online' && !/^https?:\/\//i.test(meetingUrl)) {
-    return { error: 'Add the meeting link — the full https:// address.' };
+  if (kind === 'meetup' && !organiser) {
+    return { error: 'Meetups are scheduled by Chapter Leads. Take a seat at one instead.' };
   }
 
-  // online rooms are not bound by a venue's furniture
-  const ceiling = format === 'online' ? 100 : 15;
   const seatCap = Math.min(ceiling, Math.max(minSeats, Number(formData.get('seat_cap') ?? (organiser ? 15 : 6))));
   const supabase = createClient();
   const chapterId = String(formData.get('chapter_id'));
