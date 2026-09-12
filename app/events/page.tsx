@@ -71,14 +71,14 @@ export default async function EventsPage({ searchParams }: { searchParams: { cit
           </p>
         </div>
         <div className="row" style={{ gap: 10 }}>
-          {canTalk && (
-            <a className="btn btn-dark" href="/events/new?kind=talk">Schedule a talk</a>
+          {session && canSchedule && (
+            <a className="btn btn-gold" href="/events/new">Schedule a meetup</a>
           )}
-          {session && (canSchedule || canTalkHere) && (
-          <a className="btn btn-gold" href={canSchedule ? '/events/new' : '/events/new?kind=talk'}>
-            {canSchedule ? 'Schedule a meetup' : 'Schedule a talk'}
-          </a>
-        )}
+          {session && canTalkHere && (
+            <a className={canSchedule ? 'btn btn-out' : 'btn btn-gold'} href="/events/new?kind=talk">
+              Schedule a talk
+            </a>
+          )}
         </div>
       </div>
       {isAdmin && (
