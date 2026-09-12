@@ -2,6 +2,7 @@ import { requireSession } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 import { ProfileForm } from './ProfileForm';
 import { PrivacyForm } from './PrivacyForm';
+import { AccountSecurity } from './AccountSecurity';
 
 export const metadata = { title: 'Profile — Project Connect' };
 
@@ -29,6 +30,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: { we
 
       <ProfileForm profile={profile} tags={tags ?? []} />
       <PrivacyForm settings={privacy ?? null} />
+      <AccountSecurity email={profile.email} />
     </main>
   );
 }
