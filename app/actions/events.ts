@@ -250,7 +250,16 @@ export async function createEvent(formData: FormData) {
     return { error: 'Meetups are scheduled by Chapter Leads. Take a seat at one instead.' };
   }
 
-  const seatCap = Math.min(ceiling, Math.max(minSeats, Number(formData.get('seat_cap') ?? (organiser ? 15 : 6))));
+  const format = String(formData.get('format') ?? 'in_person') === 'online'
+    ? 'online' : 'in_person';
+  const meetingUrl = String(formData.get('meeting_url') ?? '').trim();
+  if (format === 'online' && !/^https?:\/\//i.test(meetingUrl)) {
+    return { error: 'Online events need a meeting link starting with https://' };
+  }
+
+  // Online rooms are not limited by furniture; a table is.
+  const ceiling = format === 'online' ? 100 : 15;
+  const seatCap = Math.min(ceiling, Math.max(2, Number(formData.get('seat_cap') ?? 15)));
   const supabase = createClient();
   const chapterId = String(formData.get('chapter_id'));
 
@@ -275,7 +284,12 @@ export async function createEvent(formData: FormData) {
 
   const { data: created, error } = await supabase.from('events').insert({
     chapter_id: chapterId,
-    venue_id: venueId,
+    venue_id: format === 'online' ? null : venueId,
+    format,
+    meeting_url: format === 'online' ? meetingUrl : null,
+    meeting_note: format === 'online'
+      ? String(formData.get('meeting_note') ?? '').slice(0, 300) || null
+      : null,
     host_id: kind === 'talk' || !organiser ? profile.id : null,
     created_by: profile.id,
     kind,
