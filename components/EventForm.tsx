@@ -105,7 +105,8 @@ export function EventForm({ kind, chapters, venues, minSeats = 12, defaultSeats 
           {startsAt ? (
             <span className="hint" style={{ color: 'var(--ok)' }}>
               {new Date(startsAt).toLocaleString('en-CA', {
-                dateStyle: 'full', timeStyle: 'short', timeZoneName: 'long',
+                weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+                hour: 'numeric', minute: '2-digit', timeZoneName: 'long',
               })}
             </span>
           ) : (

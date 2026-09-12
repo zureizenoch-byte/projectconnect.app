@@ -170,7 +170,8 @@ export default async function EventPage({ params }: { params: { id: string } }) 
       <h1 style={{ marginTop: 12 }}>{e.title}</h1>
       <p className="mute" style={{ marginTop: 12, fontSize: 17 }}>
         {d.toLocaleString('en-CA', {
-          dateStyle: 'full', timeStyle: 'short', timeZoneName: 'short',
+          weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+          hour: 'numeric', minute: '2-digit', timeZoneName: 'short',
         })} · {e.duration_min} minutes
       </p>
 

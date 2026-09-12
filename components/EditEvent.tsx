@@ -77,7 +77,8 @@ export function EditEvent({ event, venues = [] }: {
           <span className="hint">
             {when
               ? new Date(when).toLocaleString('en-CA', {
-                  dateStyle: 'full', timeStyle: 'short', timeZoneName: 'long',
+                  weekday: 'long', month: 'long', day: 'numeric',
+                  hour: 'numeric', minute: '2-digit', timeZoneName: 'long',
                 })
               : 'Your time zone (' + Intl.DateTimeFormat().resolvedOptions().timeZone + ').'}
             {' '}Change this and everyone holding a seat is told.
