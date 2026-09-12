@@ -172,7 +172,7 @@ export default async function ChapterPage() {
       </div>
 
       <h2 style={{ marginTop: 34 }}>Chapter venues</h2>
-      <div className="surf" style={{ marginTop: 16, overflow: 'hidden' }}>
+      <div className="surf tablecard" style={{ marginTop: 16 }}>
         <table className="table">
           <thead><tr><th>Venue</th><th>Address</th><th>Capacity</th><th>Status</th></tr></thead>
           <tbody>

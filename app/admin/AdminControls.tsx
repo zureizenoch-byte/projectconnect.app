@@ -20,7 +20,7 @@ export function AdminControls({ requests, pendingEvents, leads, reports, chapter
 
       <h2 id="access-requests" style={{ marginTop: 30, scrollMarginTop: 80 }}>Access requests</h2>
       <SectionBoundary title="Access requests">
-      <div className="surf" style={{ marginTop: 14, overflow: 'hidden' }}>
+      <div className="surf tablecard" style={{ marginTop: 14 }}>
         <table className="table">
           <thead><tr><th>Person</th><th>Requesting</th><th>Chapter</th><th>Introduction</th><th style={{ textAlign: 'right' }}>Decision</th></tr></thead>
           <tbody>
@@ -54,7 +54,7 @@ export function AdminControls({ requests, pendingEvents, leads, reports, chapter
 
       <h2 id="pending-events" style={{ marginTop: 30, scrollMarginTop: 80 }}>Events awaiting approval</h2>
       <SectionBoundary title="Events awaiting approval">
-      <div className="surf" style={{ marginTop: 14, overflow: 'hidden' }}>
+      <div className="surf tablecard" style={{ marginTop: 14 }}>
         <table className="table">
           <thead><tr><th>Event</th><th>Kind</th><th>Chapter</th><th>Created by</th><th style={{ textAlign: 'right' }}>Decision</th></tr></thead>
           <tbody>
@@ -108,7 +108,7 @@ export function AdminControls({ requests, pendingEvents, leads, reports, chapter
         </div>
         <p className="hint">They must already have an account. Grants are logged and can be revoked below.</p>
       </form>
-      <div className="surf" style={{ marginTop: 14, overflow: 'hidden' }}>
+      <div className="surf tablecard" style={{ marginTop: 14 }}>
         <table className="table">
           <thead><tr><th>Person</th><th>Role</th><th>Chapter</th><th>Since</th><th style={{ textAlign: 'right' }}>Action</th></tr></thead>
           <tbody>
@@ -162,7 +162,7 @@ export function AdminControls({ requests, pendingEvents, leads, reports, chapter
       </SectionBoundary>
 
       <SectionBoundary title="Venues">
-      <div className="surf" style={{ marginTop: 14, overflow: 'hidden' }}>
+      <div className="surf tablecard" style={{ marginTop: 14 }}>
         <table className="table">
           <thead>
             <tr>
@@ -189,7 +189,7 @@ export function AdminControls({ requests, pendingEvents, leads, reports, chapter
       <p className="mute small" style={{ marginTop: 6 }}>
         Change anyone's role here. Grants and revocations are written to the audit log below.
       </p>
-      <div className="surf" style={{ marginTop: 14, overflow: 'hidden' }}>
+      <div className="surf tablecard" style={{ marginTop: 14 }}>
         <table className="table">
           <thead><tr><th>Person</th><th>City</th><th>Role</th><th style={{ textAlign: 'right' }}>Change to</th></tr></thead>
           <tbody>
@@ -234,7 +234,7 @@ export function AdminControls({ requests, pendingEvents, leads, reports, chapter
       </div>
 
       <h2 id="message-reports" style={{ marginTop: 30, scrollMarginTop: 80 }}>Reported messages</h2>
-      <div className="surf" style={{ marginTop: 14, overflow: 'hidden' }}>
+      <div className="surf tablecard" style={{ marginTop: 14 }}>
         <table className="table">
           <thead><tr><th>Reported</th><th>Reason</th><th>Message</th><th style={{ textAlign: 'right' }}>Action</th></tr></thead>
           <tbody>
@@ -269,7 +269,7 @@ export function AdminControls({ requests, pendingEvents, leads, reports, chapter
       </div>
 
       <h2 id="reports" style={{ marginTop: 30, scrollMarginTop: 80 }}>Reported posts</h2>
-      <div className="surf" style={{ marginTop: 14, overflow: 'hidden' }}>
+      <div className="surf tablecard" style={{ marginTop: 14 }}>
         <table className="table">
           <thead><tr><th>Post</th><th>Reason</th><th style={{ textAlign: 'right' }}>Action</th></tr></thead>
           <tbody>
@@ -291,7 +291,7 @@ export function AdminControls({ requests, pendingEvents, leads, reports, chapter
       </div>
 
       <h2 style={{ marginTop: 30 }}>Audit log</h2>
-      <div className="surf" style={{ marginTop: 14, overflow: 'hidden' }}>
+      <div className="surf tablecard" style={{ marginTop: 14 }}>
         <table className="table">
           <thead><tr><th>When</th><th>Who</th><th>Action</th><th>Target</th></tr></thead>
           <tbody>

@@ -213,6 +213,14 @@ input[type="checkbox"], input[type="radio"] {
 .table tr { transition: background .16s ease; }
 .table tbody tr:hover td { background: var(--gold-100); }
 
+/* A card whose content is a table: clip the corners, but never the sideways
+   scroll — a wide table must stay reachable on a narrow screen. */
+.tablecard {
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
 /* ---------------------------------------------------------------- dark sections */
 .ondark { background: linear-gradient(165deg, var(--ink), var(--gold-700)); color: #fff; }
 .ondark h1, .ondark h2, .ondark h3 { color: #fff; }
@@ -253,9 +261,21 @@ img, iframe, video { max-width: 100%; }
     grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)) !important;
   }
 
-  /* tables scroll horizontally rather than stretching the page */
+  /* tables scroll horizontally rather than stretching the page.
+     !important because the admin cards carry an inline overflow:hidden. */
+  .surf:has(> .table),
+  .surf:has(> table) { overflow-x: auto !important; -webkit-overflow-scrolling: touch; }
   .surf { overflow-x: auto; }
   .table { min-width: 560px; }
+
+  /* a faint edge so it reads as scrollable rather than cut off */
+  .surf:has(> .table) {
+    background-image: linear-gradient(to left, rgba(13,19,48,.07), transparent 32px);
+    background-repeat: no-repeat;
+    background-position: right center;
+    background-size: 32px 100%;
+    background-attachment: local;
+  }
 }
 
 /* -------- phone */

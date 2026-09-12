@@ -127,7 +127,7 @@ export default async function SpeakerPage() {
       <EventForm kind="talk" chapters={chapters} venues={venues} />
 
       <h2 style={{ marginTop: 34 }}>Past talks</h2>
-      <div className="surf" style={{ marginTop: 16, overflow: 'hidden' }}>
+      <div className="surf tablecard" style={{ marginTop: 16 }}>
         <table className="table">
           <thead><tr><th>Talk</th><th>Chapter</th><th>Attendance</th></tr></thead>
           <tbody>
