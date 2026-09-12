@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { editEvent } from '@/app/actions/eventLifecycle';
 
@@ -22,10 +22,15 @@ export function EditEvent({ event, venues = [] }: {
     event.format === 'online' ? 'online' : 'in_person');
 
   const online = format === 'online';
-  const localStart = new Date(
-    new Date(event.starts_at).getTime()
-    - new Date(event.starts_at).getTimezoneOffset() * 60000,
-  ).toISOString().slice(0, 16);
+
+  // The offset must be read in the browser: during server rendering the zone is
+  // UTC, which would drop the wrong time into the field.
+  const [localStart, setLocalStart] = useState('');
+  useEffect(() => {
+    const t = new Date(event.starts_at);
+    const local = new Date(t.getTime() - t.getTimezoneOffset() * 60000);
+    setLocalStart(local.toISOString().slice(0, 16));
+  }, [event.starts_at]);
 
   if (!open) {
     return (
@@ -72,7 +77,8 @@ export function EditEvent({ event, venues = [] }: {
 
       <div className="grid g2">
         <label className="fld"><span>Date and time</span>
-          <input name="starts_at" type="datetime-local" defaultValue={localStart} required
+          <input name="starts_at" type="datetime-local" required
+            value={when || localStart}
             onChange={(e) => setWhen(e.target.value)} />
           <span className="hint">
             {when
