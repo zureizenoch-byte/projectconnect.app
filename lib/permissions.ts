@@ -29,6 +29,7 @@ export function navFor(p: Profile) {
   if (canRunChapter(p)) base.push(['Chapter', '/chapter']);
   // Venues is an admin tool — members reach a venue through its event
   if (isAdmin(p)) base.push(['Venues', '/venues']);
+  if (isAdmin(p)) base.push(['Recruiter', '/recruiter']);
   if (isAdmin(p)) base.push(['Admin', '/admin']);
   return base;
 }
