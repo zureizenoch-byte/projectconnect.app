@@ -178,6 +178,38 @@ input[type="checkbox"], input[type="radio"] {
   backdrop-filter: saturate(150%) blur(12px);
   border-bottom: 1px solid var(--line);
 }
+/* Post header: avatar, then name and badge on one wrapping line, with role,
+   chapter and date as a single quiet meta line beneath. Three separate stacked
+   blocks looked broken once a long name wrapped. */
+.posthead {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+}
+.postname {
+  font-weight: 600; font-size: 17.5px; line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+.postmeta { font-size: 14px; line-height: 1.5; margin: 3px 0 0; }
+.postaside {
+  display: flex; flex-direction: column; align-items: flex-end; gap: 6px;
+}
+.postdate { font-size: 13.5px; white-space: nowrap; }
+
+/* On a phone the chapter and date move under the name rather than squeezing
+   it into a two-word-per-line column. */
+@media (max-width: 560px) {
+  .posthead { grid-template-columns: auto minmax(0, 1fr); gap: 12px; }
+  .postname { font-size: 16.5px; }
+  .postmeta { font-size: 13.5px; }
+  .postaside {
+    grid-column: 2;
+    flex-direction: row; align-items: center; gap: 10px;
+    margin-top: 2px;
+  }
+}
+
 /* Member search: a comfortable field on desktop, full width on a phone so the
    results panel has room to read. */
 .membersearch { position: relative; flex: 0 1 230px; min-width: 140px; }

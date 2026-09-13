@@ -228,43 +228,46 @@ export default async function DashboardPage() {
           <PostForm />
           {(posts ?? []).map((p: any) => (
             <article key={p.id} id={'post-' + p.id} className="surf lift" style={{ padding: 24 }}>
-              <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-                <a href={'/members/' + p.author_id} aria-label="View profile" style={{ flex: 'none' }}>
+              <header className="posthead">
+                <a href={'/members/' + p.author_id} aria-label="View profile" style={{ flex: 'none', lineHeight: 0 }}>
                   <Avatar src={authorMap.get(p.author_id)?.photo_url}
-                    name={authorMap.get(p.author_id)?.full_name} size={64} />
+                    name={authorMap.get(p.author_id)?.full_name} size={52} />
                 </a>
+
                 <div style={{ minWidth: 0, flex: 1 }}>
-                  {authorMap.get(p.author_id) ? (
-                    <a href={'/members/' + p.author_id}
-                      style={{ fontWeight: 600, fontSize: 19, color: 'var(--ink)', textDecoration: 'none' }}>
-                      {authorMap.get(p.author_id)?.full_name ?? 'Member'}
-                    </a>
-                  ) : (
-                    <span className="mute" style={{ fontWeight: 600, fontSize: 19 }}>Former member</span>
-                  )}
-                  <MemberBadge
-                    role={authorMap.get(p.author_id)?.role}
-                    speakerApproved={authorMap.get(p.author_id)?.speaker_approved
-                      || authorMap.get(p.author_id)?.role === 'speaker'}
-                    tier={planOf.get(p.author_id)?.tier}
-                    status={planOf.get(p.author_id)?.status} />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                    {authorMap.get(p.author_id) ? (
+                      <a href={'/members/' + p.author_id} className="postname"
+                        style={{ color: 'var(--ink)', textDecoration: 'none' }}>
+                        {authorMap.get(p.author_id)?.full_name ?? 'Member'}
+                      </a>
+                    ) : (
+                      <span className="postname mute">Former member</span>
+                    )}
+                    <MemberBadge
+                      role={authorMap.get(p.author_id)?.role}
+                      speakerApproved={authorMap.get(p.author_id)?.speaker_approved
+                        || authorMap.get(p.author_id)?.role === 'speaker'}
+                      tier={planOf.get(p.author_id)?.tier}
+                      status={planOf.get(p.author_id)?.status} />
+                  </div>
+
                   {authorMap.get(p.author_id)?.role_level && (
-                    <p className="mute" style={{ fontSize: 15, margin: '3px 0 0' }}>
-                      {authorMap.get(p.author_id).role_level}
-                    </p>
+                    <p className="mute postmeta">{authorMap.get(p.author_id).role_level}</p>
                   )}
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
+
+                <div className="postaside">
                   {authorMap.get(p.author_id)?.city && (
                     <span className="pill pill-wait" style={{ whiteSpace: 'nowrap' }}>
                       {authorMap.get(p.author_id).city}
                     </span>
                   )}
-                  <span className="mute" style={{ fontSize: 13.5, whiteSpace: 'nowrap' }}>
+                  <span className="mute postdate">
                     {new Date(p.created_at).toLocaleDateString('en-CA', { month: 'short', day: 'numeric' })}
                   </span>
                 </div>
-              </div>
+              </header>
               {p.body && (
                 <p style={{ fontSize: 16.5, lineHeight: 1.7, margin: '18px 0 0', whiteSpace: 'pre-wrap' }}>{p.body}</p>
               )}
