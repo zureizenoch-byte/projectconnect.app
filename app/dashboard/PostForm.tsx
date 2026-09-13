@@ -3,6 +3,7 @@
 import { useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { createPost } from '@/app/actions/feed';
+import { shrinkImage } from '@/lib/shrinkImage';
 
 export function PostForm() {
   const router = useRouter();
@@ -10,13 +11,16 @@ export function PostForm() {
   const fileRef = useRef<HTMLInputElement>(null);
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [stage, setStage] = useState<string | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
+  const [file, setFile] = useState<File | null>(null);
 
   const clearPhoto = () => {
     if (preview) URL.revokeObjectURL(preview);
     setPreview(null);
     setFileName(null);
+    setFile(null);
     if (fileRef.current) fileRef.current.value = '';
   };
 
@@ -24,15 +28,32 @@ export function PostForm() {
     <form ref={ref} className="surf" style={{ padding: 20 }}
       onSubmit={(e) => {
         e.preventDefault();
-        const fd = new FormData(e.currentTarget);
+        const form = e.currentTarget;
         start(async () => {
-          const res = await createPost(fd);
-          if (res?.error) setError(res.error);
-          else {
-            setError(null);
-            ref.current?.reset();
-            clearPhoto();
+          const fd = new FormData(form);
+
+          // A phone photo is megabytes; the feed needs none of that. Shrinking
+          // here is the single biggest saving in posting.
+          if (file) {
+            setStage('Preparing photo…');
+            fd.set('photo', await shrinkImage(file));
+          }
+
+          setStage('Posting…');
+          try {
+            const res = await createPost(fd);
+            if (res?.error) setError(res.error);
+            else {
+              setError(null);
+              form.reset();
+              clearPhoto();
+              router.refresh();
+            }
+          } catch {
+            setError('That took too long to confirm. Refreshing to check whether it posted…');
             router.refresh();
+          } finally {
+            setStage(null);
           }
         });
       }}>
@@ -66,7 +87,7 @@ export function PostForm() {
 
       <div className="row" style={{ gap: 10 }}>
         <button className="btn btn-primary" type="submit" disabled={pending}>
-          {pending ? 'Posting…' : 'Post'}
+          {pending ? (stage ?? 'Posting…') : 'Post'}
         </button>
 
         <label className="btn btn-out" style={{ cursor: 'pointer' }}>
@@ -74,17 +95,18 @@ export function PostForm() {
           <input ref={fileRef} type="file" name="photo" hidden
             accept="image/jpeg,image/png,image/webp,image/gif"
             onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (!file) return clearPhoto();
-              if (file.size > 8_000_000) {
+              const chosen = e.target.files?.[0];
+              if (!chosen) return clearPhoto();
+              if (chosen.size > 8_000_000) {
                 setError('Photos must be under 8MB.');
                 clearPhoto();
                 return;
               }
               setError(null);
               if (preview) URL.revokeObjectURL(preview);
-              setPreview(URL.createObjectURL(file));
-              setFileName(file.name);
+              setPreview(URL.createObjectURL(chosen));
+              setFileName(chosen.name);
+              setFile(chosen);
             }} />
         </label>
 

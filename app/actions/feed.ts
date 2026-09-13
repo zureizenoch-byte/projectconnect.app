@@ -33,7 +33,11 @@ export async function createPost(formData: FormData) {
     const admin = createAdminClient();
     const { error: uploadError } = await admin.storage
       .from('post-images')
-      .upload(path, photo!, { upsert: false, contentType: photo!.type });
+      .upload(path, photo!, {
+        upsert: false,
+        contentType: photo!.type,
+        cacheControl: '31536000',
+      });
 
     if (uploadError) {
       return {
