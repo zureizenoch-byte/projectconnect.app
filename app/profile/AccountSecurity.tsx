@@ -23,7 +23,7 @@ function ChangePassword() {
   const valid = RULE.test(next);
 
   return (
-    <form action={action} className="surf" style={{ padding: 'clamp(22px,3vw,34px)', marginTop: 22 }}>
+    <form action={action} className="surf" id="password" style={{ padding: 'clamp(22px,3vw,34px)', marginTop: 22, scrollMarginTop: 90 }}>
       <h2 style={{ fontSize: 24 }}>Change password</h2>
       <p className="mute small" style={{ marginTop: 6 }}>
         Between 8 and 20 characters, letters and numbers, with at least one of each.
