@@ -154,15 +154,30 @@ export async function revokeRole(profileId: string, role: 'speaker' | 'chapter_l
 /** Grant a role directly, without waiting for the person to apply. */
 export async function grantRole(formData: FormData) {
   const { profile } = await requireRole('admin');
-  const email = String(formData.get('email') ?? '').trim().toLowerCase();
+  const who = String(formData.get('email') ?? '').trim();
   const role = String(formData.get('role') ?? '');
-  if (!email) return { error: 'Enter an email address' };
+  if (!who) return { error: 'Enter a name or email address' };
   if (!['speaker', 'chapter_lead', 'admin'].includes(role)) return { error: 'Pick a role' };
 
   const admin = createAdminClient();
-  const { data: target } = await admin.from('profiles')
-    .select('id,chapter_id').ilike('email', email).maybeSingle();
-  if (!target) return { error: 'No account with that email. They need to sign up first.' };
+
+  // The field takes a name or an email — an admin knows people by name.
+  let target: { id: string; chapter_id: string | null } | null = null;
+
+  if (who.includes('@')) {
+    const { data } = await admin.from('profiles')
+      .select('id,chapter_id').ilike('email', who.toLowerCase()).maybeSingle();
+    target = data ?? null;
+  } else {
+    const { data } = await admin.from('profiles')
+      .select('id,chapter_id,full_name').ilike('full_name', '%' + who + '%').limit(2);
+    if ((data?.length ?? 0) > 1) {
+      return { error: 'More than one member matches that name — pick them from the list instead.' };
+    }
+    target = data?.[0] ?? null;
+  }
+
+  if (!target) return { error: 'No account matches that. They need to sign up first.' };
 
   await admin.from('role_grants').insert({
     profile_id: target.id,

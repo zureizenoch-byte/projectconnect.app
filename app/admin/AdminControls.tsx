@@ -9,8 +9,18 @@ import { decideAccessRequest, revokeRole, grantRole, setAccountRole, setEventSta
 export function AdminControls({ requests, pendingEvents, leads, reports, chapters, venues, venueNotices = [], log, everyone = [], messageReports = [], currentAdminId }: any) {
   const [pending, start] = useTransition();
   const [accountQuery, setAccountQuery] = useState('');
+  const [grantQuery, setGrantQuery] = useState('');
+  const [grantOpen, setGrantOpen] = useState(false);
   const [roleFilter, setRoleFilter] = useState('');
   const [msg, setMsg] = useState<string | null>(null);
+  // An admin knows a member by name, not by email address — so the grant field
+  // takes either, and picking a suggestion fills in the address it needs.
+  const grantTerms = grantQuery.toLowerCase().split(/[\s,]+/).filter(Boolean);
+  const grantMatches = grantQuery.trim().length < 2 ? [] : (everyone ?? []).filter((p: any) => {
+    const haystack = [p.full_name, p.email].filter(Boolean).join(' ').toLowerCase();
+    return grantTerms.every((t: string) => haystack.includes(t));
+  }).slice(0, 8);
+
   // Searching by name or email beats scrolling a table once the membership grows.
   const accountTerms = accountQuery.toLowerCase().split(/[\s,]+/).filter(Boolean);
   const matchingAccounts = (everyone ?? []).filter((p: any) => {
@@ -99,13 +109,45 @@ export function AdminControls({ requests, pendingEvents, leads, reports, chapter
           e.preventDefault();
           const fd = new FormData(e.currentTarget);
           const form = e.currentTarget;
-          run(async () => { const r = await grantRole(fd); if (!r?.error) form.reset(); return r; });
+          run(async () => {
+            const r = await grantRole(fd);
+            if (!r?.error) { form.reset(); setGrantQuery(''); setGrantOpen(false); }
+            return r;
+          });
         }}>
         <p className="eyebrow">Grant a role directly</p>
         <div className="row" style={{ alignItems: 'flex-end', marginTop: 12 }}>
-          <label className="fld" style={{ flex: '1 1 280px', marginBottom: 0 }}>
-            <span>Member email</span>
-            <input name="email" type="email" required placeholder="them@example.com" />
+          <label className="fld" style={{ flex: '1 1 300px', marginBottom: 0, position: 'relative' }}>
+            <span>Member</span>
+            <input name="email" type="text" required autoComplete="off"
+              placeholder="Type a name or email"
+              value={grantQuery}
+              onChange={(e) => { setGrantQuery(e.target.value); setGrantOpen(true); }}
+              onFocus={() => setGrantOpen(true)} />
+
+            {grantOpen && grantQuery.trim().length >= 2 && grantMatches.length > 0 && (
+              <div style={{
+                position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 30,
+                marginTop: 4, background: '#fff', border: '1px solid var(--line)',
+                borderRadius: 12, boxShadow: 'var(--sh-lg)',
+                maxHeight: 240, overflowY: 'auto',
+              }}>
+                {grantMatches.map((m: any) => (
+                  <button key={m.id} type="button"
+                    onClick={() => { setGrantQuery(m.email); setGrantOpen(false); }}
+                    style={{
+                      display: 'block', width: '100%', textAlign: 'left', cursor: 'pointer',
+                      padding: '9px 12px', border: 0, borderBottom: '1px solid var(--line)',
+                      background: 'none', font: 'inherit', fontSize: 14,
+                    }}>
+                    <span style={{ fontWeight: 500 }}>{m.full_name || m.email}</span>
+                    <span className="mute" style={{ display: 'block', fontSize: 12.5 }}>
+                      {[m.email, m.role?.replace('_', ' ')].filter(Boolean).join(' · ')}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
           </label>
           <label className="fld" style={{ flex: '0 1 200px', marginBottom: 0 }}>
             <span>Role</span>
@@ -117,7 +159,10 @@ export function AdminControls({ requests, pendingEvents, leads, reports, chapter
           </label>
           <button className="btn btn-primary" type="submit" disabled={pending}>Grant</button>
         </div>
-        <p className="hint">They must already have an account. Grants are logged and can be revoked below.</p>
+        <p className="hint">
+          Start typing a name and pick them from the list. They must already have an account —
+          grants are logged and can be revoked below.
+        </p>
       </form>
       <div className="surf tablecard" style={{ marginTop: 14 }}>
         <table className="table">
