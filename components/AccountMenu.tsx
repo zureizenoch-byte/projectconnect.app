@@ -70,8 +70,6 @@ export function AccountMenu({
           </div>
 
           <a href="/profile" style={item} onClick={() => setOpen(false)}>Edit profile</a>
-          <a href="/billing" style={{ ...item, borderTop: '1px solid var(--line)' }}
-            onClick={() => setOpen(false)}>Billing</a>
 
           <form action={signOutAction} style={{ borderTop: '1px solid var(--line)' }}>
             <button type="submit" style={{ ...item, color: 'var(--err)' }}>Sign out</button>

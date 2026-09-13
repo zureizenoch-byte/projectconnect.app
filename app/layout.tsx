@@ -72,7 +72,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             <div>
               <p className="eyebrow" style={{ marginBottom: 6 }}>Account</p>
               <p className="small" style={{ margin: "0 0 3px" }}><a href="/profile">Profile</a></p>
-              <p className="small" style={{ margin: "0 0 3px" }}><a href="/billing">Billing</a></p>
             </div>
             <div>
               <p className="eyebrow" style={{ marginBottom: 6 }}>Legal</p>
