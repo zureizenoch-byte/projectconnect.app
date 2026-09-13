@@ -43,7 +43,12 @@ export async function openConversation(otherId: string) {
     { conversation_id: conv.id, profile_id: user.id },
     { conversation_id: conv.id, profile_id: otherId },
   ]);
-  if (partError) return { error: partError.message };
+  if (partError) {
+    // Both sides must exist or neither — a half-built conversation is worse
+    // than none, because it looks usable and is not.
+    await db.from('conversations').delete().eq('id', conv.id);
+    return { error: 'Could not start the conversation. Try again.' };
+  }
 
   return { ok: conv.id };
 }
@@ -65,7 +70,22 @@ export async function sendMessage(formData: FormData) {
   const db = createAdminClient();
   const { data: member } = await db.from('conversation_participants')
     .select('profile_id').eq('conversation_id', conversationId).eq('profile_id', user.id).maybeSingle();
-  if (!member) return { error: 'You are not part of this conversation.' };
+
+  if (!member) {
+    // A conversation whose participant rows were only half-written leaves someone
+    // locked out of a thread they are plainly in. Their own messages are proof
+    // of membership, so repair the row rather than refusing the send.
+    const { data: own } = await db.from('messages')
+      .select('id').eq('conversation_id', conversationId).eq('sender_id', user.id).limit(1);
+
+    if (!own?.length) {
+      return { error: 'You are not part of this conversation.' };
+    }
+
+    const { error: repairError } = await db.from('conversation_participants')
+      .upsert({ conversation_id: conversationId, profile_id: user.id });
+    if (repairError) return { error: 'You are not part of this conversation.' };
+  }
 
   const { error } = await db.from('messages')
     .insert({ conversation_id: conversationId, sender_id: user.id, body });
