@@ -3,8 +3,14 @@
 import { useFormState, useFormStatus } from 'react-dom';
 import { useState } from 'react';
 import { signUp, resendConfirmation, type ActionState } from '@/app/actions/auth';
-import { CITIES } from '@/lib/options';
+import { ChipGroup } from '@/components/ChipGroup';
+import { MultiSelect } from '@/components/MultiSelect';
+import { Avatar } from '@/components/Avatar';
 import { DisclaimerCheckbox } from '@/components/DisclaimerCheckbox';
+import {
+  CITIES, ROLE_LEVELS, DOMAINS, TRANSFORMATION_TYPES, METHODS, INDUSTRIES,
+  CERTIFICATIONS, TOOLS, LANGUAGES,
+} from '@/lib/options';
 
 const JOIN_AS: [string, string, string][] = [
   ['member', 'Member', 'Matched meetups and Speaker Series talks in your chapter.'],
@@ -12,11 +18,26 @@ const JOIN_AS: [string, string, string][] = [
   ['speaker', 'Speaker', 'Host Speaker Series talks. An admin approves speaker accounts.'],
 ];
 
+/** A section rule with a heading — keeps one long form readable. */
+function Step({ n, title, note }: { n: string; title: string; note?: string }) {
+  return (
+    <div style={{ margin: '34px 0 20px', paddingTop: 26, borderTop: '1px solid var(--line)' }}>
+      <p className="eyebrow" style={{ margin: 0 }}>Step {n}</p>
+      <h2 style={{ fontSize: 26, marginTop: 8 }}>{title}</h2>
+      {note && <p className="mute small" style={{ margin: '8px 0 0', maxWidth: '58ch' }}>{note}</p>}
+    </div>
+  );
+}
+
 export function SignupForm() {
   const [state, action] = useFormState<ActionState, FormData>(signUp, {});
   const [role, setRole] = useState('member');
   const [pw, setPw] = useState('');
   const [pw2, setPw2] = useState('');
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [photoName, setPhotoName] = useState<string | null>(null);
+  const [name, setName] = useState('');
+
   const mismatch = pw2.length > 0 && pw !== pw2;
   const pwOk = pw.length >= 8 && /[a-zA-Z]/.test(pw) && /[0-9]/.test(pw);
 
@@ -24,6 +45,8 @@ export function SignupForm() {
 
   return (
     <form action={action}>
+      <Step n="1" title="Your account" />
+
       <fieldset style={{ border: 0, padding: 0, margin: '0 0 26px' }}>
         <legend style={{ fontSize: 17.5, fontWeight: 600, marginBottom: 10 }}>I'm joining as</legend>
         <div className="grid g3">
@@ -43,44 +66,108 @@ export function SignupForm() {
         </div>
       </fieldset>
 
-      <label className="fld"><span>Pronouns</span>
-        <input name="pronouns" placeholder="she/her, he/him, they/them" />
-      </label>
-
-      <label className="fld"><span>Full name</span>
-        <input name="full_name" required autoComplete="name" />
-        {state.fieldErrors?.full_name && <span className="err">{state.fieldErrors.full_name}</span>}
-      </label>
+      <div className="grid g2">
+        <label className="fld"><span>Pronouns</span>
+          <input name="pronouns" placeholder="she/her, he/him, they/them" />
+        </label>
+        <label className="fld"><span>Full name</span>
+          <input name="full_name" required autoComplete="name"
+            value={name} onChange={(e) => setName(e.target.value)} />
+          {state.fieldErrors?.full_name && <span className="err">{state.fieldErrors.full_name}</span>}
+        </label>
+      </div>
 
       <label className="fld"><span>Email</span>
         <input name="email" type="email" required autoComplete="email" />
         {state.fieldErrors?.email && <span className="err">{state.fieldErrors.email}</span>}
       </label>
 
-      <label className="fld"><span>Password</span>
-        <input name="password" type="password" required minLength={8} maxLength={20} autoComplete="new-password"
-          value={pw} onChange={(e) => setPw(e.target.value)} />
-        <span className="hint" style={pwOk || pw.length === 0 ? undefined : { color: 'var(--err)' }}>
-          At least 8 characters, using both letters and numbers.
-        </span>
-        {state.fieldErrors?.password && <span className="err">{state.fieldErrors.password}</span>}
+      <div className="grid g2">
+        <label className="fld"><span>Password</span>
+          <input name="password" type="password" required minLength={8} maxLength={20}
+            autoComplete="new-password"
+            value={pw} onChange={(e) => setPw(e.target.value)} />
+          <span className="hint" style={pwOk || pw.length === 0 ? undefined : { color: 'var(--err)' }}>
+            At least 8 characters, using both letters and numbers.
+          </span>
+          {state.fieldErrors?.password && <span className="err">{state.fieldErrors.password}</span>}
+        </label>
+
+        <label className="fld"><span>Retype password</span>
+          <input name="confirm" type="password" required autoComplete="new-password"
+            value={pw2} onChange={(e) => setPw2(e.target.value)}
+            style={mismatch ? { borderColor: 'var(--err)' } : undefined} />
+          {mismatch
+            ? <span className="err">Passwords do not match</span>
+            : pw2.length > 0 && <span className="hint" style={{ color: 'var(--ok)' }}>Passwords match</span>}
+        </label>
+      </div>
+
+      <Step n="2" title="Your profile"
+        note="This is what other members see, and what matching reads. You can change any of it later." />
+
+      <p className="eyebrow">Photo</p>
+      <div className="row" style={{ margin: '14px 0 26px' }}>
+        <Avatar src={photoPreview} name={name || null} size={96} />
+        <div>
+          <label className="btn btn-out" style={{ cursor: 'pointer' }}>
+            {photoName ? 'Change photo' : 'Choose a photo'}
+            <input type="file" name="photo" hidden
+              accept="image/jpeg,image/png,image/webp,image/gif"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                if (photoPreview) URL.revokeObjectURL(photoPreview);
+                setPhotoPreview(URL.createObjectURL(file));
+                setPhotoName(file.name);
+              }} />
+          </label>
+          <p className="hint" style={{ maxWidth: 260 }}>
+            {photoName ?? 'Optional, but a face makes a table feel less like a meeting.'}
+          </p>
+        </div>
+      </div>
+
+      <label className="fld"><span>Introduction</span>
+        <textarea name="intro" maxLength={400}
+          placeholder="One or two lines on what you deliver." />
       </label>
 
-      <label className="fld"><span>Retype password</span>
-        <input name="confirm" type="password" required autoComplete="new-password"
-          value={pw2} onChange={(e) => setPw2(e.target.value)}
-          style={mismatch ? { borderColor: 'var(--err)' } : undefined} />
-        {mismatch
-          ? <span className="err">Passwords do not match</span>
-          : pw2.length > 0 && <span className="hint" style={{ color: 'var(--ok)' }}>Passwords match</span>}
-      </label>
+      <div className="grid g2">
+        <label className="fld"><span>Current role</span>
+          <select name="role_level" defaultValue="">
+            <option value="">Select</option>
+            {ROLE_LEVELS.map((r) => <option key={r}>{r}</option>)}
+          </select>
+        </label>
+        <label className="fld"><span>City chapter</span>
+          <select name="city" required defaultValue="Vancouver">
+            {CITIES.map((c) => <option key={c}>{c}</option>)}
+          </select>
+        </label>
+        <label className="fld"><span>Current employer</span>
+          <input name="employer" />
+        </label>
+        <label className="fld"><span>Years of experience</span>
+          <input name="years_experience" type="number" min={0} max={60} />
+        </label>
+        <label className="fld"><span>LinkedIn</span>
+          <input name="linkedin_url" type="url" placeholder="https://linkedin.com/in/…" />
+        </label>
+      </div>
 
-      <label className="fld"><span>City chapter</span>
-        <select name="city" required defaultValue="Vancouver">
-          {CITIES.map((c) => <option key={c}>{c}</option>)}
-        </select>
-      </label>
+      <Step n="3" title="Your experience"
+        note="Click to add. Pick as many as apply — every group has an “Other, please specify” write-in. These fields drive who you get matched with." />
 
+      <MultiSelect category="domain" label="Your domains" options={DOMAINS} />
+      <ChipGroup category="transformation_type" label="Transformation types delivered" options={TRANSFORMATION_TYPES} />
+      <ChipGroup category="method" label="Methods and frameworks" options={METHODS} />
+      <ChipGroup category="industry" label="Industries" options={INDUSTRIES} />
+      <MultiSelect category="certification" label="Certifications" options={CERTIFICATIONS} />
+      <MultiSelect category="tool" label="Platforms and tooling" options={TOOLS} />
+      <MultiSelect category="language" label="Languages" options={LANGUAGES} />
+
+      <Step n="4" title="Before you join" />
 
       <DisclaimerCheckbox />
 
@@ -92,9 +179,11 @@ export function SignupForm() {
         </span>
       </label>
       {state.fieldErrors?.agree && <p className="err">{state.fieldErrors.agree}</p>}
+      {state.fieldErrors?.disclaimer && <p className="err">{state.fieldErrors.disclaimer}</p>}
       {state.error && <p className="err">{state.error}</p>}
 
-      <Submit label="Create account" busy="Creating your account…" disabled={mismatch || !pwOk} />
+      <Submit label="Create my account" busy="Setting up your profile…"
+        disabled={mismatch || !pwOk} />
     </form>
   );
 }
@@ -122,8 +211,8 @@ function CheckEmail({ email }: { email: string }) {
 
       <h2 style={{ fontSize: 30, marginTop: 20 }}>Check your email</h2>
       <p style={{ fontSize: 17, lineHeight: 1.65, margin: '14px auto 0', maxWidth: '44ch' }}>
-        We sent a confirmation link to <strong>{email}</strong>. Open it to activate your
-        account — you'll land straight on your profile to finish setting it up.
+        We sent a confirmation link to <strong>{email}</strong>. Your profile is saved — open the
+        link and you'll land straight on your dashboard.
       </p>
 
       <div style={{
