@@ -68,8 +68,13 @@ export async function sendMessage(formData: FormData) {
   if (body.length > 4000) return { error: 'Messages are limited to 4000 characters.' };
 
   const db = createAdminClient();
-  const { data: member } = await db.from('conversation_participants')
-    .select('profile_id').eq('conversation_id', conversationId).eq('profile_id', user.id).maybeSingle();
+
+  // One round trip, not two: the whole participant list answers both
+  // "are they in this thread" and "who else is in it".
+  const { data: participants } = await db.from('conversation_participants')
+    .select('profile_id').eq('conversation_id', conversationId);
+
+  const member = (participants ?? []).some((p: any) => p.profile_id === user.id);
 
   if (!member) {
     // A conversation whose participant rows were only half-written leaves someone
@@ -91,9 +96,14 @@ export async function sendMessage(formData: FormData) {
     .insert({ conversation_id: conversationId, sender_id: user.id, body });
   if (error) return { error: error.message };
 
-  await db.from('conversation_participants')
+  // Marking your own thread read is housekeeping — it must not hold up the
+  // send, and a failure here is not worth telling anyone about. A slow extra
+  // round trip here was enough to push the whole request past the gateway's
+  // time limit.
+  void db.from('conversation_participants')
     .update({ last_read_at: new Date().toISOString() })
-    .eq('conversation_id', conversationId).eq('profile_id', user.id);
+    .eq('conversation_id', conversationId).eq('profile_id', user.id)
+    .then(() => {}, () => {});
 
   revalidatePath('/messages/' + conversationId);
   revalidatePath('/messages');

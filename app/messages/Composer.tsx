@@ -12,9 +12,17 @@ export function Composer({ conversationId }: { conversationId: string }) {
   const submit = (form: HTMLFormElement) => {
     const fd = new FormData(form);
     start(async () => {
-      const res = await sendMessage(fd);
-      if (res?.error) setError(res.error);
-      else { setError(null); form.reset(); router.refresh(); }
+      try {
+        const res = await sendMessage(fd);
+        if (res?.error) setError(res.error);
+        else { setError(null); form.reset(); router.refresh(); }
+      } catch {
+        // A timeout usually means the message was saved and the reply never
+        // arrived. Reload rather than claim it failed — and keep what they
+        // typed, so nothing is lost either way.
+        setError('That took too long to confirm. Refreshing to check whether it sent…');
+        router.refresh();
+      }
     });
   };
 
