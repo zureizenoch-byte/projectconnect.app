@@ -178,10 +178,20 @@ input[type="checkbox"], input[type="radio"] {
   backdrop-filter: saturate(150%) blur(12px);
   border-bottom: 1px solid var(--line);
 }
+/* Member search: a comfortable field on desktop, full width on a phone so the
+   results panel has room to read. */
+.membersearch { position: relative; flex: 0 1 260px; min-width: 150px; }
+.membersearch input:hover { border-color: rgba(14,16,19,.24); }
+.membersearch input:focus {
+  outline: none; border-color: var(--gold); box-shadow: 0 0 0 3px rgba(51,82,207,.18);
+}
+@media (max-width: 900px) {
+  .membersearch { order: 10; flex: 1 0 100%; }
+}
+
 .nav-in {
   max-width: 1260px; margin: 0 auto;
-  display: flex; align-items: center; gap: 14px;
-  padding: 11px clamp(16px, 4vw, 40px);
+  display: flex; align-items: center; gap: 14px;  padding: 11px clamp(16px, 4vw, 40px);
 }
 .brand { display: flex; align-items: center; gap: 9px; }
 .brand img { height: 34px; width: auto; display: block; }

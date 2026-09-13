@@ -2,6 +2,7 @@ import { navFor } from '@/lib/permissions';
 import { signOut } from '@/app/actions/auth';
 import type { Profile } from '@/lib/types';
 import { Avatar } from '@/components/Avatar';
+import { MemberSearch } from '@/components/MemberSearch';
 
 export function SiteNav({ profile, inboxCount = 0, unreadCount = 0, alertCount = 0 }:
   { profile: Profile | null; inboxCount?: number; unreadCount?: number; alertCount?: number }) {
@@ -16,6 +17,7 @@ export function SiteNav({ profile, inboxCount = 0, unreadCount = 0, alertCount =
           <img src="/pc-mark-2026.png" alt="" />
           <span>Project<span style={{ color: 'var(--gold-700)' }}>Connect</span></span>
         </a>
+        {profile && <MemberSearch />}
         <div className="navpill" style={{ marginLeft: 'auto' }}>
           {links.map(([label, href]) => (
             <a key={href} href={href} style={{ position: 'relative' }}>
