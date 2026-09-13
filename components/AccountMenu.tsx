@@ -34,10 +34,10 @@ export function AccountMenu({
   }, []);
 
   const item: React.CSSProperties = {
-    display: 'block', padding: '10px 14px', fontSize: 14.5,
+    display: 'block', padding: '15px 16px', fontSize: 15.5, lineHeight: 1.3,
     color: 'var(--ink)', textDecoration: 'none', background: 'none',
     border: 0, width: '100%', textAlign: 'left', cursor: 'pointer',
-    font: 'inherit',
+    font: 'inherit', minHeight: 50,
   };
 
   return (
@@ -56,10 +56,10 @@ export function AccountMenu({
       {open && (
         <div role="menu" style={{
           position: 'absolute', top: 'calc(100% + 8px)', right: 0, zIndex: 50,
-          minWidth: 208, background: '#fff', border: '1px solid var(--line)',
+          minWidth: 224, background: '#fff', border: '1px solid var(--line)',
           borderRadius: 14, boxShadow: 'var(--sh-lg)', overflow: 'hidden',
         }}>
-          <div style={{ padding: '12px 14px', borderBottom: '1px solid var(--line)' }}>
+          <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--line)' }}>
             <p style={{ margin: 0, fontSize: 14.5, fontWeight: 600, lineHeight: 1.3 }}>
               {name ?? 'Your account'}
             </p>
