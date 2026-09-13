@@ -8,7 +8,18 @@ import { decideAccessRequest, revokeRole, grantRole, setAccountRole, setEventSta
 
 export function AdminControls({ requests, pendingEvents, leads, reports, chapters, venues, venueNotices = [], log, everyone = [], messageReports = [], currentAdminId }: any) {
   const [pending, start] = useTransition();
+  const [accountQuery, setAccountQuery] = useState('');
+  const [roleFilter, setRoleFilter] = useState('');
   const [msg, setMsg] = useState<string | null>(null);
+  // Searching by name or email beats scrolling a table once the membership grows.
+  const accountTerms = accountQuery.toLowerCase().split(/[\s,]+/).filter(Boolean);
+  const matchingAccounts = (everyone ?? []).filter((p: any) => {
+    if (roleFilter && p.role !== roleFilter) return false;
+    if (!accountTerms.length) return true;
+    const haystack = [p.full_name, p.email, p.city].filter(Boolean).join(' ').toLowerCase();
+    return accountTerms.every((t: string) => haystack.includes(t));
+  });
+
   const run = (fn: () => Promise<any>) => start(async () => {
     const res = await fn();
     setMsg(res?.error ?? 'Done.');
@@ -187,13 +198,46 @@ export function AdminControls({ requests, pendingEvents, leads, reports, chapter
 
       <h2 style={{ marginTop: 30 }}>All accounts</h2>
       <p className="mute small" style={{ marginTop: 6 }}>
-        Change anyone's role here. Grants and revocations are written to the audit log below.
+        Search for someone by name or email, then set their role. Every grant and revocation is
+        written to the audit log below.
       </p>
+
+      <div className="surf" style={{ padding: 18, marginTop: 14 }}>
+        <div className="grid g2" style={{ gap: 16 }}>
+          <label className="fld" style={{ marginBottom: 0 }}>
+            <span>Find a member</span>
+            <input value={accountQuery} onChange={(e) => setAccountQuery(e.target.value)}
+              placeholder="Name or email" />
+          </label>
+          <label className="fld" style={{ marginBottom: 0 }}>
+            <span>Current role</span>
+            <select value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)}>
+              <option value="">Any role</option>
+              <option value="member">Member</option>
+              <option value="student">Student</option>
+              <option value="speaker">Speaker</option>
+              <option value="chapter_lead">Chapter Lead</option>
+              <option value="admin">Admin</option>
+            </select>
+          </label>
+        </div>
+        <div className="row" style={{ gap: 12, marginTop: 14 }}>
+          <span className="mute small">
+            {matchingAccounts.length} of {everyone.length} {everyone.length === 1 ? 'account' : 'accounts'}
+          </span>
+          {(accountQuery || roleFilter) && (
+            <button type="button" className="btn btn-quiet"
+              style={{ minHeight: 34, padding: '0 12px', fontSize: 14 }}
+              onClick={() => { setAccountQuery(''); setRoleFilter(''); }}>Clear</button>
+          )}
+        </div>
+      </div>
+
       <div className="surf tablecard" style={{ marginTop: 14 }}>
         <table className="table">
           <thead><tr><th>Person</th><th>City</th><th>Role</th><th style={{ textAlign: 'right' }}>Change to</th></tr></thead>
           <tbody>
-            {everyone.map((p: any) => (
+            {matchingAccounts.map((p: any) => (
               <tr key={p.id}>
                 <td>{p.full_name || '—'}<br /><span className="mute small">{p.email}</span></td>
                 <td className="mute">{p.city ?? '—'}</td>
@@ -228,7 +272,11 @@ export function AdminControls({ requests, pendingEvents, leads, reports, chapter
                 </td>
               </tr>
             ))}
-            {!everyone.length && <tr><td colSpan={4} className="mute">No accounts yet.</td></tr>}
+            {!matchingAccounts.length && (
+              <tr><td colSpan={4} className="mute">
+                {everyone.length ? 'Nobody matches that search.' : 'No accounts yet.'}
+              </td></tr>
+            )}
           </tbody>
         </table>
       </div>
