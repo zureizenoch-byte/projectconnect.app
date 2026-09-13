@@ -8,8 +8,7 @@ export default function SignupPage() {
       <p className="eyebrow">Create your account</p>
       <h1 style={{ marginTop: 12 }}>Join Project Connect</h1>
       <p className="mute" style={{ marginTop: 12, maxWidth: '58ch', fontSize: 17 }}>
-        Account and profile in one go. Only your name, email and password are required —
-        everything else sharpens who you get matched with, and you can change it any time.
+        Your input sharpens who you get matched with, and you can change it any time.
       </p>
       <div className="surf" style={{ padding: 'clamp(22px,3vw,34px)', marginTop: 26 }}>
         <SignupForm />
