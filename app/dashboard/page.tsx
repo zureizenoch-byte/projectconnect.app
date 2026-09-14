@@ -293,6 +293,11 @@ export default async function DashboardPage() {
                 postId={p.id}
                 likeCount={(likes ?? []).filter((l: any) => l.post_id === p.id).length}
                 liked={(likes ?? []).some((l: any) => l.post_id === p.id && l.profile_id === user.id)}
+                reactions={(likes ?? [])
+                  .filter((l: any) => l.post_id === p.id)
+                  .map((l: any) => l.reaction ?? 'like')}
+                myReaction={(likes ?? [])
+                  .find((l: any) => l.post_id === p.id && l.profile_id === user.id)?.reaction ?? null}
                 comments={(comments ?? [])
                   .filter((c: any) => c.post_id === p.id)
                   .sort((a: any, b: any) => +new Date(a.created_at) - +new Date(b.created_at))

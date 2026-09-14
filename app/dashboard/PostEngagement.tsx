@@ -1,24 +1,55 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { toggleLike, addComment, deleteComment } from '@/app/actions/feed';
+import { setReaction, addComment, deleteComment, REACTIONS } from '@/app/actions/feed';
 import { EmojiPicker } from '@/components/EmojiPicker';
 
 type Comment = { id: string; body: string; created_at: string; author_id: string; commenter?: { full_name?: string | null; photo_url?: string | null; speaker_approved?: boolean; role?: string } };
 
 export function PostEngagement({
   postId, likeCount, liked, comments, userId, isAdmin,
+  reactions = [], myReaction = null,
 }: {
   postId: string; likeCount: number; liked: boolean;
   comments: Comment[]; userId: string; isAdmin: boolean;
+  reactions?: string[]; myReaction?: string | null;
 }) {
   const [pending, start] = useTransition();
-  const [isLiked, setLiked] = useState(liked);
-  const [count, setCount] = useState(likeCount);
   const [open, setOpen] = useState(false);
   const [list, setList] = useState(comments);
   const [draft, setDraft] = useState('');
   const [copied, setCopied] = useState(false);
+
+  // held locally so a tap reads as instant, then confirmed by the server
+  const [mine, setMine] = useState<string | null>(myReaction);
+  const [tally, setTally] = useState<string[]>(reactions);
+  const [picker, setPicker] = useState(false);
+
+  const mineEmoji = REACTIONS.find((r) => r.key === mine)?.emoji;
+  const count = tally.length;
+
+  // which reactions this post actually has, most used first
+  const shown = Array.from(new Set(tally))
+    .sort((a, b) => tally.filter((x) => x === b).length - tally.filter((x) => x === a).length)
+    .slice(0, 3)
+    .map((key) => REACTIONS.find((r) => r.key === key)?.emoji)
+    .filter(Boolean) as string[];
+
+  const react = (key: string) => {
+    setPicker(false);
+    const wasMine = mine;
+    // optimistic: drop the old, add the new, unless it is the same one
+    setTally((t) => {
+      const without = wasMine ? t.filter((x, i) => !(x === wasMine && t.indexOf(x) === i)) : [...t];
+      return wasMine === key ? without : [...without, key];
+    });
+    setMine(wasMine === key ? null : key);
+
+    start(async () => {
+      const res: any = await setReaction(postId, key);
+      if (res?.error) { setMine(wasMine); setTally(reactions); }
+    });
+  };
 
   const btn: React.CSSProperties = {
     minHeight: 38, padding: '0 14px', fontSize: 14, borderRadius: 10,
@@ -39,18 +70,68 @@ export function PostEngagement({
 
   return (
     <div style={{ marginTop: 16, paddingTop: 12, borderTop: '1px solid var(--line)' }}>
+      {count > 0 && (
+        <div className="row" style={{ gap: 8, marginBottom: 10 }}>
+          <span style={{
+            display: 'inline-flex', alignItems: 'center', gap: 2,
+            padding: '3px 9px 3px 7px', borderRadius: 999,
+            background: '#fff', border: '1px solid var(--line)', boxShadow: 'var(--sh)',
+          }}>
+            {shown.map((emoji) => (
+              <span key={emoji} aria-hidden style={{ fontSize: 15 }}>{emoji}</span>
+            ))}
+            <span className="mute" style={{ fontSize: 13, marginLeft: 4 }}>{count}</span>
+          </span>
+        </div>
+      )}
+
       <div className="row" style={{ gap: 4 }}>
-        <button style={isLiked ? active : btn} disabled={pending}
-          onClick={() => start(async () => {
-            const res = await toggleLike(postId);
-            if (!res?.error) { setLiked(!isLiked); setCount((c) => c + (isLiked ? -1 : 1)); }
-          })}>
-          <svg width="17" height="17" viewBox="0 0 24 24" fill={isLiked ? 'currentColor' : 'none'}
-            stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M7 10v12M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88Z" />
-          </svg>
-          {count === 0 ? 'Like' : count + (count === 1 ? ' like' : ' likes')}
-        </button>
+        <div style={{ position: 'relative' }}
+          onMouseEnter={() => setPicker(true)}
+          onMouseLeave={() => setPicker(false)}>
+
+          {picker && (
+            <div role="menu" aria-label="React"
+              style={{
+                position: 'absolute', bottom: 'calc(100% + 6px)', left: 0, zIndex: 30,
+                display: 'flex', gap: 2, padding: 6,
+                background: '#fff', border: '1px solid var(--line)',
+                borderRadius: 999, boxShadow: 'var(--sh-lg)',
+              }}>
+              {REACTIONS.map((r) => (
+                <button key={r.key} type="button" title={r.label} aria-label={r.label}
+                  onClick={() => react(r.key)}
+                  style={{
+                    cursor: 'pointer', border: 0, borderRadius: '50%', padding: 0,
+                    width: 38, height: 38, fontSize: 22, lineHeight: 1,
+                    background: mine === r.key ? 'var(--gold-100)' : 'transparent',
+                    transition: 'transform .12s ease, background .12s ease',
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.22)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}>
+                  {r.emoji}
+                </button>
+              ))}
+            </div>
+          )}
+
+          <button style={mine ? active : btn} disabled={pending}
+            onClick={() => {
+              // tap opens the row on touch; a second tap on the same one clears it
+              if (mine) react(mine);
+              else setPicker((p) => !p);
+            }}>
+            {mineEmoji ? (
+              <span aria-hidden style={{ fontSize: 17, lineHeight: 1 }}>{mineEmoji}</span>
+            ) : (
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M7 10v12M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88Z" />
+              </svg>
+            )}
+            {mine ? REACTIONS.find((r) => r.key === mine)?.label : 'React'}
+          </button>
+        </div>
 
         <button style={open ? active : btn} onClick={() => setOpen(!open)}>
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"

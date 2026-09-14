@@ -122,3 +122,47 @@ export async function deleteComment(commentId: string) {
   revalidatePath('/dashboard');
   return { ok: true };
 }
+
+export const REACTIONS = [
+  { key: 'like',  emoji: '👍', label: 'Like' },
+  { key: 'love',  emoji: '❤️', label: 'Love' },
+  { key: 'yes',   emoji: '🙌', label: 'This' },
+  { key: 'laugh', emoji: '😄', label: 'Funny' },
+  { key: 'idea',  emoji: '💡', label: 'Insightful' },
+  { key: 'oof',   emoji: '😬', label: 'Been there' },
+] as const;
+
+const REACTION_KEYS = REACTIONS.map((r) => r.key) as readonly string[];
+
+/**
+ * Set, change or clear your reaction to a post.
+ *
+ * One reaction per person: choosing a different one replaces it, choosing the
+ * same one again clears it. That is the behaviour people already know, and it
+ * keeps the tally honest without a second table.
+ */
+export async function setReaction(postId: string, reaction: string) {
+  const { user } = await requireSession();
+  if (!REACTION_KEYS.includes(reaction)) return { error: 'Unknown reaction.' };
+
+  const db = createAdminClient();
+
+  const { data: mine } = await db.from('post_likes')
+    .select('reaction').eq('post_id', postId).eq('profile_id', user.id).maybeSingle();
+
+  if (mine?.reaction === reaction) {
+    const { error } = await db.from('post_likes')
+      .delete().eq('post_id', postId).eq('profile_id', user.id);
+    if (error) return { error: error.message };
+    revalidatePath('/dashboard');
+    return { ok: true, reaction: null as string | null };
+  }
+
+  const { error } = await db.from('post_likes')
+    .upsert({ post_id: postId, profile_id: user.id, reaction },
+      { onConflict: 'post_id,profile_id' });
+  if (error) return { error: error.message };
+
+  revalidatePath('/dashboard');
+  return { ok: true, reaction };
+}
