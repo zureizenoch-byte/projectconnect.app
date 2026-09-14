@@ -7,8 +7,16 @@ export function LoginForm({ next }: { next: string }) {
   const [state, action] = useFormState<ActionState, FormData>(signIn, {});
   const [show, setShow] = useState(false);
 
+  // Password managers autofill and then fire submit on their own. Signing in
+  // should be a deliberate tap, so a submit that nobody pressed is refused.
+  const [armed, setArmed] = useState(false);
+
   return (
-    <form action={action}>
+    <form action={action}
+      onSubmit={(e) => {
+        if (!armed) e.preventDefault();
+        setArmed(false);
+      }}>
       <input type="hidden" name="next" value={next} />
 
       <label className="fld"><span>Email</span>
@@ -40,15 +48,18 @@ export function LoginForm({ next }: { next: string }) {
       </p>
 
       {state.error && <p className="err">{state.error}</p>}
-      <Submit />
+      <Submit onPress={() => setArmed(true)} />
     </form>
   );
 }
 
-function Submit() {
+function Submit({ onPress }: { onPress: () => void }) {
   const { pending } = useFormStatus();
   return (
     <button className="btn btn-primary" type="submit" disabled={pending}
+      onPointerDown={onPress} onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') onPress();
+      }}
       style={{ minHeight: 50, padding: '0 26px', fontSize: 16 }}>
       {pending ? 'Signing in…' : 'Log in'}
     </button>
