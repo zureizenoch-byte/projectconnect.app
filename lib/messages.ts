@@ -31,7 +31,7 @@ export async function getConversations(userId: string): Promise<ConversationSumm
     db.from('conversations').select('id,last_message_at').in('id', ids),
     db.from('conversation_participants').select('conversation_id,profile_id')
       .in('conversation_id', ids).neq('profile_id', userId),
-    db.from('messages').select('conversation_id,body,created_at,sender_id,deleted_at')
+    db.from('messages').select('conversation_id,body,image_url,created_at,sender_id,deleted_at')
       .in('conversation_id', ids).order('created_at', { ascending: false }),
     db.from('blocks').select('blocker_id,blocked_id')
       .or('blocker_id.eq.' + userId + ',blocked_id.eq.' + userId),
@@ -67,7 +67,9 @@ export async function getConversations(userId: string): Promise<ConversationSumm
         otherName: person?.full_name || 'Member',
         otherPhoto: person?.photo_url ?? null,
         otherRoleLevel: person?.role_level ?? null,
-        lastBody: last?.deleted_at ? 'Message deleted' : (last?.body ?? null),
+        lastBody: last?.deleted_at
+          ? 'Message deleted'
+          : (last?.body || (last?.image_url ? 'Photo' : null)),
         lastAt: last?.created_at ?? c.last_message_at,
         lastSenderId: last?.sender_id ?? null,
         unread: !!last && last.sender_id !== userId && (!seen || new Date(last.created_at) > new Date(seen)),

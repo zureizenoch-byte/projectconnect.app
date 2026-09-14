@@ -60,11 +60,18 @@ export async function startAndGo(formData: FormData) {
   redirect('/messages/' + res.ok);
 }
 
+const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+const MAX_IMAGE_BYTES = 8_000_000;
+
 export async function sendMessage(formData: FormData) {
   const { user } = await requireSession();
   const conversationId = String(formData.get('conversation_id') ?? '');
   const body = String(formData.get('body') ?? '').trim();
-  if (!body) return { error: 'Write something first.' };
+  const photo = formData.get('photo') as File | null;
+  const hasPhoto = !!photo && photo.size > 0;
+
+  // a photograph is a message in its own right
+  if (!body && !hasPhoto) return { error: 'Write something, or attach a photo.' };
   if (body.length > 4000) return { error: 'Messages are limited to 4000 characters.' };
 
   const db = createAdminClient();
@@ -92,8 +99,37 @@ export async function sendMessage(formData: FormData) {
     if (repairError) return { error: 'You are not part of this conversation.' };
   }
 
+  let imageUrl: string | null = null;
+
+  if (hasPhoto) {
+    if (!IMAGE_TYPES.includes(photo!.type)) {
+      return { error: 'Photos must be a JPEG, PNG, WebP or GIF.' };
+    }
+    if (photo!.size > MAX_IMAGE_BYTES) {
+      return { error: 'Photos must be under 8MB.' };
+    }
+
+    const ext = (photo!.name.split('.').pop() ?? 'jpg').toLowerCase().slice(0, 5);
+    const path = conversationId + '/' + user.id + '-' + Date.now() + '.' + ext;
+
+    const { error: uploadError } = await db.storage
+      .from('message-images')
+      .upload(path, photo!, { upsert: false, contentType: photo!.type });
+
+    if (uploadError) {
+      return {
+        error: uploadError.message.toLowerCase().includes('not found')
+          ? 'Photo storage is not set up yet — create a public "message-images" bucket.'
+          : 'Could not upload that photo: ' + uploadError.message,
+      };
+    }
+
+    const { data } = db.storage.from('message-images').getPublicUrl(path);
+    imageUrl = data.publicUrl;
+  }
+
   const { error } = await db.from('messages')
-    .insert({ conversation_id: conversationId, sender_id: user.id, body });
+    .insert({ conversation_id: conversationId, sender_id: user.id, body, image_url: imageUrl });
   if (error) return { error: error.message };
 
   // Marking your own thread read is housekeeping — it must not hold up the

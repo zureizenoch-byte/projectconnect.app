@@ -26,7 +26,7 @@ export default async function Thread({ params }: { params: { id: string } }) {
     : { data: null };
 
   const { data: messages } = await db.from('messages')
-    .select('id,body,created_at,sender_id,deleted_at')
+    .select('id,body,image_url,created_at,sender_id,deleted_at')
     .eq('conversation_id', params.id).order('created_at');
 
   const { data: block } = other
@@ -113,7 +113,7 @@ export default async function Thread({ params }: { params: { id: string } }) {
 
               <div style={{ display: 'flex', justifyContent: mine ? 'flex-end' : 'flex-start' }}>
                 <div style={{
-                  maxWidth: '78%', padding: '11px 15px', borderRadius: 16,
+                  maxWidth: '78%', padding: m.image_url && !m.body ? 5 : '11px 15px', borderRadius: 16,
                   borderBottomRightRadius: mine ? 4 : 16,
                   borderBottomLeftRadius: mine ? 16 : 4,
                   background: mine ? 'var(--gold-700)' : '#fff',
@@ -121,15 +121,31 @@ export default async function Thread({ params }: { params: { id: string } }) {
                   border: mine ? 'none' : '1px solid var(--line)',
                   boxShadow: 'var(--sh)',
                 }}>
-                  <p style={{
-                    margin: 0, fontSize: 15.5, lineHeight: 1.6, whiteSpace: 'pre-wrap',
-                    fontStyle: m.deleted_at ? 'italic' : undefined,
-                    opacity: m.deleted_at ? .6 : 1,
-                  }}>
-                    {m.deleted_at ? 'Message deleted' : m.body}
-                  </p>
+                  {m.image_url && !m.deleted_at && (
+                    <a href={m.image_url} target="_blank" rel="noopener noreferrer"
+                      style={{ display: 'block', borderRadius: 12, overflow: 'hidden' }}>
+                      <img src={m.image_url} alt="" loading="lazy"
+                        style={{
+                          display: 'block', width: '100%', height: 'auto',
+                          maxWidth: 380, maxHeight: 420, objectFit: 'contain',
+                        }} />
+                    </a>
+                  )}
+
+                  {(m.deleted_at || m.body) && (
+                    <p style={{
+                      margin: m.image_url ? '8px 10px 0' : 0,
+                      fontSize: 15.5, lineHeight: 1.6, whiteSpace: 'pre-wrap',
+                      fontStyle: m.deleted_at ? 'italic' : undefined,
+                      opacity: m.deleted_at ? .6 : 1,
+                    }}>
+                      {m.deleted_at ? 'Message deleted' : m.body}
+                    </p>
+                  )}
                   <span style={{
                     display: 'block', marginTop: 5, fontSize: 11.5,
+                    paddingInline: m.image_url && !m.body ? 6 : 0,
+                    paddingBottom: m.image_url && !m.body ? 2 : 0,
                     color: mine ? 'rgba(255,255,255,.7)' : 'var(--mute)',
                   }}>
                     {new Date(m.created_at).toLocaleTimeString('en-CA', {
