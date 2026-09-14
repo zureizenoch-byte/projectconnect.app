@@ -193,7 +193,7 @@ export async function grantRole(formData: FormData) {
   const { error } = await admin.from('profiles').update(patch).eq('id', target.id);
   if (error) return { error: error.message };
 
-  await log(profile.id, 'access.grant', target.id, { role, email });
+  await log(profile.id, 'access.grant', target.id, { role, who });
   revalidatePath('/admin');
   return { ok: true };
 }
@@ -326,4 +326,105 @@ export async function resolveReport(reportId: string) {
   await log(profile.id, 'report.resolve', reportId);
   revalidatePath('/admin');
   return { ok: true };
+}
+
+/**
+ * Book a speaker: pick someone from the approved pool, a topic and a place,
+ * and the talk goes straight onto the calendar with them as host.
+ *
+ * An admin booking is published immediately — there is nobody above them to
+ * approve it — so the venue notice fires here rather than on a later publish.
+ */
+export async function bookSpeaker(formData: FormData) {
+  const { profile } = await requireRole('admin');
+  const admin = createAdminClient();
+
+  const speakerId = String(formData.get('speaker_id') ?? '');
+  const topic = String(formData.get('topic') ?? '').trim().slice(0, 200);
+  const startsAt = String(formData.get('starts_at') ?? '');
+  const chapterId = String(formData.get('chapter_id') ?? '');
+  const format = String(formData.get('format') ?? 'in_person') === 'online' ? 'online' : 'in_person';
+
+  if (!speakerId) return { error: 'Pick a speaker from the pool.' };
+  if (!topic) return { error: 'Give the talk a topic.' };
+  if (!startsAt) return { error: 'Pick a date and time.' };
+  if (!chapterId) return { error: 'Pick a chapter.' };
+
+  const { data: speaker } = await admin.from('profiles')
+    .select('id,full_name,role,speaker_approved').eq('id', speakerId).maybeSingle();
+  if (!speaker) return { error: 'That speaker no longer has an account.' };
+  if (speaker.role !== 'speaker' && speaker.role !== 'admin') {
+    return { error: (speaker.full_name ?? 'That person') + ' is not an approved speaker.' };
+  }
+
+  const meetingUrl = String(formData.get('meeting_url') ?? '').trim();
+  if (format === 'online' && !/^https?:\/\//i.test(meetingUrl)) {
+    return { error: 'An online talk needs a meeting link starting with https://' };
+  }
+
+  const venueId = format === 'online' ? null : (String(formData.get('venue_id') ?? '') || null);
+  const ceiling = format === 'online' ? 100 : 15;
+  const rawSeats = Number(formData.get('seat_cap') ?? 15);
+  const seatCap = Math.min(ceiling, Math.max(2, Number.isFinite(rawSeats) ? rawSeats : 15));
+
+  const iso = new Date(startsAt).toISOString();
+
+  // Two talks by the same speaker at once would be a double booking
+  const { data: clash } = await admin.from('events')
+    .select('id,title,starts_at').eq('host_id', speakerId).eq('kind', 'talk')
+    .neq('status', 'cancelled')
+    .gte('starts_at', new Date(new Date(iso).getTime() - 2 * 3600_000).toISOString())
+    .lte('starts_at', new Date(new Date(iso).getTime() + 2 * 3600_000).toISOString())
+    .maybeSingle();
+  if (clash) {
+    return {
+      error: (speaker.full_name ?? 'That speaker') + ' already has "' + clash.title
+        + '" within two hours of that time.',
+    };
+  }
+
+  const { data: created, error } = await admin.from('events').insert({
+    chapter_id: chapterId,
+    venue_id: venueId,
+    host_id: speakerId,
+    created_by: profile.id,
+    kind: 'talk',
+    title: topic,
+    description: String(formData.get('description') ?? '').slice(0, 4000) || null,
+    starts_at: iso,
+    seat_cap: seatCap,
+    format,
+    meeting_url: format === 'online' ? meetingUrl : null,
+    meeting_note: format === 'online'
+      ? String(formData.get('meeting_note') ?? '').slice(0, 300) || null
+      : null,
+    status: 'published',
+    published_at: new Date().toISOString(),
+  }).select('id').single();
+
+  if (error) return { error: error.message };
+
+  // Tell the speaker they have been booked — they did not ask for this
+  await admin.from('notifications').insert({
+    profile_id: speakerId,
+    kind: 'event.booked',
+    title: 'You are booked to speak',
+    body: topic + ' · ' + new Date(iso).toLocaleDateString('en-CA', {
+      weekday: 'long', month: 'long', day: 'numeric',
+    }),
+    href: '/events/' + created.id,
+    actor_id: profile.id,
+  });
+
+  if (venueId) {
+    const { notifyVenue } = await import('@/app/actions/venueNotify');
+    await notifyVenue(created.id).catch(() => {});
+  }
+
+  await log(profile.id, 'speaker.book', created.id, { speaker_id: speakerId, topic });
+
+  revalidatePath('/admin');
+  revalidatePath('/events');
+  revalidatePath('/speaker');
+  return { ok: 'Booked. ' + (speaker.full_name ?? 'The speaker') + ' has been notified.' };
 }

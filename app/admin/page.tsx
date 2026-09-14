@@ -49,6 +49,29 @@ export default async function AdminPage() {
     .select('id,email,full_name,role,city,speaker_approved')
     .order('created_at');
 
+  // The speaker pool: anyone approved to host, with the topics they listed
+  const { data: speakerRows } = await supabase
+    .from('profiles')
+    .select('id,full_name,photo_url,role_level,employer,city,intro')
+    .eq('role', 'speaker').eq('speaker_approved', true)
+    .order('full_name');
+
+  const speakerIds = (speakerRows ?? []).map((s: any) => s.id);
+  const { data: speakerTopics } = speakerIds.length
+    ? await supabase.from('profile_tags')
+        .select('profile_id,value').eq('category', 'topic').in('profile_id', speakerIds)
+    : { data: [] as any[] };
+
+  const topicsOf = new Map<string, string[]>();
+  for (const t of speakerTopics ?? []) {
+    if (!topicsOf.has(t.profile_id)) topicsOf.set(t.profile_id, []);
+    topicsOf.get(t.profile_id)!.push(t.value);
+  }
+
+  const speakerPool = (speakerRows ?? []).map((s: any) => ({
+    ...s, topics: topicsOf.get(s.id) ?? [],
+  }));
+
   // resolve names and cities from the account list rather than SQL joins
   const byId = new Map((everyone ?? []).map((p: any) => [p.id, p]));
   const cityOf = new Map((chapters ?? []).map((c: any) => [c.id, c.city]));
@@ -162,6 +185,7 @@ export default async function AdminPage() {
         log={logRows}
         messageReports={messageReportRows}
         everyone={everyone ?? []}
+        speakerPool={speakerPool}
         currentAdminId={me.id}
       />
       </SectionBoundary>

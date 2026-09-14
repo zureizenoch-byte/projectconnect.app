@@ -4,9 +4,10 @@ import { useState, useTransition } from 'react';
 import { VenueForm } from './VenueForm';
 import { VenueRow } from './VenueRow';
 import { SectionBoundary } from './SectionBoundary';
+import { SpeakerBooking } from './SpeakerBooking';
 import { decideAccessRequest, revokeRole, grantRole, setAccountRole, setEventStatus, saveVenue, setVenueActive, deleteVenue, resolveReport, resolveMessageReport } from '@/app/actions/admin';
 
-export function AdminControls({ requests, pendingEvents, leads, reports, chapters, venues, venueNotices = [], log, everyone = [], messageReports = [], currentAdminId }: any) {
+export function AdminControls({ requests, pendingEvents, leads, reports, chapters, venues, venueNotices = [], log, everyone = [], speakerPool = [], messageReports = [], currentAdminId }: any) {
   const [pending, start] = useTransition();
   const [accountQuery, setAccountQuery] = useState('');
   const [grantQuery, setGrantQuery] = useState('');
@@ -240,6 +241,15 @@ export function AdminControls({ requests, pendingEvents, leads, reports, chapter
         when no event references it. Add a contact email and the venue is emailed automatically
         whenever a meetup there is published.
       </p>
+
+      <h2 id="book-speaker" style={{ marginTop: 30, scrollMarginTop: 80 }}>Book a speaker</h2>
+      <p className="mute small" style={{ marginTop: 6, maxWidth: '62ch' }}>
+        Pick someone from the approved pool, choose a topic and a place, and the talk goes
+        onto the calendar with them as host.
+      </p>
+      <SectionBoundary title="Book a speaker">
+        <SpeakerBooking speakers={speakerPool} chapters={chapters ?? []} venues={venues ?? []} />
+      </SectionBoundary>
 
       <h2 style={{ marginTop: 30 }}>All accounts</h2>
       <p className="mute small" style={{ marginTop: 6 }}>
