@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { requireSession } from '@/lib/auth';
+import { REACTION_KEYS } from '@/lib/reactions';
 
 const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 const MAX_IMAGE_BYTES = 8_000_000;
@@ -122,17 +123,6 @@ export async function deleteComment(commentId: string) {
   revalidatePath('/dashboard');
   return { ok: true };
 }
-
-export const REACTIONS = [
-  { key: 'like',  emoji: '👍', label: 'Like' },
-  { key: 'love',  emoji: '❤️', label: 'Love' },
-  { key: 'yes',   emoji: '🙌', label: 'This' },
-  { key: 'laugh', emoji: '😄', label: 'Funny' },
-  { key: 'idea',  emoji: '💡', label: 'Insightful' },
-  { key: 'oof',   emoji: '😬', label: 'Been there' },
-] as const;
-
-const REACTION_KEYS = REACTIONS.map((r) => r.key) as readonly string[];
 
 /**
  * Set, change or clear your reaction to a post.

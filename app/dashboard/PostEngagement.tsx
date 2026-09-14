@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { setReaction, addComment, deleteComment, REACTIONS } from '@/app/actions/feed';
+import { setReaction, addComment, deleteComment } from '@/app/actions/feed';
+import { REACTIONS } from '@/lib/reactions';
 import { EmojiPicker } from '@/components/EmojiPicker';
 
 type Comment = { id: string; body: string; created_at: string; author_id: string; commenter?: { full_name?: string | null; photo_url?: string | null; speaker_approved?: boolean; role?: string } };
