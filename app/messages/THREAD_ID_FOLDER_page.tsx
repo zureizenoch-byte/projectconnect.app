@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import { requireSession } from '@/lib/auth';
 import { createAdminClient } from '@/lib/supabase/server';
 import { Avatar } from '@/components/Avatar';
+import { ScrollToLatest } from '@/components/ScrollToLatest';
 import { Composer } from '../Composer';
 import { ThreadActions } from '../ThreadActions';
 import { markRead } from '@/app/actions/messages';
@@ -39,6 +40,22 @@ export default async function Thread({ params }: { params: { id: string } }) {
 
   await markRead(params.id);
 
+  const rows = messages ?? [];
+
+  // A day heading is worth more than a timestamp on every bubble
+  const dayOf = (iso: string) => new Date(iso).toDateString();
+  const dayLabel = (iso: string) => {
+    const d = new Date(iso);
+    const today = new Date();
+    const yesterday = new Date(today.getTime() - 86400000);
+    if (d.toDateString() === today.toDateString()) return 'Today';
+    if (d.toDateString() === yesterday.toDateString()) return 'Yesterday';
+    return d.toLocaleDateString('en-CA', {
+      weekday: 'long', month: 'long', day: 'numeric',
+      year: d.getFullYear() === today.getFullYear() ? undefined : 'numeric',
+    });
+  };
+
   return (
     <main className="wrap" style={{ maxWidth: 760 }}>
       <a href="/messages" className="small mute">← All messages</a>
@@ -69,37 +86,51 @@ export default async function Thread({ params }: { params: { id: string } }) {
       </header>
 
       <div className="grid" style={{ gap: 10, marginTop: 18 }}>
-        {(messages ?? []).length === 0 && (
+        {rows.length === 0 && (
           <p className="mute" style={{ textAlign: 'center', padding: 24 }}>
             No messages yet. Say hello.
           </p>
         )}
-        {(messages ?? []).map((m: any) => {
+
+        {rows.map((m: any, i: number) => {
           const mine = m.sender_id === user.id;
+          const newDay = i === 0 || dayOf(m.created_at) !== dayOf(rows[i - 1].created_at);
+
           return (
-            <div key={m.id} style={{ display: 'flex', justifyContent: mine ? 'flex-end' : 'flex-start' }}>
-              <div style={{
-                maxWidth: '78%', padding: '11px 15px', borderRadius: 16,
-                borderBottomRightRadius: mine ? 4 : 16,
-                borderBottomLeftRadius: mine ? 16 : 4,
-                background: mine ? 'var(--gold-700)' : '#fff',
-                color: mine ? '#fff' : 'var(--ink)',
-                border: mine ? 'none' : '1px solid var(--line)',
-                boxShadow: 'var(--sh)',
-              }}>
-                <p style={{
-                  margin: 0, fontSize: 15.5, lineHeight: 1.6, whiteSpace: 'pre-wrap',
-                  fontStyle: m.deleted_at ? 'italic' : undefined,
-                  opacity: m.deleted_at ? .6 : 1,
+            <div key={m.id}>
+              {newDay && (
+                <p className="mute" style={{
+                  textAlign: 'center', fontSize: 12.5, letterSpacing: '.06em',
+                  textTransform: 'uppercase', margin: i === 0 ? '0 0 12px' : '16px 0 12px',
+                }}>{dayLabel(m.created_at)}</p>
+              )}
+
+              <div style={{ display: 'flex', justifyContent: mine ? 'flex-end' : 'flex-start' }}>
+                <div style={{
+                  maxWidth: '78%', padding: '11px 15px', borderRadius: 16,
+                  borderBottomRightRadius: mine ? 4 : 16,
+                  borderBottomLeftRadius: mine ? 16 : 4,
+                  background: mine ? 'var(--gold-700)' : '#fff',
+                  color: mine ? '#fff' : 'var(--ink)',
+                  border: mine ? 'none' : '1px solid var(--line)',
+                  boxShadow: 'var(--sh)',
                 }}>
-                  {m.deleted_at ? 'Message deleted' : m.body}
-                </p>
-                <span style={{
-                  display: 'block', marginTop: 5, fontSize: 11.5,
-                  color: mine ? 'rgba(255,255,255,.7)' : 'var(--mute)',
-                }}>
-                  {new Date(m.created_at).toLocaleString('en-CA', { dateStyle: 'medium', timeStyle: 'short' })}
-                </span>
+                  <p style={{
+                    margin: 0, fontSize: 15.5, lineHeight: 1.6, whiteSpace: 'pre-wrap',
+                    fontStyle: m.deleted_at ? 'italic' : undefined,
+                    opacity: m.deleted_at ? .6 : 1,
+                  }}>
+                    {m.deleted_at ? 'Message deleted' : m.body}
+                  </p>
+                  <span style={{
+                    display: 'block', marginTop: 5, fontSize: 11.5,
+                    color: mine ? 'rgba(255,255,255,.7)' : 'var(--mute)',
+                  }}>
+                    {new Date(m.created_at).toLocaleTimeString('en-CA', {
+                      hour: 'numeric', minute: '2-digit',
+                    })}
+                  </span>
+                </div>
               </div>
             </div>
           );
@@ -119,6 +150,8 @@ export default async function Thread({ params }: { params: { id: string } }) {
       ) : (
         <Composer conversationId={params.id} />
       )}
+
+      <ScrollToLatest count={rows.length} />
     </main>
   );
 }
