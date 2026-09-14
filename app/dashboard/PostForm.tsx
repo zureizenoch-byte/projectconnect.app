@@ -3,6 +3,7 @@
 import { useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { createPost } from '@/app/actions/feed';
+import { EmojiPicker } from '@/components/EmojiPicker';
 import { shrinkImage } from '@/lib/shrinkImage';
 
 export function PostForm() {
@@ -89,6 +90,8 @@ export function PostForm() {
         <button className="btn btn-primary" type="submit" disabled={pending}>
           {pending ? (stage ?? 'Posting…') : 'Post'}
         </button>
+
+        <EmojiPicker targetName="body" />
 
         <label className="btn btn-out" style={{ cursor: 'pointer' }}>
           {fileName ? 'Change photo' : 'Add a photo'}

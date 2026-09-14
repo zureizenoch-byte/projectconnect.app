@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { toggleLike, addComment, deleteComment } from '@/app/actions/feed';
+import { EmojiPicker } from '@/components/EmojiPicker';
 
 type Comment = { id: string; body: string; created_at: string; author_id: string; commenter?: { full_name?: string | null; photo_url?: string | null; speaker_approved?: boolean; role?: string } };
 
@@ -86,6 +87,7 @@ export function PostEngagement({
               placeholder="Add a comment"
               style={{ flex: 1, minHeight: 44, padding: '10px 14px', fontFamily: 'var(--font-body)',
                 fontSize: 15.5, border: '1px solid var(--line)', borderRadius: 12, background: '#fff' }} />
+            <EmojiPicker onPick={(x) => setDraft((d) => d + x)} size={44} />
             <button className="btn btn-dark" type="submit" disabled={pending || !draft.trim()}
               style={{ minHeight: 44, padding: '0 18px', fontSize: 14.5 }}>Post</button>
           </form>

@@ -2,6 +2,7 @@
 import { useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { sendMessage } from '@/app/actions/messages';
+import { EmojiPicker } from '@/components/EmojiPicker';
 
 export function Composer({ conversationId }: { conversationId: string }) {
   const router = useRouter();
@@ -77,6 +78,7 @@ export function Composer({ conversationId }: { conversationId: string }) {
 
       <div className="row" style={{ justifyContent: 'space-between', marginTop: 10, gap: 10 }}>
         <div className="row" style={{ gap: 10 }}>
+          <EmojiPicker targetName="body" />
           <label className="btn btn-out"
             style={{ cursor: 'pointer', minHeight: 42, padding: '0 16px', fontSize: 14 }}>
             {preview ? 'Change photo' : 'Photo'}
