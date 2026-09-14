@@ -64,17 +64,23 @@ export default async function Thread({ params }: { params: { id: string } }) {
         <div className="row" style={{ gap: 14 }}>
           <Avatar src={other?.photo_url} name={other?.full_name} size={56} />
           <div style={{ flex: 1, minWidth: 0 }}>
-            <a href={'/members/' + (other?.id ?? '')}
-              style={{ fontFamily: 'var(--font-heading)', fontWeight: 600, fontSize: 22, color: 'var(--ink)' }}>
-              {other?.full_name || 'Member'}
-            </a>
+            {theyBlocked ? (
+              <span style={{
+                fontFamily: 'var(--font-heading)', fontWeight: 600, fontSize: 22, color: 'var(--ink)',
+              }}>{other?.full_name || 'Member'}</span>
+            ) : (
+              <a href={'/members/' + (other?.id ?? '')}
+                style={{ fontFamily: 'var(--font-heading)', fontWeight: 600, fontSize: 22, color: 'var(--ink)' }}>
+                {other?.full_name || 'Member'}
+              </a>
+            )}
             {other?.role_level && (
               <p className="mute small" style={{ margin: '2px 0 0' }}>
                 {other.role_level}{other.employer ? ' · ' + other.employer : ''}
               </p>
             )}
           </div>
-          {other && (
+          {other && !theyBlocked && (
             <ThreadActions
               conversationId={params.id}
               otherId={other.id}
@@ -144,8 +150,11 @@ export default async function Thread({ params }: { params: { id: string } }) {
           </p>
         </div>
       ) : theyBlocked ? (
+        // Say nothing about being blocked. The thread reads as closed, not as rejected.
         <div className="surf" style={{ padding: 20, marginTop: 18, textAlign: 'center' }}>
-          <p className="mute" style={{ margin: 0 }}>You can no longer message this member.</p>
+          <p className="mute" style={{ margin: 0 }}>
+            This conversation is closed. You can still read what was said.
+          </p>
         </div>
       ) : (
         <Composer conversationId={params.id} />

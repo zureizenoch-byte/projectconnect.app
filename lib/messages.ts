@@ -10,7 +10,10 @@ export type ConversationSummary = {
   lastAt: string;
   lastSenderId: string | null;
   unread: boolean;
+  /** You blocked them — shown to you. */
   blocked: boolean;
+  /** They blocked you — never surfaced; the thread just goes quiet. */
+  blockedByThem: boolean;
 };
 
 /** Every conversation for a member, newest first, with the other person resolved. */
@@ -44,8 +47,13 @@ export async function getConversations(userId: string): Promise<ConversationSumm
   const lastByConv = new Map<string, any>();
   for (const m of msgs ?? []) if (!lastByConv.has(m.conversation_id)) lastByConv.set(m.conversation_id, m);
 
-  const blockedIds = new Set<string>();
-  for (const b of blocks ?? []) blockedIds.add(b.blocker_id === userId ? b.blocked_id : b.blocker_id);
+  // A block you made is yours to see. A block against you is not disclosed.
+  const iBlocked = new Set<string>();
+  const theyBlocked = new Set<string>();
+  for (const b of blocks ?? []) {
+    if (b.blocker_id === userId) iBlocked.add(b.blocked_id);
+    else theyBlocked.add(b.blocker_id);
+  }
 
   return (convs ?? [])
     .map((c: any) => {
@@ -63,7 +71,8 @@ export async function getConversations(userId: string): Promise<ConversationSumm
         lastAt: last?.created_at ?? c.last_message_at,
         lastSenderId: last?.sender_id ?? null,
         unread: !!last && last.sender_id !== userId && (!seen || new Date(last.created_at) > new Date(seen)),
-        blocked: blockedIds.has(otherId),
+        blocked: iBlocked.has(otherId),
+        blockedByThem: theyBlocked.has(otherId),
       };
     })
     .sort((a, b) => +new Date(b.lastAt) - +new Date(a.lastAt));

@@ -31,6 +31,26 @@ export default async function MemberProfile({ params }: { params: { id: string }
   const isAdmin = viewer.role === 'admin';
   const visible = privacy?.visible_to_members ?? true;
 
+  // If they blocked you, their profile is closed to you — worded as privacy,
+  // not as rejection, so the block itself is never disclosed.
+  const { data: blockRows } = isSelf || isAdmin
+    ? { data: [] as any[] }
+    : await db.from('blocks').select('blocker_id')
+        .eq('blocker_id', person.id).eq('blocked_id', viewer.id);
+  const theyBlockedMe = (blockRows ?? []).length > 0;
+
+  if (theyBlockedMe) {
+    return (
+      <main className="wrap" style={{ maxWidth: 640 }}>
+        <h1>Profile is private</h1>
+        <p className="mute" style={{ marginTop: 12 }}>
+          This member has chosen not to be visible to others. You'll still meet them at a matched table.
+        </p>
+        <a className="btn btn-out" href="/dashboard" style={{ marginTop: 20 }}>Back to dashboard</a>
+      </main>
+    );
+  }
+
   if (!visible && !isSelf && !isAdmin) {
     return (
       <main className="wrap" style={{ maxWidth: 640 }}>

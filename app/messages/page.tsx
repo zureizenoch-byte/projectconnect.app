@@ -38,7 +38,7 @@ export default async function MessagesPage() {
             <div style={{ flex: 1, minWidth: 0 }}>
               <div className="row" style={{ gap: 8 }}>
                 <strong style={{ fontSize: 16.5 }}>{c.otherName}</strong>
-                {c.blocked && <span className="pill pill-off">Blocked</span>}
+                {c.blocked && <span className="pill pill-off">Blocked</span>}{/* yours only */}
                 {c.unread && <span className="pill pill-wait">New</span>}
               </div>
               <p className="mute small" style={{
