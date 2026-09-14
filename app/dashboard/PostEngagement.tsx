@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { setReaction, addComment, deleteComment } from '@/app/actions/feed';
-import { REACTIONS } from '@/lib/reactions';
+import { REACTIONS, MORE_REACTIONS, ALL_REACTIONS } from '@/lib/reactions';
 import { EmojiPicker } from '@/components/EmojiPicker';
 
 type Comment = { id: string; body: string; created_at: string; author_id: string; commenter?: { full_name?: string | null; photo_url?: string | null; speaker_approved?: boolean; role?: string } };
@@ -25,19 +25,22 @@ export function PostEngagement({
   const [mine, setMine] = useState<string | null>(myReaction);
   const [tally, setTally] = useState<string[]>(reactions);
   const [picker, setPicker] = useState(false);
+  const [more, setMore] = useState(false);
 
-  const mineEmoji = REACTIONS.find((r) => r.key === mine)?.emoji;
+  const mineEmoji = ALL_REACTIONS.find((r) => r.key === mine)?.emoji;
+  const mineLabel = ALL_REACTIONS.find((r) => r.key === mine)?.label;
   const count = tally.length;
 
   // which reactions this post actually has, most used first
   const shown = Array.from(new Set(tally))
     .sort((a, b) => tally.filter((x) => x === b).length - tally.filter((x) => x === a).length)
     .slice(0, 3)
-    .map((key) => REACTIONS.find((r) => r.key === key)?.emoji)
+    .map((key) => ALL_REACTIONS.find((r) => r.key === key)?.emoji)
     .filter(Boolean) as string[];
 
   const react = (key: string) => {
     setPicker(false);
+    setMore(false);
     const wasMine = mine;
     // optimistic: drop the old, add the new, unless it is the same one
     setTally((t) => {
@@ -89,30 +92,70 @@ export function PostEngagement({
       <div className="row" style={{ gap: 4 }}>
         <div style={{ position: 'relative' }}
           onMouseEnter={() => setPicker(true)}
-          onMouseLeave={() => setPicker(false)}>
+          onMouseLeave={() => { if (!more) setPicker(false); }}>
 
           {picker && (
             <div role="menu" aria-label="React"
               style={{
                 position: 'absolute', bottom: 'calc(100% + 6px)', left: 0, zIndex: 30,
-                display: 'flex', gap: 2, padding: 6,
                 background: '#fff', border: '1px solid var(--line)',
-                borderRadius: 999, boxShadow: 'var(--sh-lg)',
+                borderRadius: more ? 18 : 999, boxShadow: 'var(--sh-lg)',
+                padding: 6, maxWidth: 'min(320px, calc(100vw - 40px))',
               }}>
-              {REACTIONS.map((r) => (
-                <button key={r.key} type="button" title={r.label} aria-label={r.label}
-                  onClick={() => react(r.key)}
+
+              {/* the six worth hitting without thinking */}
+              <div style={{ display: 'flex', gap: 2 }}>
+                {REACTIONS.map((r) => (
+                  <button key={r.key} type="button" title={r.label} aria-label={r.label}
+                    onClick={() => react(r.key)}
+                    style={{
+                      cursor: 'pointer', border: 0, borderRadius: '50%', padding: 0,
+                      width: 38, height: 38, fontSize: 22, lineHeight: 1, flex: 'none',
+                      background: mine === r.key ? 'var(--gold-100)' : 'transparent',
+                      transition: 'transform .12s ease, background .12s ease',
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.22)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}>
+                    {r.emoji}
+                  </button>
+                ))}
+
+                <button type="button" onClick={() => setMore((m) => !m)}
+                  aria-expanded={more} aria-label={more ? 'Fewer reactions' : 'More reactions'}
+                  title={more ? 'Fewer' : 'More'}
                   style={{
-                    cursor: 'pointer', border: 0, borderRadius: '50%', padding: 0,
-                    width: 38, height: 38, fontSize: 22, lineHeight: 1,
-                    background: mine === r.key ? 'var(--gold-100)' : 'transparent',
-                    transition: 'transform .12s ease, background .12s ease',
-                  }}
-                  onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.22)'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}>
-                  {r.emoji}
+                    cursor: 'pointer', borderRadius: '50%', padding: 0, flex: 'none',
+                    width: 38, height: 38, fontSize: 19, lineHeight: 1,
+                    border: '1px solid var(--line)',
+                    background: more ? 'var(--gold-100)' : '#fff',
+                    color: 'var(--mute)', marginLeft: 2,
+                  }}>
+                  {more ? '−' : '+'}
                 </button>
-              ))}
+              </div>
+
+              {more && (
+                <div style={{
+                  display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 2,
+                  marginTop: 8, paddingTop: 8, borderTop: '1px solid var(--line)',
+                  maxHeight: 176, overflowY: 'auto',
+                }}>
+                  {MORE_REACTIONS.map((r) => (
+                    <button key={r.key} type="button" title={r.label} aria-label={r.label}
+                      onClick={() => react(r.key)}
+                      style={{
+                        cursor: 'pointer', border: 0, borderRadius: 10, padding: 0,
+                        height: 38, fontSize: 21, lineHeight: 1,
+                        background: mine === r.key ? 'var(--gold-100)' : 'transparent',
+                        transition: 'transform .12s ease, background .12s ease',
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.18)'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}>
+                      {r.emoji}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
@@ -130,7 +173,7 @@ export function PostEngagement({
                 <path d="M7 10v12M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88Z" />
               </svg>
             )}
-            {mine ? REACTIONS.find((r) => r.key === mine)?.label : 'React'}
+            {mine ? mineLabel : 'React'}
           </button>
         </div>
 
