@@ -59,6 +59,7 @@ export function EmojiPicker({ targetName, formId, onPick, size = 42 }: {
   const [open, setOpen] = useState(false);
   const [group, setGroup] = useState(0);
   const [recent, setRecent] = useState<string[]>([]);
+  const [drop, setDrop] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -67,6 +68,14 @@ export function EmojiPicker({ targetName, formId, onPick, size = 42 }: {
       if (saved) setRecent(JSON.parse(saved).slice(0, 18));
     } catch {}
   }, []);
+
+  // Opening upward is nicer beside a composer, but on a short screen the panel
+  // runs off the top and its category tabs become unreachable. Measure first.
+  useEffect(() => {
+    if (!open) return;
+    const box = wrapRef.current?.getBoundingClientRect();
+    if (box) setDrop(box.top < 360);
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -122,15 +131,20 @@ export function EmojiPicker({ targetName, formId, onPick, size = 42 }: {
       {open && (
         <div role="dialog" aria-label="Emoji"
           style={{
-            position: 'absolute', bottom: 'calc(100% + 10px)', left: 0, zIndex: 40,
-            width: 'min(332px, calc(100vw - 48px))',
+            position: 'absolute', left: 0, zIndex: 40,
+            ...(drop ? { top: 'calc(100% + 10px)' } : { bottom: 'calc(100% + 10px)' }),
+            width: 'min(340px, calc(100vw - 32px))',
+            maxWidth: 'calc(100vw - 32px)',
             background: '#fff', border: '1px solid var(--line)',
             borderRadius: 16, boxShadow: 'var(--sh-lg)', padding: 12,
+            display: 'flex', flexDirection: 'column',
+            maxHeight: 'min(60vh, 380px)',
           }}>
 
           <div style={{
             display: 'flex', gap: 4, overflowX: 'auto', paddingBottom: 10,
             borderBottom: '1px solid var(--line)', marginBottom: 10,
+            flex: 'none', scrollbarWidth: 'thin',
           }}>
             {recent.length > 0 && (
               <button type="button" onClick={() => setGroup(-1)}
@@ -143,16 +157,17 @@ export function EmojiPicker({ targetName, formId, onPick, size = 42 }: {
           </div>
 
           <div style={{
-            display: 'grid', gridTemplateColumns: 'repeat(8, 1fr)', gap: 2,
-            maxHeight: 208, overflowY: 'auto',
+            display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(38px, 1fr))',
+            gap: 2, overflowY: 'auto', flex: 1, minHeight: 0,
+            WebkitOverflowScrolling: 'touch',
           }}>
             {(group === -1 ? recent : GROUPS[group][1]).map((emoji, i) => (
               <button key={emoji + i} type="button" onClick={() => insert(emoji)}
                 aria-label={emoji}
                 style={{
                   cursor: 'pointer', border: 0, background: 'transparent',
-                  borderRadius: 8, padding: 0, height: 34,
-                  fontSize: 21, lineHeight: 1,
+                  borderRadius: 8, padding: 0, height: 40,
+                  fontSize: 23, lineHeight: 1,
                 }}
                 onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--gold-100)'; }}
                 onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}>
