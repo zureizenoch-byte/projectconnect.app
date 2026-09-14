@@ -27,7 +27,7 @@ export function Composer({ conversationId }: { conversationId: string }) {
   };
 
   return (
-    <form ref={ref} className="surf" style={{ padding: 16, marginTop: 18, position: 'sticky', bottom: 16 }}
+    <form ref={ref} id="composer" className="surf" style={{ padding: 16, marginTop: 18, position: 'sticky', bottom: 16 }}
       onSubmit={(e) => { e.preventDefault(); submit(e.currentTarget); }}>
       <input type="hidden" name="conversation_id" value={conversationId} />
       <textarea name="body" required rows={3} maxLength={4000}

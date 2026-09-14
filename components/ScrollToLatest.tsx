@@ -1,39 +1,39 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 
 /**
- * Lands the thread on the newest message rather than the oldest.
+ * Lands on the newest message rather than the bottom of the document.
  *
- * Jumps without animation on first paint, so it reads as "this is where the
- * conversation is" rather than a scroll the reader has to watch. Later arrivals
- * glide, and only if the reader is already near the bottom — nobody wants to be
- * yanked away from something they are reading further up.
+ * Scrolling the window to its full height overshoots — past the composer and
+ * into the footer. This positions the last bubble just above the composer, so
+ * the latest message is what you actually see on arrival.
  */
 export function ScrollToLatest({ count }: { count: number }) {
-  const anchor = useRef<HTMLDivElement>(null);
-  const first = useRef(true);
-
   useEffect(() => {
-    const el = anchor.current;
-    if (!el) return;
+    if (!count) return;
 
-    const jump = (smooth: boolean) => {
-      const y = el.getBoundingClientRect().top + window.scrollY;
-      window.scrollTo({ top: y, behavior: smooth ? 'smooth' : 'auto' });
+    const settle = () => {
+      const last = document.getElementById('latest-message');
+      if (!last) return;
+
+      const composer = document.getElementById('composer');
+      const gap = (composer?.offsetHeight ?? 0) + 24;
+
+      const target = last.getBoundingClientRect().bottom + window.scrollY + gap
+        - window.innerHeight;
+
+      window.scrollTo({
+        top: Math.max(0, target),
+        behavior: 'auto',
+      });
     };
 
-    if (first.current) {
-      first.current = false;
-      // wait for images and fonts to settle so the position is not stale
-      requestAnimationFrame(() => requestAnimationFrame(() => jump(false)));
-      return;
-    }
-
-    const nearBottom =
-      window.innerHeight + window.scrollY > document.body.offsetHeight - 260;
-    if (nearBottom) jump(true);
+    // after layout, and again once fonts and avatars have settled the height
+    requestAnimationFrame(settle);
+    const t = setTimeout(settle, 220);
+    return () => clearTimeout(t);
   }, [count]);
 
-  return <div ref={anchor} aria-hidden style={{ scrollMarginBottom: 120 }} />;
+  return null;
 }

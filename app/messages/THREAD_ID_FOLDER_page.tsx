@@ -97,7 +97,7 @@ export default async function Thread({ params }: { params: { id: string } }) {
           const newDay = i === 0 || dayOf(m.created_at) !== dayOf(rows[i - 1].created_at);
 
           return (
-            <div key={m.id}>
+            <div key={m.id} id={i === rows.length - 1 ? 'latest-message' : undefined}>
               {newDay && (
                 <p className="mute" style={{
                   textAlign: 'center', fontSize: 12.5, letterSpacing: '.06em',
