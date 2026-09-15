@@ -335,6 +335,42 @@ export default async function MemberProfile({ params }: { params: { id: string }
             </p>
           )}
 
+          {isSelf && !hasRecord && (
+            <div style={{
+              marginTop: 24, padding: 'clamp(18px,2.5vw,24px)', borderRadius: 16,
+              border: '1px solid var(--gold-200)',
+              background: 'linear-gradient(140deg, var(--gold-100), #fff)',
+              maxWidth: '52ch',
+            }}>
+              <p style={{
+                fontSize: 12.5, fontWeight: 600, letterSpacing: '.09em',
+                textTransform: 'uppercase', color: 'var(--gold-700)', margin: 0,
+              }}>Your first meetup</p>
+              <p style={{ fontSize: 19, lineHeight: 1.5, margin: '10px 0 0', fontWeight: 500 }}>
+                {openEvents > 0
+                  ? 'You haven\u2019t been to one yet.'
+                  : 'You haven\u2019t been to one yet.'}
+              </p>
+              <p className="mute" style={{ fontSize: 15.5, lineHeight: 1.6, margin: '6px 0 0' }}>
+                {openEvents > 0
+                  ? 'There ' + (openEvents === 1 ? 'is 1 open' : 'are ' + openEvents + ' open')
+                    + ' right now \u2014 a table of a dozen people who do what you do.'
+                  : 'Nothing is scheduled at the moment. We\u2019ll tell you as soon as there is.'}
+              </p>
+              <div className="row" style={{ gap: 10, marginTop: 18 }}>
+                {openEvents > 0 && (
+                  <a className="btn btn-gold" href="/events"
+                    style={{ minHeight: 44, padding: '0 22px', fontSize: 15 }}>See events</a>
+                )}
+                <span className="mute small">
+                  Member since {new Date(person.created_at).toLocaleDateString('en-CA', {
+                    month: 'long', year: 'numeric',
+                  })}
+                </span>
+              </div>
+            </div>
+          )}
+
           <div className="row" style={{ gap: 10, marginTop: 24 }}>
             {isSelf && <a className="btn btn-primary" href="/profile">Edit my profile</a>}
             {!isSelf && allowContact && <MessageButton otherId={person.id} />}
@@ -479,36 +515,8 @@ export default async function MemberProfile({ params }: { params: { id: string }
               </div>
             )}
 
-            {/* A zero is only worth showing beside something you can do about it. */}
-            {isSelf && !hasRecord ? (
-              <div style={{
-                padding: 18, borderRadius: 16,
-                border: '1px solid var(--line)', background: '#fff',
-              }}>
-                <p style={{
-                  fontSize: 12.5, fontWeight: 600, letterSpacing: '.09em',
-                  textTransform: 'uppercase', color: 'var(--gold-700)', margin: 0,
-                }}>Your first meetup</p>
-                <p style={{ fontSize: 15.5, lineHeight: 1.6, margin: '10px 0 14px' }}>
-                  {openEvents > 0
-                    ? 'You haven\u2019t been to one yet. There ' + (openEvents === 1 ? 'is 1 open' : 'are ' + openEvents + ' open')
-                      + ' right now.'
-                    : 'You haven\u2019t been to one yet. Nothing is scheduled at the moment \u2014 we\u2019ll tell you when it is.'}
-                </p>
-                {openEvents > 0 && (
-                  <a className="btn btn-gold" href="/events"
-                    style={{ width: '100%', minHeight: 42, fontSize: 14.5 }}>See events</a>
-                )}
-                <p className="mute small" style={{
-                  margin: '14px 0 0', paddingTop: 12, borderTop: '1px solid var(--line)',
-                }}>
-                  Member since {new Date(person.created_at).toLocaleDateString('en-CA', {
-                    month: 'long', year: 'numeric',
-                  })}
-                </p>
-              </div>
-            ) : (
-              /* The record — turning up is the currency here */
+            {/* The record — turning up is the currency here */}
+            {hasRecord && (
               <div style={{
                 padding: 18, borderRadius: 16,
                 border: '1px solid var(--line)', background: '#fff',
@@ -531,6 +539,24 @@ export default async function MemberProfile({ params }: { params: { id: string }
                   Member since {new Date(person.created_at).toLocaleDateString('en-CA', {
                     month: 'long', year: 'numeric',
                   })}
+                </p>
+              </div>
+            )}
+
+            {/* Someone else with no record still needs their join date stated */}
+            {!isSelf && !hasRecord && (
+              <div style={{
+                padding: 18, borderRadius: 16,
+                border: '1px solid var(--line)', background: '#fff',
+              }}>
+                <p style={{
+                  fontSize: 12.5, fontWeight: 600, letterSpacing: '.09em',
+                  textTransform: 'uppercase', color: 'var(--gold-700)', margin: 0,
+                }}>Their record</p>
+                <p className="mute" style={{ fontSize: 14.5, lineHeight: 1.6, margin: '8px 0 0' }}>
+                  Nothing attended yet. Member since {new Date(person.created_at).toLocaleDateString('en-CA', {
+                    month: 'long', year: 'numeric',
+                  })}.
                 </p>
               </div>
             )}
