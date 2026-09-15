@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { requireSession } from '@/lib/auth';
 import { REACTION_KEYS } from '@/lib/reactions';
+import { guardPostInteraction } from '@/lib/blocks';
 
 const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 const MAX_IMAGE_BYTES = 8_000_000;
@@ -68,6 +69,10 @@ export async function createPost(formData: FormData) {
 /** Feed posts are report-only — no pre-moderation. */
 export async function reportPost(postId: string, reason: string) {
   const { user } = await requireSession();
+
+  const blocked = await guardPostInteraction(user.id, postId);
+  if (blocked) return blocked;
+
   const supabase = createClient();
   const { error } = await supabase.from('post_reports')
     .insert({ post_id: postId, reporter_id: user.id, reason: reason.slice(0, 500) });
@@ -87,6 +92,10 @@ export async function deletePost(postId: string) {
 
 export async function toggleLike(postId: string) {
   const { user } = await requireSession();
+
+  const blocked = await guardPostInteraction(user.id, postId);
+  if (blocked) return blocked;
+
   const supabase = createClient();
   const { data: existing } = await supabase.from('post_likes')
     .select('post_id').eq('post_id', postId).eq('profile_id', user.id).maybeSingle();
@@ -102,6 +111,10 @@ export async function addComment(postId: string, body: string) {
   const { user, profile } = await requireSession();
   const text = body.trim();
   if (!text) return { error: 'Write something first' };
+
+  const blocked = await guardPostInteraction(user.id, postId);
+  if (blocked) return blocked;
+
   const supabase = createClient();
   const { data, error } = await supabase.from('post_comments')
     .insert({ post_id: postId, author_id: user.id, body: text.slice(0, 2000) })
@@ -134,6 +147,9 @@ export async function deleteComment(commentId: string) {
 export async function setReaction(postId: string, reaction: string) {
   const { user } = await requireSession();
   if (!REACTION_KEYS.includes(reaction)) return { error: 'Unknown reaction.' };
+
+  const blocked = await guardPostInteraction(user.id, postId);
+  if (blocked) return blocked;
 
   const db = createAdminClient();
 

@@ -5,6 +5,7 @@ import { mapsUrl } from '@/lib/matching';
 import { TAG_CATEGORIES } from '@/lib/types';
 import { PostForm } from './PostForm';
 import { Avatar } from '@/components/Avatar';
+import { blockedIdsFor } from '@/lib/blocks';
 import { MemberBadge } from '@/components/MemberBadge';
 import { PostActions } from './PostActions';
 import { PostEngagement } from './PostEngagement';
@@ -29,8 +30,14 @@ export default async function DashboardPage() {
       .order('created_at', { ascending: false }).limit(50),
   ]);
 
-  const postIds = (posts ?? []).map((p: any) => p.id);
-  const authorIds = Array.from(new Set((posts ?? []).map((p: any) => p.author_id)));
+  // Blocking is mutual invisibility: their posts leave your feed, and yours
+  // leave theirs, so neither can reach the other's content at all.
+  const hiddenIds = await blockedIdsFor(user.id);
+  const visiblePosts = (posts ?? []).filter((p: any) =>
+    !p.author_id || !hiddenIds.has(p.author_id));
+
+  const postIds = visiblePosts.map((p: any) => p.id);
+  const authorIds = Array.from(new Set(visiblePosts.map((p: any) => p.author_id)));
 
   const safe = async (fn: () => any): Promise<any[]> => {
     try {
@@ -73,7 +80,10 @@ export default async function DashboardPage() {
     : [];
   const planOf = new Map<string, any>((plans ?? []).map((s: any) => [s.profile_id, s]));
 
-  const commenterIds = Array.from(new Set((comments ?? []).map((c: any) => c.author_id)))
+  const visibleComments = (comments ?? []).filter((c: any) =>
+    !c.author_id || !hiddenIds.has(c.author_id));
+
+  const commenterIds = Array.from(new Set(visibleComments.map((c: any) => c.author_id)))
     .filter((id: any) => !authorMap.has(id));
   if (commenterIds.length) {
     const extra = await safe(() => supabase.from('profiles').select(PERSON).in('id', commenterIds));
@@ -226,7 +236,7 @@ export default async function DashboardPage() {
       <div className="grid" style={{ gridTemplateColumns: 'minmax(0,7fr) minmax(0,4fr)', marginTop: 16, alignItems: 'start' }}>
         <div className="grid" style={{ gap: 14 }}>
           <PostForm />
-          {(posts ?? []).map((p: any) => (
+          {visiblePosts.map((p: any) => (
             <article key={p.id} id={'post-' + p.id} className="surf lift" style={{ padding: 24 }}>
               <header className="posthead">
                 <a href={'/members/' + p.author_id} aria-label="View profile" style={{ flex: 'none', lineHeight: 0 }}>
@@ -298,7 +308,7 @@ export default async function DashboardPage() {
                   .map((l: any) => l.reaction ?? 'like')}
                 myReaction={(likes ?? [])
                   .find((l: any) => l.post_id === p.id && l.profile_id === user.id)?.reaction ?? null}
-                comments={(comments ?? [])
+                comments={visibleComments
                   .filter((c: any) => c.post_id === p.id)
                   .sort((a: any, b: any) => +new Date(a.created_at) - +new Date(b.created_at))
                   .map((c: any) => ({ ...c, commenter: authorMap.get(c.author_id) }))}
@@ -313,7 +323,7 @@ export default async function DashboardPage() {
               <p className="small mute" style={{ marginTop: 6, whiteSpace: 'pre-wrap' }}>{postsError.message}</p>
             </div>
           )}
-          {!postsError && !posts?.length && <p className="mute">No posts yet. Write the first one above.</p>}
+          {!postsError && !visiblePosts.length && <p className="mute">No posts yet. Write the first one above.</p>}
         </div>
 
         <aside className="surf" style={{ padding: 22, position: 'sticky', top: 84 }}>
