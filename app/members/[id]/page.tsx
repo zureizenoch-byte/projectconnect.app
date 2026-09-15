@@ -539,12 +539,6 @@ export default async function MemberProfile({ params }: { params: { id: string }
         </div>
       </header>
 
-          {person.seeking_mentor && (
-            <span className="tag" style={{ fontSize: 15, padding: '7px 15px' }}>Looking for a mentor</span>
-          )}
-        </div>
-      )}
-
       <section className="surf" style={{ padding: 'clamp(24px,3.2vw,36px)', marginTop: 18 }}>
         <h2 style={{ fontSize: 30 }}>Experience</h2>
         {grouped.size === 0 ? (
