@@ -84,6 +84,72 @@ export default async function MemberProfile({ params }: { params: { id: string }
     grouped.get(t.category)!.push(t.value);
   }
 
+  // ---- the record: what this person has actually turned up to ----
+  const { data: theirSeats } = await db.from('event_seats')
+    .select('event_id,status,events(id,title,kind,starts_at,status,venues(name,address))')
+    .eq('profile_id', params.id).neq('status', 'cancelled');
+
+  const attended = (theirSeats ?? []).filter((s: any) =>
+    s.events && s.events.status !== 'cancelled' && new Date(s.events.starts_at) < new Date());
+
+  const record = {
+    meetups: attended.filter((s: any) => s.events.kind === 'meetup').length,
+    talks: attended.filter((s: any) => s.events.kind === 'talk').length,
+    posts: (posts ?? []).length,
+  };
+
+  const { count: hostedCount } = await db.from('events')
+    .select('id', { count: 'exact', head: true })
+    .or('host_id.eq.' + params.id + ',created_by.eq.' + params.id)
+    .neq('status', 'cancelled');
+
+  // ---- common ground: the thing this whole app is built on ----
+  const { data: myTags } = isSelf
+    ? { data: [] as any[] }
+    : await db.from('profile_tags').select('category,value').eq('profile_id', viewer.id);
+
+  const mineByCategory = new Map<string, Set<string>>();
+  for (const t of myTags ?? []) {
+    if (!mineByCategory.has(t.category)) mineByCategory.set(t.category, new Set());
+    mineByCategory.get(t.category)!.add(t.value);
+  }
+
+  const sharedIn = (category: string) =>
+    (grouped.get(category) ?? []).filter((v) => mineByCategory.get(category)?.has(v));
+
+  const shared = {
+    domains: isSelf ? [] : sharedIn('domain'),
+    industries: isSelf ? [] : sharedIn('industry'),
+    methods: isSelf ? [] : sharedIn('method'),
+  };
+  const sharedCount = shared.domains.length + shared.industries.length + shared.methods.length;
+  const sameChapter = !isSelf && !!person.city && person.city === viewer.city;
+
+  // have we sat at the same table, and are we booked on the same one next?
+  const theirEventIds = (theirSeats ?? []).map((s: any) => s.event_id);
+  const { data: myOverlap } = isSelf || !theirEventIds.length
+    ? { data: [] as any[] }
+    : await db.from('event_seats')
+        .select('event_id,events(id,title,kind,starts_at,status,venues(name,address))')
+        .eq('profile_id', viewer.id).neq('status', 'cancelled')
+        .in('event_id', theirEventIds);
+
+  const overlaps = (myOverlap ?? []).filter((s: any) => s.events && s.events.status !== 'cancelled');
+  const now = Date.now();
+  const together = overlaps.filter((s: any) => +new Date(s.events.starts_at) < now).length;
+  const upcomingTogether = overlaps
+    .filter((s: any) => +new Date(s.events.starts_at) >= now)
+    .sort((a: any, b: any) => +new Date(a.events.starts_at) - +new Date(b.events.starts_at))[0];
+
+  // for your own profile, the tags that are driving your invitations
+  const myDriving = isSelf
+    ? {
+        domains: grouped.get('domain') ?? [],
+        industries: grouped.get('industry') ?? [],
+        methods: grouped.get('method') ?? [],
+      }
+    : null;
+
   const roleLabel = person.role === 'admin' ? 'Admin'
     : person.role === 'speaker' ? 'Speaker'
     : person.role === 'chapter_lead' ? 'Chapter Lead'
@@ -98,7 +164,8 @@ export default async function MemberProfile({ params }: { params: { id: string }
           height: 132,
           background: 'linear-gradient(120deg, var(--ink) 0%, var(--gold-700) 58%, var(--grn) 100%)',
         }} />
-        <div style={{ padding: '0 clamp(22px,3.5vw,38px) clamp(26px,3.5vw,34px)' }}>
+        <div className="profilegrid" style={{ padding: '0 clamp(22px,3.5vw,38px) clamp(26px,3.5vw,34px)' }}>
+          <div className="profileident">
           <div style={{ marginTop: -62, display: 'inline-block' }}>
             <Avatar src={person.photo_url} name={person.full_name} email={person.email} size={136} ring />
           </div>
@@ -157,6 +224,113 @@ export default async function MemberProfile({ params }: { params: { id: string }
               </a>
             )}
           </div>
+          </div>
+
+          <aside className="profileside">
+            {/* What you share — the premise of the app, on the page where people decide to talk */}
+            <div style={{
+              padding: 20, borderRadius: 16,
+              border: '1px solid var(--gold-200)', background: 'var(--gold-100)',
+            }}>
+              <p style={{
+                fontSize: 12.5, fontWeight: 600, letterSpacing: '.09em',
+                textTransform: 'uppercase', color: 'var(--gold-700)', margin: 0,
+              }}>{isSelf ? 'How you get matched' : 'What you share'}</p>
+
+              {isSelf ? (
+                myDriving && (myDriving.domains.length || myDriving.industries.length) ? (
+                  <>
+                    <p className="mute" style={{ fontSize: 14.5, lineHeight: 1.6, margin: '10px 0 14px' }}>
+                      These are the tags putting you at a table with the right people.
+                    </p>
+                    <CommonList label="Domains" values={myDriving.domains.slice(0, 4)} />
+                    <CommonList label="Industries" values={myDriving.industries.slice(0, 3)} />
+                    <CommonList label="Methods" values={myDriving.methods.slice(0, 3)} />
+                    <a className="btn btn-out" href="/profile"
+                      style={{ marginTop: 14, width: '100%', minHeight: 40, fontSize: 14 }}>
+                      Add more
+                    </a>
+                  </>
+                ) : (
+                  <>
+                    <p className="mute" style={{ fontSize: 14.5, lineHeight: 1.6, margin: '10px 0 14px' }}>
+                      Nothing mapped yet, so matching has little to work with. A few domains is enough
+                      to start.
+                    </p>
+                    <a className="btn btn-gold" href="/profile"
+                      style={{ width: '100%', minHeight: 42, fontSize: 14.5 }}>Map my experience</a>
+                  </>
+                )
+              ) : sharedCount > 0 || sameChapter || together > 0 ? (
+                <>
+                  <p style={{ fontSize: 15.5, lineHeight: 1.6, margin: '10px 0 14px' }}>
+                    {[
+                      sharedCount > 0 && sharedCount + (sharedCount === 1 ? ' thing' : ' things') + ' in common',
+                      sameChapter && 'same chapter',
+                      together > 0 && 'met ' + together + (together === 1 ? ' time' : ' times') + ' already',
+                    ].filter(Boolean).join(' · ')}
+                  </p>
+                  <CommonList label="Domains" values={shared.domains.slice(0, 4)} />
+                  <CommonList label="Industries" values={shared.industries.slice(0, 3)} />
+                  <CommonList label="Methods" values={shared.methods.slice(0, 3)} />
+                </>
+              ) : (
+                <p className="mute" style={{ fontSize: 14.5, lineHeight: 1.6, margin: '10px 0 0' }}>
+                  Nothing mapped in common yet — which is often the more interesting table.
+                </p>
+              )}
+            </div>
+
+            {/* Booked on the same event: a reason to say hello before the day */}
+            {upcomingTogether && (
+              <a href={'/events/' + upcomingTogether.events.id} style={{
+                display: 'block', padding: 18, borderRadius: 16, textDecoration: 'none',
+                border: '1px solid var(--line)', background: '#fff', color: 'inherit',
+              }}>
+                <p style={{
+                  fontSize: 12.5, fontWeight: 600, letterSpacing: '.09em',
+                  textTransform: 'uppercase', color: 'var(--gold-700)', margin: 0,
+                }}>You're both going</p>
+                <p style={{ fontSize: 16.5, fontWeight: 600, margin: '8px 0 0', lineHeight: 1.3 }}>
+                  {upcomingTogether.events.title}
+                </p>
+                <p className="mute small" style={{ margin: '4px 0 0' }}>
+                  {new Date(upcomingTogether.events.starts_at).toLocaleDateString('en-CA', {
+                    weekday: 'long', month: 'long', day: 'numeric',
+                  })}
+                  {upcomingTogether.events.venues?.name ? ' · ' + upcomingTogether.events.venues.name : ''}
+                </p>
+              </a>
+            )}
+
+            {/* The record — turning up is the currency here */}
+            <div style={{
+              padding: 18, borderRadius: 16,
+              border: '1px solid var(--line)', background: '#fff',
+            }}>
+              <p style={{
+                fontSize: 12.5, fontWeight: 600, letterSpacing: '.09em',
+                textTransform: 'uppercase', color: 'var(--gold-700)', margin: '0 0 14px',
+              }}>{isSelf ? 'Your record' : 'Their record'}</p>
+
+              <div style={{
+                display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16,
+              }}>
+                <Stat n={record.meetups} label="meetups" />
+                <Stat n={record.talks} label="talks" />
+                <Stat n={hostedCount ?? 0} label={(hostedCount ?? 0) === 1 ? 'hosted' : 'hosted'} />
+                <Stat n={record.posts} label="posts" />
+              </div>
+
+              <p className="mute small" style={{
+                margin: '16px 0 0', paddingTop: 14, borderTop: '1px solid var(--line)',
+              }}>
+                Member since {new Date(person.created_at).toLocaleDateString('en-CA', {
+                  month: 'long', year: 'numeric',
+                })}
+              </p>
+            </div>
+          </aside>
         </div>
       </header>
 
@@ -219,5 +393,32 @@ export default async function MemberProfile({ params }: { params: { id: string }
         </section>
       )}
     </main>
+  );
+}
+
+function CommonList({ label, values }: { label: string; values: string[] }) {
+  if (!values.length) return null;
+  return (
+    <div style={{ marginBottom: 12 }}>
+      <p className="mute" style={{ fontSize: 12.5, margin: '0 0 6px' }}>{label}</p>
+      <div className="chips">
+        {values.map((v) => (
+          <span key={v} className="tag" style={{ fontSize: 13.5, padding: '5px 11px' }}>{v}</span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function Stat({ n, label }: { n: number; label: string }) {
+  return (
+    <div>
+      <span style={{
+        display: 'block', fontFamily: 'var(--font-heading)', fontWeight: 600,
+        fontSize: 30, lineHeight: 1, letterSpacing: '-0.02em',
+        color: n > 0 ? 'var(--ink)' : 'var(--mute)',
+      }}>{n}</span>
+      <span className="mute" style={{ fontSize: 13.5 }}>{label}</span>
+    </div>
   );
 }

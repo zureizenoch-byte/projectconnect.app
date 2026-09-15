@@ -483,3 +483,31 @@ img, iframe, video { max-width: 100%; }
 @media (max-width: 560px) {
   .venuebrand { grid-template-columns: 1fr; }
 }
+
+/* ---------------------------------------------------------------- member profile
+   Identity on the left, what-you-share on the right. On a phone the columns
+   collapse and the side cards sit under the identity, where they read as a
+   continuation rather than a sidebar. */
+.profilegrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 300px);
+  gap: clamp(20px, 3vw, 36px);
+  align-items: start;
+}
+.profileside {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  /* clears the avatar that overhangs the cover strip */
+  padding-top: 22px;
+}
+
+@media (max-width: 860px) {
+  .profilegrid { grid-template-columns: minmax(0, 1fr); }
+  .profileside { padding-top: 4px; }
+}
+
+@media (max-width: 420px) {
+  .profileside > div,
+  .profileside > a { padding: 16px; }
+}
