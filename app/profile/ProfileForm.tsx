@@ -52,6 +52,38 @@ export function ProfileForm({ profile, tags }: { profile: Profile; tags: Tag[] }
         </label>
       </div>
 
+      <div style={{
+        padding: 'clamp(16px,2.5vw,22px)', borderRadius: 14, marginBottom: 22,
+        border: '1px solid var(--gold-200)', background: 'var(--gold-100)',
+      }}>
+        <p style={{
+          fontSize: 12.5, fontWeight: 600, letterSpacing: '.09em',
+          textTransform: 'uppercase', color: 'var(--gold-700)', margin: 0,
+        }}>Give people a way in</p>
+        <p className="mute" style={{ fontSize: 14.5, lineHeight: 1.6, margin: '8px 0 18px' }}>
+          These three lines do more work than anything else on your profile. They are what
+          someone reads before deciding to sit down with you.
+        </p>
+
+        <label className="fld"><span>Ask me about</span>
+          <input name="ask_me_about" defaultValue={profile.ask_me_about ?? ''} maxLength={160}
+            placeholder="Rescuing a programme nobody wanted to own" />
+          <span className="hint">One thing you could talk about for an hour.</span>
+        </label>
+
+        <label className="fld"><span>I'm looking for</span>
+          <input name="looking_for" defaultValue={profile.looking_for ?? ''} maxLength={160}
+            placeholder="People who've moved from delivery into product" />
+          <span className="hint">What would make a meetup worth your Saturday.</span>
+        </label>
+
+        <label className="fld" style={{ marginBottom: 0 }}><span>Usually free</span>
+          <input name="availability" defaultValue={profile.availability ?? ''} maxLength={200}
+            placeholder="Weekday mornings, Saturday afternoons" />
+          <span className="hint">The missing half of every "we should get coffee".</span>
+        </label>
+      </div>
+
       <label className="fld"><span>Introduction</span>
         <textarea name="intro" defaultValue={profile.intro ?? ''} maxLength={400}
           placeholder="One or two lines on what you deliver." />

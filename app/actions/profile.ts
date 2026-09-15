@@ -44,6 +44,9 @@ const ProfileSchema = z.object({
   graduation_year: optNum(1970, 2040),
   arrival_year: optNum(1950, 2040),
   home_country: optStr(80),
+  ask_me_about: optStr(160),
+  looking_for: optStr(160),
+  availability: optStr(200),
   credential_recognition: optStr(60),
   work_authorization: optStr(80),
 });

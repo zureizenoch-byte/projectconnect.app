@@ -276,6 +276,65 @@ export default async function MemberProfile({ params }: { params: { id: string }
             </p>
           )}
 
+          {(person.ask_me_about || person.looking_for) && (
+            <div style={{
+              marginTop: 22, display: 'grid', gap: 16, maxWidth: '54ch',
+            }}>
+              {person.ask_me_about && (
+                <div style={{ borderLeft: '3px solid var(--gold)', paddingLeft: 16 }}>
+                  <p style={{
+                    fontSize: 12.5, fontWeight: 600, letterSpacing: '.09em',
+                    textTransform: 'uppercase', color: 'var(--gold-700)', margin: 0,
+                  }}>Ask me about</p>
+                  <p style={{ fontSize: 18, lineHeight: 1.55, margin: '6px 0 0' }}>
+                    {person.ask_me_about}
+                  </p>
+                </div>
+              )}
+              {person.looking_for && (
+                <div style={{ borderLeft: '3px solid var(--gold-200)', paddingLeft: 16 }}>
+                  <p style={{
+                    fontSize: 12.5, fontWeight: 600, letterSpacing: '.09em',
+                    textTransform: 'uppercase', color: 'var(--gold-700)', margin: 0,
+                  }}>{isSelf ? "You're looking for" : "They're looking for"}</p>
+                  <p style={{ fontSize: 18, lineHeight: 1.55, margin: '6px 0 0' }}>
+                    {person.looking_for}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {(person.availability || person.open_to_mentoring || person.seeking_mentor) && (
+            <div className="row" style={{ gap: 18, marginTop: 20, rowGap: 8 }}>
+              {person.availability && (
+                <span className="mute" style={{ fontSize: 15.5 }}>
+                  Usually free · {person.availability}
+                </span>
+              )}
+              {(person.open_to_mentoring || person.seeking_mentor) && (
+                <span className="mute" style={{ fontSize: 15.5 }}>
+                  {[
+                    person.open_to_mentoring && 'Happy to mentor',
+                    person.seeking_mentor && 'Looking for a mentor',
+                  ].filter(Boolean).join(' · ')}
+                </span>
+              )}
+            </div>
+          )}
+
+          {isSelf && !person.ask_me_about && !person.looking_for && (
+            <p className="mute" style={{
+              fontSize: 15, lineHeight: 1.6, margin: '20px 0 0', maxWidth: '46ch',
+              padding: '14px 16px', borderRadius: 12,
+              border: '1px dashed var(--gold-200)', background: 'var(--gold-100)',
+            }}>
+              Two lines — <strong style={{ color: 'var(--ink)' }}>Ask me about</strong> and{' '}
+              <strong style={{ color: 'var(--ink)' }}>I'm looking for</strong> — give people a
+              reason to walk over. Add them from Edit my profile.
+            </p>
+          )}
+
           <div className="row" style={{ gap: 10, marginTop: 24 }}>
             {isSelf && <a className="btn btn-primary" href="/profile">Edit my profile</a>}
             {!isSelf && allowContact && <MessageButton otherId={person.id} />}
@@ -480,11 +539,6 @@ export default async function MemberProfile({ params }: { params: { id: string }
         </div>
       </header>
 
-      {(person.open_to_mentoring || person.seeking_mentor) && (
-        <div className="row" style={{ gap: 10, marginTop: 18 }}>
-          {person.open_to_mentoring && (
-            <span className="tag" style={{ fontSize: 15, padding: '7px 15px' }}>Open to mentoring</span>
-          )}
           {person.seeking_mentor && (
             <span className="tag" style={{ fontSize: 15, padding: '7px 15px' }}>Looking for a mentor</span>
           )}

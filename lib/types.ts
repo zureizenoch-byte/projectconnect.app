@@ -21,6 +21,9 @@ export type Profile = {
   employer_visible: boolean;
   speaker_approved: boolean;
   lead_chapter_id: string | null;
+  ask_me_about: string | null;
+  looking_for: string | null;
+  availability: string | null;
   is_student: boolean;
   is_immigrant: boolean;
   created_at: string;
