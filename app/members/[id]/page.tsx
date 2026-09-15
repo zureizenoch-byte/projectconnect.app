@@ -31,15 +31,25 @@ export default async function MemberProfile({ params }: { params: { id: string }
   const isAdmin = viewer.role === 'admin';
   const visible = privacy?.visible_to_members ?? true;
 
-  // If they blocked you, their profile is closed to you — worded as privacy,
-  // not as rejection, so the block itself is never disclosed.
-  const { data: blockRows } = isSelf || isAdmin
-    ? { data: [] as any[] }
-    : await db.from('blocks').select('blocker_id')
-        .eq('blocker_id', person.id).eq('blocked_id', viewer.id);
-  const theyBlockedMe = (blockRows ?? []).length > 0;
+  // A block works both ways, like every other network: neither person can
+  // reach the other's profile. Worded as privacy, so the block is never
+  // disclosed to the person who was blocked.
+  //
+  // A failed query counts as blocked. Erring the other way would quietly
+  // reopen a profile someone deliberately closed.
+  let blocked = false;
+  if (!isSelf && !isAdmin) {
+    const { data: blockRows, error: blockError } = await db
+      .from('blocks')
+      .select('blocker_id,blocked_id')
+      .or(
+        'and(blocker_id.eq.' + person.id + ',blocked_id.eq.' + viewer.id + '),'
+        + 'and(blocker_id.eq.' + viewer.id + ',blocked_id.eq.' + person.id + ')',
+      );
+    blocked = !!blockError || (blockRows ?? []).length > 0;
+  }
 
-  if (theyBlockedMe) {
+  if (blocked) {
     return (
       <main className="wrap" style={{ maxWidth: 640 }}>
         <h1>Profile is private</h1>
