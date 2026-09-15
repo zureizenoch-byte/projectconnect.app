@@ -150,6 +150,67 @@ export default async function MemberProfile({ params }: { params: { id: string }
       }
     : null;
 
+  // How far each tag reaches, and who it reaches — a list of words is not much
+  // of a reason to fill this in; eleven people who did the same work is.
+  let reach: { value: string; members: number }[] = [];
+  let peopleLikeYou: any[] = [];
+  let openEvents = 0;
+
+  if (isSelf) {
+    const myDomains = grouped.get('domain') ?? [];
+
+    if (myDomains.length) {
+      const { data: sharers } = await db.from('profile_tags')
+        .select('profile_id,value')
+        .eq('category', 'domain')
+        .in('value', myDomains)
+        .neq('profile_id', viewer.id);
+
+      const perValue = new Map<string, number>();
+      const seen = new Map<string, Set<string>>();
+      for (const row of sharers ?? []) {
+        perValue.set(row.value, (perValue.get(row.value) ?? 0) + 1);
+        if (!seen.has(row.profile_id)) seen.set(row.profile_id, new Set());
+        seen.get(row.profile_id)!.add(row.value);
+      }
+
+      reach = myDomains
+        .map((v) => ({ value: v, members: perValue.get(v) ?? 0 }))
+        .sort((a, b) => b.members - a.members);
+
+      // the people, most overlap first — visible proof the mapping is worth doing
+      const candidateIds = [...seen.keys()];
+      if (candidateIds.length) {
+        const { data: others } = await db.from('profiles')
+          .select('id,full_name,photo_url,role_level,city')
+          .in('id', candidateIds)
+          .limit(60);
+
+        const { data: theirPrivacy } = await db.from('privacy_settings')
+          .select('profile_id,visible_to_members').in('profile_id', candidateIds);
+        const hidden = new Set((theirPrivacy ?? [])
+          .filter((r: any) => r.visible_to_members === false).map((r: any) => r.profile_id));
+
+        peopleLikeYou = (others ?? [])
+          .filter((o: any) => !hidden.has(o.id))
+          .map((o: any) => ({ ...o, shared: [...(seen.get(o.id) ?? [])] }))
+          .sort((a: any, b: any) =>
+            b.shared.length - a.shared.length
+            || (a.city === person.city ? -1 : 1))
+          .slice(0, 8);
+      }
+    }
+
+    // a zero is only worth showing next to something you can do about it
+    const { count: openCount } = await db.from('events')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'published')
+      .gte('starts_at', new Date().toISOString());
+    openEvents = openCount ?? 0;
+  }
+
+  const hasRecord = record.meetups + record.talks + (hostedCount ?? 0) > 0;
+
   const roleLabel = person.role === 'admin' ? 'Admin'
     : person.role === 'speaker' ? 'Speaker'
     : person.role === 'chapter_lead' ? 'Chapter Lead'
@@ -243,9 +304,27 @@ export default async function MemberProfile({ params }: { params: { id: string }
                     <p className="mute" style={{ fontSize: 14.5, lineHeight: 1.6, margin: '10px 0 14px' }}>
                       These are the tags putting you at a table with the right people.
                     </p>
-                    <CommonList label="Domains" values={myDriving.domains.slice(0, 4)} />
-                    <CommonList label="Industries" values={myDriving.industries.slice(0, 3)} />
-                    <CommonList label="Methods" values={myDriving.methods.slice(0, 3)} />
+                    {reach.length > 0 ? (
+                      <div style={{ display: 'grid', gap: 8 }}>
+                        {reach.slice(0, 5).map((r) => (
+                          <div key={r.value} className="row" style={{
+                            gap: 10, justifyContent: 'space-between',
+                            padding: '8px 12px', borderRadius: 10,
+                            background: '#fff', border: '1px solid var(--gold-200)',
+                          }}>
+                            <span style={{ fontSize: 14.5, minWidth: 0 }}>{r.value}</span>
+                            <span className="mute" style={{ fontSize: 13.5, whiteSpace: 'nowrap' }}>
+                              {r.members === 0 ? 'only you' : r.members + ' member' + (r.members === 1 ? '' : 's')}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <>
+                        <CommonList label="Domains" values={myDriving.domains.slice(0, 4)} />
+                        <CommonList label="Methods" values={myDriving.methods.slice(0, 3)} />
+                      </>
+                    )}
                     <a className="btn btn-out" href="/profile"
                       style={{ marginTop: 14, width: '100%', minHeight: 40, fontSize: 14 }}>
                       Add more
@@ -303,33 +382,100 @@ export default async function MemberProfile({ params }: { params: { id: string }
               </a>
             )}
 
-            {/* The record — turning up is the currency here */}
-            <div style={{
-              padding: 18, borderRadius: 16,
-              border: '1px solid var(--line)', background: '#fff',
-            }}>
-              <p style={{
-                fontSize: 12.5, fontWeight: 600, letterSpacing: '.09em',
-                textTransform: 'uppercase', color: 'var(--gold-700)', margin: '0 0 14px',
-              }}>{isSelf ? 'Your record' : 'Their record'}</p>
-
+            {/* Your tags are only worth filling in if they lead somewhere. */}
+            {isSelf && peopleLikeYou.length > 0 && (
               <div style={{
-                display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16,
+                padding: 18, borderRadius: 16,
+                border: '1px solid var(--line)', background: '#fff',
               }}>
-                <Stat n={record.meetups} label="meetups" />
-                <Stat n={record.talks} label="talks" />
-                <Stat n={hostedCount ?? 0} label={(hostedCount ?? 0) === 1 ? 'hosted' : 'hosted'} />
-                <Stat n={record.posts} label="posts" />
-              </div>
+                <p style={{
+                  fontSize: 12.5, fontWeight: 600, letterSpacing: '.09em',
+                  textTransform: 'uppercase', color: 'var(--gold-700)', margin: 0,
+                }}>People like you</p>
+                <p className="mute" style={{ fontSize: 14, lineHeight: 1.55, margin: '8px 0 14px' }}>
+                  Members working in the same domains.
+                </p>
 
-              <p className="mute small" style={{
-                margin: '16px 0 0', paddingTop: 14, borderTop: '1px solid var(--line)',
+                <div style={{ display: 'grid', gap: 10 }}>
+                  {peopleLikeYou.slice(0, 5).map((o: any) => (
+                    <a key={o.id} href={'/members/' + o.id} style={{
+                      display: 'flex', gap: 11, alignItems: 'center',
+                      textDecoration: 'none', color: 'inherit',
+                    }}>
+                      <Avatar src={o.photo_url} name={o.full_name} size={38} />
+                      <span style={{ minWidth: 0 }}>
+                        <span style={{
+                          display: 'block', fontSize: 14.5, fontWeight: 600,
+                          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                        }}>{o.full_name || 'Member'}</span>
+                        <span className="mute" style={{ display: 'block', fontSize: 13 }}>
+                          {o.shared.length > 1
+                            ? o.shared.length + ' domains in common'
+                            : o.shared[0]}
+                        </span>
+                      </span>
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* A zero is only worth showing beside something you can do about it. */}
+            {isSelf && !hasRecord ? (
+              <div style={{
+                padding: 18, borderRadius: 16,
+                border: '1px solid var(--line)', background: '#fff',
               }}>
-                Member since {new Date(person.created_at).toLocaleDateString('en-CA', {
-                  month: 'long', year: 'numeric',
-                })}
-              </p>
-            </div>
+                <p style={{
+                  fontSize: 12.5, fontWeight: 600, letterSpacing: '.09em',
+                  textTransform: 'uppercase', color: 'var(--gold-700)', margin: 0,
+                }}>Your first meetup</p>
+                <p style={{ fontSize: 15.5, lineHeight: 1.6, margin: '10px 0 14px' }}>
+                  {openEvents > 0
+                    ? 'You haven\u2019t been to one yet. There ' + (openEvents === 1 ? 'is 1 open' : 'are ' + openEvents + ' open')
+                      + ' right now.'
+                    : 'You haven\u2019t been to one yet. Nothing is scheduled at the moment \u2014 we\u2019ll tell you when it is.'}
+                </p>
+                {openEvents > 0 && (
+                  <a className="btn btn-gold" href="/events"
+                    style={{ width: '100%', minHeight: 42, fontSize: 14.5 }}>See events</a>
+                )}
+                <p className="mute small" style={{
+                  margin: '14px 0 0', paddingTop: 12, borderTop: '1px solid var(--line)',
+                }}>
+                  Member since {new Date(person.created_at).toLocaleDateString('en-CA', {
+                    month: 'long', year: 'numeric',
+                  })}
+                </p>
+              </div>
+            ) : (
+              /* The record — turning up is the currency here */
+              <div style={{
+                padding: 18, borderRadius: 16,
+                border: '1px solid var(--line)', background: '#fff',
+              }}>
+                <p style={{
+                  fontSize: 12.5, fontWeight: 600, letterSpacing: '.09em',
+                  textTransform: 'uppercase', color: 'var(--gold-700)', margin: '0 0 14px',
+                }}>{isSelf ? 'Your record' : 'Their record'}</p>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                  <Stat n={record.meetups} label="meetups" />
+                  <Stat n={record.talks} label="talks" />
+                  <Stat n={hostedCount ?? 0} label="hosted" />
+                  <Stat n={record.posts} label="posts" />
+                </div>
+
+                <p className="mute small" style={{
+                  margin: '16px 0 0', paddingTop: 14, borderTop: '1px solid var(--line)',
+                }}>
+                  Member since {new Date(person.created_at).toLocaleDateString('en-CA', {
+                    month: 'long', year: 'numeric',
+                  })}
+                </p>
+              </div>
+            )}
+
           </aside>
         </div>
       </header>

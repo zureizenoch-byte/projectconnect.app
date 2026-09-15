@@ -72,10 +72,6 @@ export function AccountMenu({
               margin: '2px 0 0', fontSize: 12.5, lineHeight: 1.4,
               overflow: 'hidden', textOverflow: 'ellipsis',
             }}>{email}</p>
-            <p style={{
-              margin: '6px 0 0', fontSize: 12.5, fontWeight: 600,
-              letterSpacing: '.05em', textTransform: 'uppercase', color: 'var(--gold-700)',
-            }}>View my profile</p>
           </a>
 
           <a href="/profile" style={item} onClick={() => setOpen(false)}>Edit profile</a>
