@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useEffect, useRef, useState, useTransition } from 'react';
 import { setReaction, addComment, deleteComment } from '@/app/actions/feed';
 import { REACTIONS, MORE_REACTIONS, ALL_REACTIONS } from '@/lib/reactions';
 import { EmojiPicker } from '@/components/EmojiPicker';
@@ -26,6 +26,20 @@ export function PostEngagement({
   const [tally, setTally] = useState<string[]>(reactions);
   const [picker, setPicker] = useState(false);
   const [more, setMore] = useState(false);
+
+  // Hover-to-open needs a grace period: the bar sits above the button, so the
+  // pointer briefly leaves both on the way there. Closing instantly makes the
+  // reactions unreachable by mouse.
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const holdOpen = () => {
+    if (closeTimer.current) { clearTimeout(closeTimer.current); closeTimer.current = null; }
+    setPicker(true);
+  };
+  const letClose = () => {
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+    closeTimer.current = setTimeout(() => { setPicker(false); setMore(false); }, 320);
+  };
+  useEffect(() => () => { if (closeTimer.current) clearTimeout(closeTimer.current); }, []);
 
   const mineEmoji = ALL_REACTIONS.find((r) => r.key === mine)?.emoji;
   const mineLabel = ALL_REACTIONS.find((r) => r.key === mine)?.label;
@@ -93,17 +107,24 @@ export function PostEngagement({
 
       <div className="row" style={{ gap: 4 }}>
         <div style={{ position: 'relative' }}
-          onMouseEnter={() => setPicker(true)}
-          onMouseLeave={() => { if (!more) setPicker(false); }}>
+          onMouseEnter={holdOpen}
+          onMouseLeave={letClose}>
 
           {picker && (
             <div role="menu" aria-label="React"
+              onMouseEnter={holdOpen}
+              onMouseLeave={letClose}
               style={{
                 position: 'absolute', bottom: 'calc(100% + 8px)', left: 0, zIndex: 30,
                 background: '#fff', border: '1px solid var(--line)',
                 borderRadius: more ? 18 : 999, boxShadow: 'var(--sh-lg)',
                 padding: 6, maxWidth: 'min(320px, calc(100vw - 40px))',
               }}>
+
+              {/* an invisible bridge across the gap, so the pointer never leaves */}
+              <span aria-hidden style={{
+                position: 'absolute', left: 0, right: 0, top: '100%', height: 10,
+              }} />
 
               {/* the six worth hitting without thinking */}
               <div style={{ display: 'flex', gap: 2, WebkitTouchCallout: 'none' }}>
@@ -164,7 +185,7 @@ export function PostEngagement({
           <button disabled={pending}
             aria-label={mine ? 'Your reaction: ' + mineLabel : 'React to this post'}
             onContextMenu={(e) => e.preventDefault()}
-            onClick={() => { setPicker((p) => !p); if (picker) setMore(false); }}
+            onClick={() => { if (picker) { setPicker(false); setMore(false); } else holdOpen(); }}
             style={{
               ...(mine ? active : btn),
               WebkitUserSelect: 'none',
