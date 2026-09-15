@@ -68,7 +68,7 @@ export function SiteNav({ profile, inboxCount = 0, unreadCount = 0, alertCount =
                   }}>{alertCount > 99 ? '99+' : alertCount}</span>
                 )}
               </a>
-              <AccountMenu name={profile.full_name} email={profile.email} signOutAction={signOut}>
+              <AccountMenu name={profile.full_name} email={profile.email} profileId={profile.id} signOutAction={signOut}>
                 <Avatar src={profile.photo_url} name={profile.full_name} email={profile.email} size={38} />
               </AccountMenu>
             </>

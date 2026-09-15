@@ -10,10 +10,11 @@ import { useEffect, useRef, useState } from 'react';
  * profile links behind the avatar gives the row back its shape.
  */
 export function AccountMenu({
-  name, email, children, signOutAction,
+  name, email, profileId, children, signOutAction,
 }: {
   name: string | null;
   email: string;
+  profileId: string;
   children: React.ReactNode;
   signOutAction: () => Promise<void>;
 }) {
@@ -59,7 +60,11 @@ export function AccountMenu({
           minWidth: 224, background: '#fff', border: '1px solid var(--line)',
           borderRadius: 14, boxShadow: 'var(--sh-lg)', overflow: 'hidden',
         }}>
-          <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--line)' }}>
+          <a href={'/members/' + profileId} onClick={() => setOpen(false)}
+            style={{
+              display: 'block', padding: '14px 16px', textDecoration: 'none',
+              color: 'inherit', borderBottom: '1px solid var(--line)',
+            }}>
             <p style={{ margin: 0, fontSize: 14.5, fontWeight: 600, lineHeight: 1.3 }}>
               {name ?? 'Your account'}
             </p>
@@ -67,7 +72,11 @@ export function AccountMenu({
               margin: '2px 0 0', fontSize: 12.5, lineHeight: 1.4,
               overflow: 'hidden', textOverflow: 'ellipsis',
             }}>{email}</p>
-          </div>
+            <p style={{
+              margin: '6px 0 0', fontSize: 12.5, fontWeight: 600,
+              letterSpacing: '.05em', textTransform: 'uppercase', color: 'var(--gold-700)',
+            }}>View my profile</p>
+          </a>
 
           <a href="/profile" style={item} onClick={() => setOpen(false)}>Edit profile</a>
 
