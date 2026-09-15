@@ -507,7 +507,16 @@ img, iframe, video { max-width: 100%; }
   .profileside { padding-top: 4px; }
 }
 
+/* Four short counts read better two-up than stacked, so this grid opts out of
+   the blanket mobile stacking rule. */
+.statgrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 16px;
+}
+
 @media (max-width: 420px) {
   .profileside > div,
   .profileside > a { padding: 16px; }
+  .statgrid { gap: 12px; }
 }

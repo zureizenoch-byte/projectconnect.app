@@ -459,7 +459,7 @@ export default async function MemberProfile({ params }: { params: { id: string }
                   textTransform: 'uppercase', color: 'var(--gold-700)', margin: '0 0 14px',
                 }}>{isSelf ? 'Your record' : 'Their record'}</p>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                <div className="statgrid">
                   <Stat n={record.meetups} label="meetups" />
                   <Stat n={record.talks} label="talks" />
                   <Stat n={hostedCount ?? 0} label="hosted" />
