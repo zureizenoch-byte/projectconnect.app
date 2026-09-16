@@ -520,3 +520,8 @@ img, iframe, video { max-width: 100%; }
   .profileside > a { padding: 16px; }
   .statgrid { gap: 12px; }
 }
+
+@keyframes pcFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
