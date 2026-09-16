@@ -1,5 +1,6 @@
 'use server';
 
+import { eventDate } from '@/lib/eventTime';
 import { revalidatePath } from 'next/cache';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { requireRole, requireSession } from '@/lib/auth';
@@ -369,6 +370,10 @@ export async function bookSpeaker(formData: FormData) {
 
   const iso = new Date(startsAt).toISOString();
 
+  const { data: chapterRow } = await admin.from('chapters')
+    .select('city').eq('id', chapterId).maybeSingle();
+  const chapterCity = chapterRow?.city ?? null;
+
   // Two talks by the same speaker at once would be a double booking
   const { data: clash } = await admin.from('events')
     .select('id,title,starts_at').eq('host_id', speakerId).eq('kind', 'talk')
@@ -409,9 +414,7 @@ export async function bookSpeaker(formData: FormData) {
     profile_id: speakerId,
     kind: 'event.booked',
     title: 'You are booked to speak',
-    body: topic + ' · ' + new Date(iso).toLocaleDateString('en-CA', {
-      weekday: 'long', month: 'long', day: 'numeric',
-    }),
+    body: topic + ' · ' + eventDate(iso, chapterCity),
     href: '/events/' + created.id,
     actor_id: profile.id,
   });

@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import { eventFull } from '@/lib/eventTime';
 import { requireSession } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 import { canHostTalks } from '@/lib/permissions';
@@ -88,7 +89,7 @@ export default async function SpeakerPage() {
                   <p className="eyebrow">{t.chapters?.city} · {t.status}</p>
                   <h3 style={{ marginTop: 8, fontSize: 22 }}>{t.title}</h3>
                   <p className="mute small" style={{ marginTop: 6 }}>
-                    {new Date(t.starts_at).toLocaleString('en-CA', { dateStyle: 'full', timeStyle: 'short' })} ·{' '}
+                    {eventFull(t.starts_at, t.chapters?.city)} ·{' '}
                     {confirmed} of {t.seat_cap} seats
                   </p>
                   {t.status_note && (

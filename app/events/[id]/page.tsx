@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation';
+import { eventFull } from '@/lib/eventTime';
 import { getSession } from '@/lib/auth';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { isPaid } from '@/lib/tiers';
@@ -169,10 +170,7 @@ export default async function EventPage({ params }: { params: { id: string } }) 
       <p className="eyebrow">{city} · {e.kind === 'talk' ? 'Speaker Series' : 'Meetup'}</p>
       <h1 style={{ marginTop: 12 }}>{e.title}</h1>
       <p className="mute" style={{ marginTop: 12, fontSize: 17 }}>
-        {d.toLocaleString('en-CA', {
-          weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
-          hour: 'numeric', minute: '2-digit', timeZoneName: 'short',
-        })} · {e.duration_min} minutes
+        {eventFull(e.starts_at, (e.chapters as any)?.city)} · {e.duration_min} minutes
       </p>
 
       {(e.status === 'postponed' || e.status === 'cancelled' || e.original_starts_at) && (
@@ -188,7 +186,7 @@ export default async function EventPage({ params }: { params: { id: string } }) 
           </strong>
           {e.original_starts_at && e.status !== 'cancelled' && (
             <p className="mute" style={{ margin: '6px 0 0', fontSize: 14.5 }}>
-              Originally {new Date(e.original_starts_at).toLocaleString('en-CA', { dateStyle: 'full', timeStyle: 'short' })}
+              Originally {eventFull(e.original_starts_at, (e.chapters as any)?.city)}
             </p>
           )}
           {e.status_note && (

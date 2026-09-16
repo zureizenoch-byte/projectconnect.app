@@ -1,4 +1,5 @@
 import { requireSession } from '@/lib/auth';
+import { eventFull, eventShort } from '@/lib/eventTime';
 import { createClient } from '@/lib/supabase/server';
 import { isPaid } from '@/lib/tiers';
 import { mapsUrl } from '@/lib/matching';
@@ -166,7 +167,7 @@ export default async function DashboardPage() {
                 </a>
               </h2>
               <p className="mute" style={{ marginTop: 8 }}>
-                {new Date(next.events.starts_at).toLocaleString('en-CA', { dateStyle: 'full', timeStyle: 'short' })}
+                {eventFull(next.events.starts_at, profile.city)}
               </p>
               <p className="mute">{next.events.venues?.name}{next.table_no ? ' · Table ' + next.table_no : ''}</p>
               <div className="row" style={{ marginTop: 18 }}>
@@ -215,7 +216,7 @@ export default async function DashboardPage() {
                   <strong style={{ fontSize: 15 }}>{s.events?.title}</strong>
                   <p className="small mute" style={{ margin: '2px 0 0' }}>
                     {s.events?.kind === 'talk' ? 'Speaker Series' : 'Coffee meetup'}
-                    {s.events ? ' · ' + new Date(s.events.starts_at).toLocaleDateString('en-CA', { dateStyle: 'medium' }) : ''}
+                    {s.events ? ' · ' + eventShort(s.events.starts_at, profile.city) : ''}
                   </p>
                 </div>
                 <span className={'pill ' + (

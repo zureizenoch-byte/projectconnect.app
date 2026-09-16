@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import { eventFull, eventShort } from '@/lib/eventTime';
 import { requireSession } from '@/lib/auth';
 import { createAdminClient } from '@/lib/supabase/server';
 import { canRunChapter, leadNeedsPlan } from '@/lib/permissions';
@@ -127,7 +128,7 @@ export default async function ChapterPage() {
                     <a href={'/events/' + e.id} style={{ color: 'var(--ink)' }}>{e.title}</a>
                   </h3>
                   <p className="mute small" style={{ marginTop: 6 }}>
-                    {new Date(e.starts_at).toLocaleString('en-CA', { dateStyle: 'full', timeStyle: 'short' })}
+                    {eventFull(e.starts_at, profile.city)}
                     {e.venues?.name ? ' · ' + e.venues.name : ' · venue to be confirmed'}
                   </p>
                   <p className="mute small" style={{ marginTop: 2 }}>
@@ -241,7 +242,7 @@ export default async function ChapterPage() {
                 <div>
                   <p className="eyebrow">
                     {e.kind === 'talk' ? 'Speaker Series' : 'Meetup'} ·{' '}
-                    {new Date(e.starts_at).toLocaleDateString('en-CA', { dateStyle: 'medium' })}
+                    {eventShort(e.starts_at, profile.city)}
                   </p>
                   <h3 style={{ marginTop: 8, fontSize: 20 }}>{e.title}</h3>
                 </div>

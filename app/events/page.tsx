@@ -5,6 +5,7 @@ import { RsvpButton } from '@/components/RsvpButton';
 import { EventLifecycle } from '@/components/EventLifecycle';
 import { EditEvent } from '@/components/EditEvent';
 import { VenuePhoto } from '@/components/VenuePhoto';
+import { eventDate, eventTime, eventMonth, eventDay } from '@/lib/eventTime';
 import { detectPlatform, PLATFORM_LABEL } from '@/lib/meeting';
 
 const platformLabel = (url?: string | null) => PLATFORM_LABEL[detectPlatform(url)];
@@ -130,9 +131,9 @@ export default async function EventsPage({ searchParams }: { searchParams: { cit
                   fontFamily: 'var(--font-heading)',
                 }}>
                   <span style={{ fontSize: 10.5, letterSpacing: '.1em', textTransform: 'uppercase' }}>
-                    {d.toLocaleDateString('en-CA', { month: 'short' })}
+                    {eventMonth(e.starts_at, cityName)}
                   </span>
-                  <span style={{ fontSize: 21, lineHeight: 1 }}>{d.getDate()}</span>
+                  <span style={{ fontSize: 21, lineHeight: 1 }}>{eventDay(e.starts_at, cityName)}</span>
                 </div>
 
                 <div style={{
@@ -179,9 +180,9 @@ export default async function EventsPage({ searchParams }: { searchParams: { cit
               <div style={{ padding: 22, display: 'flex', flexDirection: 'column', gap: 12, flex: 1 }}>
                 <div>
                   <p className="eyebrow" style={{ margin: 0 }}>
-                    {d.toLocaleDateString('en-CA', { weekday: 'long', month: 'long', day: 'numeric' })}
+                    {eventDate(e.starts_at, cityName)}
                     {' · '}
-                    {d.toLocaleTimeString('en-CA', { hour: 'numeric', minute: '2-digit' })}
+                    {eventTime(e.starts_at, cityName)}
                   </p>
                   <p className="mute small" style={{ margin: '4px 0 0' }}>{cityName}</p>
                   <h3 style={{ marginTop: 8, fontSize: 24, lineHeight: 1.12 }}>

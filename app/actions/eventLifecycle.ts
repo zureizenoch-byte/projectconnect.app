@@ -1,5 +1,6 @@
 'use server';
 
+import { eventFull } from '@/lib/eventTime';
 import { revalidatePath } from 'next/cache';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireSession } from '@/lib/auth';
@@ -10,7 +11,7 @@ async function assertCanManage(eventId: string) {
   const { profile } = await requireSession();
   const db = createAdminClient();
   const { data: ev } = await db.from('events')
-    .select('id,title,description,starts_at,chapter_id,host_id,created_by,status,venue_id,seat_cap,format,meeting_url,meeting_note,original_starts_at')
+    .select('id,title,description,starts_at,chapter_id,host_id,created_by,status,venue_id,seat_cap,format,meeting_url,meeting_note,original_starts_at,chapters(city)')
     .eq('id', eventId).maybeSingle();
   if (!ev) return { error: 'Event not found' as const };
 
@@ -23,8 +24,9 @@ async function assertCanManage(eventId: string) {
   return { ev, profile, db };
 }
 
-function whenText(iso: string) {
-  return new Date(iso).toLocaleString('en-CA', { dateStyle: 'full', timeStyle: 'short' });
+/** Times in notifications must read in the chapter's own zone, not the server's. */
+function whenText(iso: string, city?: string | null) {
+  return eventFull(iso, city);
 }
 
 /** Move an event to a new date, telling everyone who holds a seat. */
@@ -60,7 +62,7 @@ export async function rescheduleEvent(formData: FormData) {
     ev_id: eventId,
     n_kind: 'event.rescheduled',
     n_title: ev.title + ' has moved',
-    n_body: 'Now ' + whenText(iso) + (note ? ' — ' + note : '') + '. Your seat carries over.',
+    n_body: 'Now ' + whenText(iso, ev.chapters?.city) + (note ? ' — ' + note : '') + '. Your seat carries over.',
     actor: profile.id,
   });
 
@@ -174,7 +176,7 @@ export async function restoreEvent(formData: FormData) {
     ev_id: eventId,
     n_kind: 'event.restored',
     n_title: 'Good news \u2014 ' + ev.title + ' is back on',
-    n_body: (moved ? 'New date: ' : 'Still ') + whenText(iso)
+    n_body: (moved ? 'New date: ' : 'Still ') + whenText(iso, ev.chapters?.city)
       + '. Your seat was held the whole time, so there is nothing to do but turn up.',
     actor: profile.id,
   });
@@ -187,7 +189,7 @@ export async function restoreEvent(formData: FormData) {
         profile_id: p.id,
         kind: 'event.restored',
         title: ev.title + ' is back on the calendar',
-        body: whenText(iso) + '. Seats are open again.',
+        body: whenText(iso, ev.chapters?.city) + '. Seats are open again.',
         href: '/events/' + eventId,
         actor_id: profile.id,
       })),
@@ -198,7 +200,7 @@ export async function restoreEvent(formData: FormData) {
   revalidatePath('/dashboard');
   return {
     ok: moved
-      ? 'Back on for ' + whenText(iso) + '. Seat holders and the chapter have been told.'
+      ? 'Back on for ' + whenText(iso, ev.chapters?.city) + '. Seat holders and the chapter have been told.'
       : 'Back on. Seat holders and the chapter have been told.',
   };
 }
@@ -319,7 +321,7 @@ export async function editEvent(formData: FormData) {
       ev_id: eventId,
       n_kind: 'event.rescheduled',
       n_title: title + ' has moved',
-      n_body: 'Now ' + whenText(iso) + '. Your seat carries over.',
+      n_body: 'Now ' + whenText(iso, ev.chapters?.city) + '. Your seat carries over.',
       actor: profile.id,
     });
   }

@@ -1,5 +1,6 @@
 'use server';
 
+import { eventDate, eventTime, eventFull } from '@/lib/eventTime';
 import { revalidatePath } from 'next/cache';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireSession, requireRole } from '@/lib/auth';
@@ -72,14 +73,10 @@ export async function notifyVenue(eventId: string, force = false) {
     ? venue.address
     : venue.address + ', ' + city;
 
-  const starts = new Date(ev.starts_at);
-  const when = starts.toLocaleString('en-CA', { dateStyle: 'full', timeStyle: 'short' });
-  const date = starts.toLocaleDateString('en-CA', {
-    weekday: 'long', month: 'long', day: 'numeric',
-  });
-  const time = starts.toLocaleTimeString('en-CA', {
-    hour: 'numeric', minute: '2-digit',
-  });
+  // The café needs its own local time, not the server's UTC
+  const when = eventFull(ev.starts_at, city);
+  const date = eventDate(ev.starts_at, city);
+  const time = eventTime(ev.starts_at, city);
 
   const supportEmail = process.env.EMAIL_REPLY_TO
     ?? process.env.SMTP_USER
