@@ -1,0 +1,182 @@
+import { notFound } from 'next/navigation';
+import { requireSession } from '@/lib/auth';
+import { createAdminClient } from '@/lib/supabase/server';
+import { Avatar } from '@/components/Avatar';
+import { ScrollToLatest } from '@/components/ScrollToLatest';
+import { Composer } from '../Composer';
+import { ThreadActions } from '../ThreadActions';
+import { markRead } from '@/app/actions/messages';
+
+export const dynamic = 'force-dynamic';
+
+export default async function Thread({ params }: { params: { id: string } }) {
+  const { user } = await requireSession();
+  const db = createAdminClient();
+
+  const { data: me } = await db.from('conversation_participants')
+    .select('profile_id').eq('conversation_id', params.id).eq('profile_id', user.id).maybeSingle();
+  if (!me) notFound();
+
+  const { data: otherRow } = await db.from('conversation_participants')
+    .select('profile_id').eq('conversation_id', params.id).neq('profile_id', user.id).maybeSingle();
+
+  const { data: other } = otherRow
+    ? await db.from('profiles').select('id,full_name,photo_url,role_level,employer')
+        .eq('id', otherRow.profile_id).maybeSingle()
+    : { data: null };
+
+  const { data: messages } = await db.from('messages')
+    .select('id,body,image_url,created_at,sender_id,deleted_at')
+    .eq('conversation_id', params.id).order('created_at');
+
+  const { data: block } = other
+    ? await db.from('blocks').select('blocker_id')
+        .or('and(blocker_id.eq.' + user.id + ',blocked_id.eq.' + other.id + '),' +
+            'and(blocker_id.eq.' + other.id + ',blocked_id.eq.' + user.id + ')')
+    : { data: [] as any[] };
+
+  const iBlocked = (block ?? []).some((b: any) => b.blocker_id === user.id);
+  const theyBlocked = (block ?? []).some((b: any) => b.blocker_id !== user.id);
+
+  await markRead(params.id);
+
+  const rows = messages ?? [];
+
+  // A day heading is worth more than a timestamp on every bubble
+  const dayOf = (iso: string) => new Date(iso).toDateString();
+  const dayLabel = (iso: string) => {
+    const d = new Date(iso);
+    const today = new Date();
+    const yesterday = new Date(today.getTime() - 86400000);
+    if (d.toDateString() === today.toDateString()) return 'Today';
+    if (d.toDateString() === yesterday.toDateString()) return 'Yesterday';
+    return d.toLocaleDateString('en-CA', {
+      weekday: 'long', month: 'long', day: 'numeric',
+      year: d.getFullYear() === today.getFullYear() ? undefined : 'numeric',
+    });
+  };
+
+  return (
+    <main className="wrap" style={{ maxWidth: 760 }}>
+      <a href="/messages" className="small mute">← All messages</a>
+
+      <header className="surf" style={{ padding: 20, marginTop: 14 }}>
+        <div className="row" style={{ gap: 14 }}>
+          <Avatar src={other?.photo_url} name={other?.full_name} size={56} />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            {theyBlocked ? (
+              <span style={{
+                fontFamily: 'var(--font-heading)', fontWeight: 600, fontSize: 22, color: 'var(--ink)',
+              }}>{other?.full_name || 'Member'}</span>
+            ) : (
+              <a href={'/members/' + (other?.id ?? '')}
+                style={{ fontFamily: 'var(--font-heading)', fontWeight: 600, fontSize: 22, color: 'var(--ink)' }}>
+                {other?.full_name || 'Member'}
+              </a>
+            )}
+            {other?.role_level && (
+              <p className="mute small" style={{ margin: '2px 0 0' }}>
+                {other.role_level}{other.employer ? ' · ' + other.employer : ''}
+              </p>
+            )}
+          </div>
+          {other && !theyBlocked && (
+            <ThreadActions
+              conversationId={params.id}
+              otherId={other.id}
+              otherName={other.full_name || 'this member'}
+              iBlocked={iBlocked}
+            />
+          )}
+        </div>
+      </header>
+
+      <div className="grid" style={{ gap: 10, marginTop: 18 }}>
+        {rows.length === 0 && (
+          <p className="mute" style={{ textAlign: 'center', padding: 24 }}>
+            No messages yet. Say hello.
+          </p>
+        )}
+
+        {rows.map((m: any, i: number) => {
+          const mine = m.sender_id === user.id;
+          const newDay = i === 0 || dayOf(m.created_at) !== dayOf(rows[i - 1].created_at);
+
+          return (
+            <div key={m.id} id={i === rows.length - 1 ? 'latest-message' : undefined}>
+              {newDay && (
+                <p className="mute" style={{
+                  textAlign: 'center', fontSize: 12.5, letterSpacing: '.06em',
+                  textTransform: 'uppercase', margin: i === 0 ? '0 0 12px' : '16px 0 12px',
+                }}>{dayLabel(m.created_at)}</p>
+              )}
+
+              <div style={{ display: 'flex', justifyContent: mine ? 'flex-end' : 'flex-start' }}>
+                <div style={{
+                  maxWidth: '78%', padding: m.image_url && !m.body ? 5 : '11px 15px', borderRadius: 16,
+                  borderBottomRightRadius: mine ? 4 : 16,
+                  borderBottomLeftRadius: mine ? 16 : 4,
+                  background: mine ? 'var(--gold-700)' : '#fff',
+                  color: mine ? '#fff' : 'var(--ink)',
+                  border: mine ? 'none' : '1px solid var(--line)',
+                  boxShadow: 'var(--sh)',
+                }}>
+                  {m.image_url && !m.deleted_at && (
+                    <a href={m.image_url} target="_blank" rel="noopener noreferrer"
+                      style={{ display: 'block', borderRadius: 12, overflow: 'hidden' }}>
+                      <img src={m.image_url} alt="" loading="lazy"
+                        style={{
+                          display: 'block', width: '100%', height: 'auto',
+                          maxWidth: 380, maxHeight: 420, objectFit: 'contain',
+                        }} />
+                    </a>
+                  )}
+
+                  {(m.deleted_at || m.body) && (
+                    <p style={{
+                      margin: m.image_url ? '8px 10px 0' : 0,
+                      fontSize: 15.5, lineHeight: 1.6, whiteSpace: 'pre-wrap',
+                      fontStyle: m.deleted_at ? 'italic' : undefined,
+                      opacity: m.deleted_at ? .6 : 1,
+                    }}>
+                      {m.deleted_at ? 'Message deleted' : m.body}
+                    </p>
+                  )}
+                  <span style={{
+                    display: 'block', marginTop: 5, fontSize: 11.5,
+                    paddingInline: m.image_url && !m.body ? 6 : 0,
+                    paddingBottom: m.image_url && !m.body ? 2 : 0,
+                    color: mine ? 'rgba(255,255,255,.7)' : 'var(--mute)',
+                  }}>
+                    {new Date(m.created_at).toLocaleTimeString('en-CA', {
+                      hour: 'numeric', minute: '2-digit',
+                    })}
+                  </span>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {iBlocked ? (
+        <div className="surf" style={{ padding: 20, marginTop: 18, textAlign: 'center' }}>
+          <p className="mute" style={{ margin: 0 }}>
+            You blocked this member. Unblock them to send a message.
+          </p>
+        </div>
+      ) : theyBlocked ? (
+        // Say nothing about being blocked. The thread reads as closed, not as rejected.
+        <div className="surf" style={{ padding: 20, marginTop: 18, textAlign: 'center' }}>
+          <p className="mute" style={{ margin: 0 }}>
+            This conversation is closed. You can still read what was said.
+          </p>
+        </div>
+      ) : (
+        <Composer conversationId={params.id} />
+      )}
+
+      <ScrollToLatest count={rows.length} />
+    </main>
+  );
+}

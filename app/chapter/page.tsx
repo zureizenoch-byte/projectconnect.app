@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
-import { eventFull, eventShort } from '@/lib/eventTime';
+import { eventFull, eventShort, eventTime, zoneLabel } from '@/lib/eventTime';
 import { requireSession } from '@/lib/auth';
 import { createAdminClient } from '@/lib/supabase/server';
 import { canRunChapter, leadNeedsPlan } from '@/lib/permissions';
@@ -242,7 +242,7 @@ export default async function ChapterPage() {
                 <div>
                   <p className="eyebrow">
                     {e.kind === 'talk' ? 'Speaker Series' : 'Meetup'} ·{' '}
-                    {eventShort(e.starts_at, profile.city)}
+                    {eventShort(e.starts_at, profile.city)} · {eventTime(e.starts_at, profile.city)} {zoneLabel(profile.city, new Date(e.starts_at))}
                   </p>
                   <h3 style={{ marginTop: 8, fontSize: 20 }}>{e.title}</h3>
                 </div>

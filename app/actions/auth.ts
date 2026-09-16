@@ -30,6 +30,9 @@ const SignupSchema = z.object({
   employer: z.string().max(120).optional(),
   years_experience: z.string().optional(),
   linkedin_url: z.string().optional(),
+  ask_me_about: z.string().optional(),
+  looking_for: z.string().optional(),
+  availability: z.string().optional(),
 }).refine((d) => d.password === d.confirm, { path: ['confirm'], message: 'Passwords do not match' });
 
 export type ActionState = { error?: string; fieldErrors?: Record<string, string>; ok?: boolean; checkEmail?: string };
@@ -92,6 +95,9 @@ export async function signUp(_prev: ActionState, formData: FormData): Promise<Ac
       employer: d.employer?.trim() || null,
       years_experience: num(d.years_experience) ?? null,
       linkedin_url: url(d.linkedin_url) ?? null,
+      ask_me_about: d.ask_me_about?.trim().slice(0, 160) || null,
+      looking_for: d.looking_for?.trim().slice(0, 160) || null,
+      availability: d.availability?.trim().slice(0, 200) || null,
       updated_at: new Date().toISOString(),
     };
     await admin.from('profiles').update(patch).eq('id', userId);

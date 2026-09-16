@@ -1,6 +1,6 @@
 'use client';
 
-import { eventDate, eventTime } from '@/lib/eventTime';
+import { eventDate, eventTime, zoneLabel } from '@/lib/eventTime';
 import { useState, useTransition } from 'react';
 import { VenueForm } from './VenueForm';
 import { VenueRow } from './VenueRow';
@@ -84,7 +84,7 @@ export function AdminControls({ requests, pendingEvents, leads, reports, chapter
             {(pendingEvents ?? []).map((e: any) => (
               <tr key={e.id}>
                 <td>{e.title}<br /><span className="mute small">
-                  {eventDate(e.starts_at, e.chapters?.city)} · {eventTime(e.starts_at, e.chapters?.city)}
+                  {eventDate(e.starts_at, e.chapters?.city)} · {eventTime(e.starts_at, e.chapters?.city)} {zoneLabel(e.chapters?.city, new Date(e.starts_at))}
                 </span></td>
                 <td>{e.kind === 'talk' ? 'Speaker Series' : 'Meetup'}</td>
                 <td className="mute">{e.chapters?.city}</td>

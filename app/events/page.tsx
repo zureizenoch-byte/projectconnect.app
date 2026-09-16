@@ -5,7 +5,7 @@ import { RsvpButton } from '@/components/RsvpButton';
 import { EventLifecycle } from '@/components/EventLifecycle';
 import { EditEvent } from '@/components/EditEvent';
 import { VenuePhoto } from '@/components/VenuePhoto';
-import { eventDate, eventTime, eventMonth, eventDay } from '@/lib/eventTime';
+import { eventDate, eventTime, eventMonth, eventDay, zoneLabel } from '@/lib/eventTime';
 import { detectPlatform, PLATFORM_LABEL } from '@/lib/meeting';
 
 const platformLabel = (url?: string | null) => PLATFORM_LABEL[detectPlatform(url)];
@@ -182,7 +182,7 @@ export default async function EventsPage({ searchParams }: { searchParams: { cit
                   <p className="eyebrow" style={{ margin: 0 }}>
                     {eventDate(e.starts_at, cityName)}
                     {' · '}
-                    {eventTime(e.starts_at, cityName)}
+                    {eventTime(e.starts_at, cityName)} {zoneLabel(cityName, new Date(e.starts_at))}
                   </p>
                   <p className="mute small" style={{ margin: '4px 0 0' }}>{cityName}</p>
                   <h3 style={{ marginTop: 8, fontSize: 24, lineHeight: 1.12 }}>

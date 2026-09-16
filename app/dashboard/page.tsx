@@ -1,5 +1,5 @@
 import { requireSession } from '@/lib/auth';
-import { eventFull, eventShort } from '@/lib/eventTime';
+import { eventFull, eventShort, eventTime, zoneLabel } from '@/lib/eventTime';
 import { createClient } from '@/lib/supabase/server';
 import { isPaid } from '@/lib/tiers';
 import { mapsUrl } from '@/lib/matching';
@@ -216,7 +216,11 @@ export default async function DashboardPage() {
                   <strong style={{ fontSize: 15 }}>{s.events?.title}</strong>
                   <p className="small mute" style={{ margin: '2px 0 0' }}>
                     {s.events?.kind === 'talk' ? 'Speaker Series' : 'Coffee meetup'}
-                    {s.events ? ' · ' + eventShort(s.events.starts_at, profile.city) : ''}
+                    {s.events
+                      ? ' · ' + eventShort(s.events.starts_at, profile.city)
+                        + ' · ' + eventTime(s.events.starts_at, profile.city)
+                        + ' ' + zoneLabel(profile.city, new Date(s.events.starts_at))
+                      : ''}
                   </p>
                 </div>
                 <span className={'pill ' + (
