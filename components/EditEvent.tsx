@@ -1,16 +1,18 @@
 'use client';
 
-import { useEffect, useState, useTransition } from 'react';
+import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { editEvent } from '@/app/actions/eventLifecycle';
+import { utcToZonedInput, zonedToUtcIso, zoneLabel, eventDate, eventTime } from '@/lib/eventTime';
 
 /**
  * Correcting an event, as distinct from moving or cancelling it. Collapsed by
  * default so the page still reads as an event rather than a form.
  */
-export function EditEvent({ event, venues = [] }: {
+export function EditEvent({ event, venues = [], city }: {
   event: any;
   venues?: { id: string; name: string; chapter_id: string }[];
+  city?: string | null;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -23,14 +25,8 @@ export function EditEvent({ event, venues = [] }: {
 
   const online = format === 'online';
 
-  // The offset must be read in the browser: during server rendering the zone is
-  // UTC, which would drop the wrong time into the field.
-  const [localStart, setLocalStart] = useState('');
-  useEffect(() => {
-    const t = new Date(event.starts_at);
-    const local = new Date(t.getTime() - t.getTimezoneOffset() * 60000);
-    setLocalStart(local.toISOString().slice(0, 16));
-  }, [event.starts_at]);
+  // The field is the chapter's clock, so it reads the same for every organiser
+  const localStart = utcToZonedInput(event.starts_at, city);
 
   if (!open) {
     return (
@@ -76,17 +72,16 @@ export function EditEvent({ event, venues = [] }: {
       </label>
 
       <div className="grid g2">
-        <label className="fld"><span>Date and time</span>
+        <label className="fld"><span>Date and time{city ? ' · ' + city + ' time' : ''}</span>
           <input name="starts_at" type="datetime-local" required
             value={when || localStart}
             onChange={(e) => setWhen(e.target.value)} />
           <span className="hint">
             {when
-              ? new Date(when).toLocaleString('en-CA', {
-                  weekday: 'long', month: 'long', day: 'numeric',
-                  hour: 'numeric', minute: '2-digit', timeZoneName: 'long',
-                })
-              : 'Your time zone (' + Intl.DateTimeFormat().resolvedOptions().timeZone + ').'}
+              ? eventDate(zonedToUtcIso(when, city), city) + ' at '
+                + eventTime(zonedToUtcIso(when, city), city)
+                + ' ' + zoneLabel(city)
+              : (city ? city + ' time (' + zoneLabel(city) + ').' : 'Chapter time.')}
             {' '}Change this and everyone holding a seat is told.
           </span>
         </label>

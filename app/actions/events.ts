@@ -1,5 +1,6 @@
 'use server';
 
+import { zonedToUtcIso } from '@/lib/eventTime';
 import { revalidatePath } from 'next/cache';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { requireSession } from '@/lib/auth';
@@ -263,6 +264,11 @@ export async function createEvent(formData: FormData) {
   const supabase = createClient();
   const chapterId = String(formData.get('chapter_id'));
 
+  // The typed time means the chapter's own clock, wherever the organiser sits
+  const { data: chapterRow } = await createAdminClient()
+    .from('chapters').select('city').eq('id', chapterId).maybeSingle();
+  const startsIso = zonedToUtcIso(String(formData.get('starts_at') ?? ''), chapterRow?.city);
+
   // "Add a new venue" creates the venue first, so it can be reused next time
   let venueId: string | null = String(formData.get('venue_id') || '') || null;
   if (venueId === '__new') {
@@ -295,7 +301,7 @@ export async function createEvent(formData: FormData) {
     kind,
     title: String(formData.get('title') ?? '').slice(0, 200),
     description: String(formData.get('description') ?? '').slice(0, 4000),
-    starts_at: new Date(String(formData.get('starts_at'))).toISOString(),
+    starts_at: startsIso,
     seat_cap: seatCap,
     // Chapter Lead creates, admin approves before publishing
     status: isAdmin(profile) ? 'published' : 'pending',

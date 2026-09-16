@@ -299,7 +299,7 @@ export default async function EventPage({ params }: { params: { id: string } }) 
             Change the title, description, date, seats or venue. Moving the date tells everyone
             holding a seat.
           </p>
-          <EditEvent event={e} venues={venueOptions ?? []} />
+          <EditEvent event={e} venues={venueOptions ?? []} city={(e.chapters as any)?.city} />
         </div>
       )}
 

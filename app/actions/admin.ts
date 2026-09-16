@@ -1,6 +1,6 @@
 'use server';
 
-import { eventDate } from '@/lib/eventTime';
+import { eventDate, zonedToUtcIso } from '@/lib/eventTime';
 import { revalidatePath } from 'next/cache';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { requireRole, requireSession } from '@/lib/auth';
@@ -368,11 +368,12 @@ export async function bookSpeaker(formData: FormData) {
   const rawSeats = Number(formData.get('seat_cap') ?? 15);
   const seatCap = Math.min(ceiling, Math.max(2, Number.isFinite(rawSeats) ? rawSeats : 15));
 
-  const iso = new Date(startsAt).toISOString();
-
   const { data: chapterRow } = await admin.from('chapters')
     .select('city').eq('id', chapterId).maybeSingle();
   const chapterCity = chapterRow?.city ?? null;
+
+  // the admin types the chapter's clock, not their own
+  const iso = zonedToUtcIso(startsAt, chapterCity);
 
   // Two talks by the same speaker at once would be a double booking
   const { data: clash } = await admin.from('events')

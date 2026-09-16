@@ -1,6 +1,6 @@
 'use server';
 
-import { eventFull } from '@/lib/eventTime';
+import { eventFull, zonedToUtcIso } from '@/lib/eventTime';
 import { revalidatePath } from 'next/cache';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireSession } from '@/lib/auth';
@@ -40,7 +40,7 @@ export async function rescheduleEvent(formData: FormData) {
   if ('error' in ctx) return ctx;
   const { ev, profile, db } = ctx;
 
-  const iso = new Date(newStart).toISOString();
+  const iso = zonedToUtcIso(newStart, ev.chapters?.city);
 
   const { error } = await db.from('events').update({
     starts_at: iso,
@@ -157,7 +157,7 @@ export async function restoreEvent(formData: FormData) {
   if ('error' in ctx) return ctx;
   const { ev, profile, db } = ctx;
 
-  const iso = new Date(newStart).toISOString();
+  const iso = zonedToUtcIso(newStart, ev.chapters?.city);
   const moved = new Date(iso).getTime() !== new Date(ev.starts_at).getTime();
 
   const { error } = await db.from('events').update({
@@ -266,7 +266,7 @@ export async function editEvent(formData: FormData) {
   if (!title) return { error: 'An event needs a title.' };
 
   const startsAt = String(formData.get('starts_at') ?? '');
-  const iso = startsAt ? new Date(startsAt).toISOString() : ev.starts_at;
+  const iso = startsAt ? zonedToUtcIso(startsAt, ev.chapters?.city) : ev.starts_at;
   const moved = new Date(iso).getTime() !== new Date(ev.starts_at).getTime();
 
   const format = String(formData.get('format') ?? ev.format ?? 'in_person') === 'online'

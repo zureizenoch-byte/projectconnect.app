@@ -3,6 +3,7 @@ import { useState, useTransition } from 'react';
 import { createEvent } from '@/app/actions/events';
 import { mapsUrl } from '@/lib/matching';
 import { VenueSearch } from '@/components/VenueSearch';
+import { zonedToUtcIso, eventDate, eventTime, zoneLabel } from '@/lib/eventTime';
 
 export function EventForm({ kind, chapters, venues, minSeats = 12, defaultSeats = 15, submitLabel }: {
   kind: 'meetup' | 'talk';
@@ -24,8 +25,6 @@ export function EventForm({ kind, chapters, venues, minSeats = 12, defaultSeats 
   const [meetingUrl, setMeetingUrl] = useState('');
 
   const online = format === 'online';
-  // A time means nothing without its zone, and members may be anywhere
-  const localZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const linkOk = !online || /^https?:\/\//i.test(meetingUrl.trim());
   const ready = title.trim().length > 0 && startsAt.length > 0 && linkOk;
   const maxSeats = online ? 100 : 15;
@@ -99,18 +98,21 @@ export function EventForm({ kind, chapters, venues, minSeats = 12, defaultSeats 
             {chapters.map((c) => <option key={c.id} value={c.id}>{c.city}</option>)}
           </select>
         </label>
-        <label className="fld"><span>Date and time</span>
+        <label className="fld">
+          <span>Date and time{cityName ? ' · ' + cityName + ' time' : ''}</span>
           <input name="starts_at" type="datetime-local" required
             value={startsAt} onChange={(e) => setStartsAt(e.target.value)} />
           {startsAt ? (
             <span className="hint" style={{ color: 'var(--ok)' }}>
-              {new Date(startsAt).toLocaleString('en-CA', {
-                weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
-                hour: 'numeric', minute: '2-digit', timeZoneName: 'long',
-              })}
+              {eventDate(zonedToUtcIso(startsAt, cityName), cityName)} at{' '}
+              {eventTime(zonedToUtcIso(startsAt, cityName), cityName)} {zoneLabel(cityName)}
             </span>
           ) : (
-            <span className="hint">Entered in your own time zone ({localZone}).</span>
+            <span className="hint">
+              {cityName
+                ? 'Enter the time as it will be in ' + cityName + ' (' + zoneLabel(cityName) + ').'
+                : 'Enter the chapter\u2019s local time.'}
+            </span>
           )}
         </label>
         <label className="fld"><span>Seats ({minSeats}–{maxSeats})</span>
@@ -137,9 +139,8 @@ export function EventForm({ kind, chapters, venues, minSeats = 12, defaultSeats 
           </label>
           {startsAt && (
             <p className="hint" style={{ marginTop: -8, marginBottom: 18 }}>
-              Online rooms draw people from other chapters. Everyone sees this time in their
-              own zone — yours reads{' '}
-              <strong>{new Date(startsAt).toLocaleTimeString('en-CA', {
+              Set in {cityName || 'chapter'} time. In your own zone that is{' '}
+              <strong>{new Date(zonedToUtcIso(startsAt, cityName)).toLocaleTimeString('en-CA', {
                 hour: 'numeric', minute: '2-digit', timeZoneName: 'short',
               })}</strong>.
             </p>
