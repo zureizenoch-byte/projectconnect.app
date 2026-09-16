@@ -139,10 +139,10 @@ export function EventForm({ kind, chapters, venues, minSeats = 12, defaultSeats 
           </label>
           {startsAt && (
             <p className="hint" style={{ marginTop: -8, marginBottom: 18 }}>
-              Set in {cityName || 'chapter'} time. In your own zone that is{' '}
-              <strong>{new Date(zonedToUtcIso(startsAt, cityName)).toLocaleTimeString('en-CA', {
-                hour: 'numeric', minute: '2-digit', timeZoneName: 'short',
-              })}</strong>.
+              Shown to everyone as {cityName || 'chapter'} time
+              {zoneLabel(cityName, new Date(zonedToUtcIso(startsAt, cityName)))
+                ? ' (' + zoneLabel(cityName, new Date(zonedToUtcIso(startsAt, cityName))) + ')' : ''},
+              whichever zone they are in.
             </p>
           )}
         </>
