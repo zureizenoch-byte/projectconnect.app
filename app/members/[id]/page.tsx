@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation';
+import { AvatarZoom } from '@/components/AvatarZoom';
 import { requireSession } from '@/lib/auth';
 import { createAdminClient } from '@/lib/supabase/server';
 import { Avatar } from '@/components/Avatar';
@@ -238,7 +239,7 @@ export default async function MemberProfile({ params }: { params: { id: string }
         <div className="profilegrid" style={{ padding: '0 clamp(22px,3.5vw,38px) clamp(26px,3.5vw,34px)' }}>
           <div className="profileident">
           <div style={{ marginTop: -62, display: 'inline-block' }}>
-            <Avatar src={person.photo_url} name={person.full_name} email={person.email} size={136} ring />
+            <AvatarZoom src={person.photo_url} name={person.full_name} email={person.email} size={136} ring />
           </div>
 
           <div className="row" style={{ gap: 12, marginTop: 16, alignItems: 'baseline' }}>
