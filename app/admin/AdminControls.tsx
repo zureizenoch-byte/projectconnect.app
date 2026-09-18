@@ -6,7 +6,8 @@ import { VenueForm } from './VenueForm';
 import { VenueRow } from './VenueRow';
 import { SectionBoundary } from './SectionBoundary';
 import { SpeakerBooking } from './SpeakerBooking';
-import { decideAccessRequest, revokeRole, grantRole, setAccountRole, setEventStatus, saveVenue, setVenueActive, deleteVenue, resolveReport, resolveMessageReport } from '@/app/actions/admin';
+import { decideAccessRequest, revokeRole, grantRole, setAccountRole, setEventStatus, saveVenue, setVenueActive, deleteVenue, resolveReport } from '@/app/actions/admin';
+import { ReportDecision } from './ReportDecision';
 
 export function AdminControls({ requests, pendingEvents, leads, reports, chapters, venues, venueNotices = [], log, everyone = [], speakerPool = [], messageReports = [], currentAdminId }: any) {
   const [pending, start] = useTransition();
@@ -362,8 +363,7 @@ export function AdminControls({ requests, pendingEvents, leads, reports, chapter
                   </span>
                 </td>
                 <td style={{ textAlign: 'right' }}>
-                  <button className="btn btn-out" style={{ minHeight: 34, padding: '0 12px', fontSize: 13.5 }}
-                    disabled={pending} onClick={() => run(() => resolveMessageReport(r.id))}>Resolve</button>
+                  <ReportDecision reportId={r.id} />
                 </td>
               </tr>
             ))}

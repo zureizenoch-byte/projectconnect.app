@@ -247,21 +247,72 @@ export async function saveVenue(formData: FormData) {
   return { ok: true };
 }
 
-export async function resolveMessageReport(reportId: string, alsoSuspend = false) {
+/**
+ * Close a reported message.
+ *
+ * Two outcomes, because "resolved" alone says nothing: dismiss it, or uphold it
+ * and warn the member. A warning names the rule, not the reporter — a member
+ * who reports someone should not be identifiable by what happens next.
+ *
+ * Warnings accumulate. The count goes in the notification so a second warning
+ * reads as a second warning, not a first one repeated.
+ */
+export async function resolveMessageReport(reportId: string, uphold = false, note = '') {
   const { profile } = await requireRole('admin');
   const admin = createAdminClient();
 
   const { data: rep } = await admin.from('message_reports')
-    .select('id,reported_id').eq('id', reportId).maybeSingle();
+    .select('id,reported_id,reason,resolved').eq('id', reportId).maybeSingle();
   if (!rep) return { error: 'Report not found' };
+  if (rep.resolved) return { error: 'That report has already been closed.' };
 
   await admin.from('message_reports').update({
-    resolved: true, resolved_by: profile.id, resolved_at: new Date().toISOString(),
+    resolved: true,
+    resolved_by: profile.id,
+    resolved_at: new Date().toISOString(),
+    upheld: uphold,
+    resolution_note: note.trim().slice(0, 600) || null,
   }).eq('id', reportId);
 
-  await log(profile.id, 'message_report.resolve', reportId, { suspended: alsoSuspend });
+  let warnings = 0;
+
+  if (uphold && rep.reported_id) {
+    const { count } = await admin.from('message_reports')
+      .select('id', { count: 'exact', head: true })
+      .eq('reported_id', rep.reported_id).eq('upheld', true);
+    warnings = count ?? 1;
+
+    const nth = warnings === 1 ? 'a warning'
+      : warnings === 2 ? 'a second warning'
+        : 'warning number ' + warnings;
+
+    // The admin's own words carry further than boilerplate, so they lead.
+    const explanation = note.trim().slice(0, 600);
+
+    await admin.from('notifications').insert({
+      profile_id: rep.reported_id,
+      kind: 'moderation.warning',
+      title: warnings === 1
+        ? 'A message you sent was reported'
+        : 'Another message you sent was reported',
+      body: (explanation ? explanation + '\n\n' : '')
+        + 'An admin reviewed it and agreed it broke our conduct rules, so this is '
+        + nth + '. Project Connect is for professional conversation — keep messages '
+        + 'civil, relevant, and free of unsolicited sales.'
+        + (warnings >= 3 ? ' Further reports may cost you your account.' : ''),
+      href: '/legal/terms',
+    });
+  }
+
+  await log(profile.id, uphold ? 'message_report.uphold' : 'message_report.dismiss',
+    reportId, { reported_id: rep.reported_id, warnings, note: note.trim().slice(0, 600) || null });
+
   revalidatePath('/admin');
-  return { ok: true };
+  return {
+    ok: uphold
+      ? 'Upheld. The member has been warned' + (warnings > 1 ? ' (' + warnings + ' total).' : '.')
+      : 'Dismissed. Nobody was warned.',
+  };
 }
 
 /**
