@@ -265,6 +265,47 @@ input[type="checkbox"], input[type="radio"] {
   -webkit-overflow-scrolling: touch;
 }
 
+/* ---------------------------------------------------------------- sheets */
+/* A panel that is a popover on a desktop and a bottom sheet on a phone.
+   A fixed-width popover inside a narrow card gets clipped by its own
+   container, which is how the report form became unreachable on mobile. */
+.reportsheet {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  z-index: 60;
+  width: 320px;
+  padding: 18px;
+  box-shadow: var(--sh-lg);
+}
+.sheetveil { display: none; }
+
+@media (max-width: 720px) {
+  .reportsheet {
+    position: fixed;
+    inset: auto 0 0 0;
+    width: auto;
+    max-height: 88vh;
+    overflow-y: auto;
+    padding: 20px 18px calc(20px + env(safe-area-inset-bottom));
+    border-radius: 20px 20px 0 0;
+    border-bottom: 0;
+    animation: sheetup .22s ease;
+  }
+  .sheetveil {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 55;
+    background: rgba(13, 19, 48, .42);
+  }
+}
+
+@keyframes sheetup {
+  from { transform: translateY(14px); opacity: .7; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
 /* ---------------------------------------------------------------- dark sections */
 .ondark { background: linear-gradient(165deg, var(--ink), var(--gold-700)); color: #fff; }
 .ondark h1, .ondark h2, .ondark h3 { color: #fff; }

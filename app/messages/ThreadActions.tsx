@@ -51,11 +51,10 @@ export function ThreadActions({
       </div>
 
       {open === 'report' && (
-        <div className="surf" style={{
-          position: 'absolute', right: 0, top: 'calc(100% + 8px)', zIndex: 30,
-          width: 320, padding: 18, boxShadow: 'var(--sh-lg)',
-        }}>
-          <form onSubmit={(e: any) => {
+        <>
+          <div className="sheetveil" onClick={() => setOpen('none')} aria-hidden />
+          <div className="surf reportsheet" role="dialog" aria-label="Report this conversation">
+            <form onSubmit={(e: any) => {
             e.preventDefault();
             const fd = new FormData(e.currentTarget);
             start(async () => {
@@ -87,11 +86,12 @@ export function ThreadActions({
               <button className="btn btn-quiet" type="button" onClick={() => setOpen('none')}
                 style={{ minHeight: 38, padding: '0 12px', fontSize: 14 }}>Cancel</button>
             </div>
-          </form>
-        </div>
+            </form>
+          </div>
+        </>
       )}
 
-      {msg && <p className="hint" style={{ position: 'absolute', right: 0, top: 'calc(100% + 6px)', width: 260 }}>{msg}</p>}
+      {msg && <p className="hint" style={{ marginTop: 8, textAlign: 'right' }}>{msg}</p>}
     </div>
   );
 }
