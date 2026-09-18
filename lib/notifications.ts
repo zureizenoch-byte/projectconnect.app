@@ -47,12 +47,14 @@ export function notificationGlyph(kind: string) {
   if (kind.startsWith('seat.confirmed')) return '✓';
   if (kind.startsWith('seat')) return '◔';
   if (kind.startsWith('message')) return '✉';
+  if (kind.startsWith('moderation.reported')) return '⚠';
+  if (kind.startsWith('moderation')) return '⚠';
   if (kind.startsWith('access')) return '⚑';
   return '•';
 }
 
 export function notificationTone(kind: string) {
-  if (kind.includes('cancelled') || kind.includes('rejected')) return 'var(--err)';
+  if (kind.includes('cancelled') || kind.includes('rejected') || kind.startsWith('moderation')) return 'var(--err)';
   if (kind.includes('confirmed') || kind.includes('approved') || kind.includes('restored')) return 'var(--ok)';
   return 'var(--gold-700)';
 }

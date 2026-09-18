@@ -222,6 +222,38 @@ export async function reportMessage(formData: FormData) {
     });
   }
 
+  // Tell the admins. A failure here must not lose the report itself.
+  try {
+    const { data: admins } = await db.from('profiles').select('id').eq('role', 'admin');
+
+    if (admins?.length) {
+      const [{ data: reported }, { data: reporter }] = await Promise.all([
+        reportedId
+          ? db.from('profiles').select('full_name').eq('id', reportedId).maybeSingle()
+          : Promise.resolve({ data: null }),
+        db.from('profiles').select('full_name').eq('id', user.id).maybeSingle(),
+      ]);
+
+      const trimmed = detail.trim().replace(/\s+/g, ' ').slice(0, 140);
+
+      await db.from('notifications').insert(
+        admins.map((a: { id: string }) => ({
+          profile_id: a.id,
+          kind: 'report.message',
+          title: 'A message was reported',
+          body: 'Against ' + (reported?.full_name ?? 'a member')
+            + '\nReason: ' + reason.replace(/_/g, ' ')
+            + (trimmed ? ' — "' + trimmed + '"' : '')
+            + '\nReported by ' + (reporter?.full_name ?? 'a member') + '.',
+          href: '/admin#message-reports',
+          actor_id: user.id,
+        })),
+      );
+    }
+  } catch {
+    // the report is filed; the queue will show it either way
+  }
+
   revalidatePath('/messages');
   revalidatePath('/admin');
   return { ok: 'Reported. An admin will review it' + (alsoBlock ? ', and this member is now blocked.' : '.') };

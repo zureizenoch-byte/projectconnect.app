@@ -66,9 +66,15 @@ export async function createPost(formData: FormData) {
   return { ok: true };
 }
 
-/** Feed posts are report-only — no pre-moderation. */
+/**
+ * Feed posts are report-only — no pre-moderation, so a report has to reach
+ * someone. Every admin is notified, with the reason and a jump to the queue.
+ *
+ * Reporting twice is not an error worth showing: the unique constraint means
+ * the second attempt is a no-op, and the member has already done their part.
+ */
 export async function reportPost(postId: string, reason: string) {
-  const { user } = await requireSession();
+  const { user, profile } = await requireSession();
 
   const blocked = await guardPostInteraction(user.id, postId);
   if (blocked) return blocked;
@@ -76,7 +82,51 @@ export async function reportPost(postId: string, reason: string) {
   const supabase = createClient();
   const { error } = await supabase.from('post_reports')
     .insert({ post_id: postId, reporter_id: user.id, reason: reason.slice(0, 500) });
-  if (error) return { error: error.message };
+
+  if (error) {
+    if (error.code === '23505' || error.message.toLowerCase().includes('duplicate')) {
+      return { ok: true, already: true };
+    }
+    return { error: error.message };
+  }
+
+  // Tell the admins. Failing to notify must not lose the report itself.
+  try {
+    const db = createAdminClient();
+
+    const [{ data: admins }, { data: post }] = await Promise.all([
+      db.from('profiles').select('id').eq('role', 'admin'),
+      db.from('posts').select('body,author_id').eq('id', postId).maybeSingle(),
+    ]);
+
+    if (admins?.length) {
+      const { data: author } = post?.author_id
+        ? await db.from('profiles').select('full_name').eq('id', post.author_id).maybeSingle()
+        : { data: null };
+
+      const excerpt = (post?.body ?? '').trim().replace(/\s+/g, ' ').slice(0, 90);
+      const who = author?.full_name ?? 'a member';
+      const trimmed = reason.trim().slice(0, 140);
+
+      await db.from('notifications').insert(
+        admins.map((a: { id: string }) => ({
+          profile_id: a.id,
+          kind: 'report.post',
+          title: 'A post was reported',
+          body: who + "'s post"
+            + (excerpt ? ' — "' + excerpt + (excerpt.length === 90 ? '…' : '') + '"' : '')
+            + (trimmed ? '\nReason: ' + trimmed : '')
+            + '\nReported by ' + (profile.full_name ?? 'a member') + '.',
+          href: '/admin#reports',
+          actor_id: user.id,
+        })),
+      );
+    }
+  } catch {
+    // the report is filed; the queue will show it either way
+  }
+
+  revalidatePath('/admin');
   return { ok: true };
 }
 
