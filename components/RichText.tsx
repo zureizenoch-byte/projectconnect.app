@@ -68,14 +68,11 @@ function inline(text: string, keyBase: string) {
   });
 }
 
-// Every dash a keyboard or autocorrect can produce — Unicode's dash-punctuation
-// category — plus the common bullet glyphs. Enumerating code points kept
-// missing one; the category does not.
-// Characters that open something else at the start of a line, so they are not
-// list markers however they are spaced.
-const NOT_A_BULLET = '#>"\\'([{@/\\\\|';
-const DASH = '(?![' + NOT_A_BULLET + '])[\\p{P}\\p{S}]';
-const LIST_LEAD = new RegExp('^(\\s*(?:' + DASH + '|\\d+[.)])\\s+)?([\\s\\S]*)$', 'u');
+// A list marker is any single punctuation or symbol character standing alone
+// before a space at the start of a line — every dash, minus sign and bullet
+// glyph a keyboard can emit. Characters that open something else (#, >, a
+// quote, a bracket, @) are excluded.
+const LIST_LEAD = /^(\s*(?:(?!["'#>(\[{@/\\|])[\p{P}\p{S}]|\d+[.)])\s+)?([\s\S]*)$/u;
 const MARKERS = ['__', '**', '*', '_'];
 
 /**
@@ -120,7 +117,7 @@ function redistribute(text: string): string {
   return out;
 }
 
-const BULLET = new RegExp('^\\s*' + DASH + '\\s+(.*)$', 'u');
+const BULLET = /^\s*(?!["'#>(\[{@/\\|])[\p{P}\p{S}]\s+(.*)$/u;
 const NUMBER = /^\s*(\d+)[.)]\s+(.*)$/;
 
 type Block =

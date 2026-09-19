@@ -19,10 +19,10 @@ const WRAPS = [
   { key: 'u', marker: '__', label: 'Underline', hint: 'Ctrl+U', glyph: 'U', render: { textDecoration: 'underline' as const } },
 ];
 
-// Unicode's dash-punctuation category, plus the common bullet glyphs.
-const NOT_A_BULLET = '#>"\\'([{@/\\\\|';
-const DASH = '(?![' + NOT_A_BULLET + '])[\\p{P}\\p{S}]';
-const BULLET = new RegExp('^(\\s*)(' + DASH + ')\\s+', 'u');
+// A list marker is any single punctuation or symbol character standing alone
+// before a space at the start of a line. Characters that open something else
+// (#, >, a quote, a bracket, @) are excluded.
+const BULLET = /^(\s*)((?!["'#>(\[{@/\\|])[\p{P}\p{S}])\s+/u;
 const NUMBER = /^(\s*)(\d+)[.)]\s+/;
 
 function fieldFor(name: string, from: HTMLElement | null) {
@@ -41,7 +41,7 @@ function setValue(field: HTMLTextAreaElement, next: string, from: number, to = f
   field.setSelectionRange(from, to);
 }
 
-const LIST_LEAD = new RegExp('^(\\s*(?:' + DASH + '|\\d+[.)])\\s+)?([\\s\\S]*)$', 'u');
+const LIST_LEAD = /^(\s*(?:(?!["'#>(\[{@/\\|])[\p{P}\p{S}]|\d+[.)])\s+)?([\s\S]*)$/u;
 
 function wrap(field: HTMLTextAreaElement, marker: string) {
   const { selectionStart: a, selectionEnd: b, value } = field;
