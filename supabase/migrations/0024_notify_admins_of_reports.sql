@@ -1,6 +1,9 @@
--- 0024_notify_admins_of_reports.sql
--- A report is useless if nobody sees it. Every new report notifies every
--- admin, in the database, so it cannot be missed through a UI path.
+-- 0024_notify_admins_of_reports.sql  (corrected)
+-- Every new report notifies every admin, from the database, so it cannot be
+-- missed through a UI path.
+--
+-- reason is an enum, so it must be cast before any text function touches it —
+-- trim(new.reason) raises "function pg_catalog.btrim(report_reason) does not exist".
 
 create or replace function notify_admins_of_report()
 returns trigger language plpgsql security definer set search_path = public as $fn$
@@ -8,8 +11,10 @@ declare
   who text;
   what text;
   target text;
+  why text;
 begin
-  -- who is being reported, without exposing the reporter
+  why := replace(new.reason::text, '_', ' ');
+
   if TG_TABLE_NAME = 'message_reports' then
     select coalesce(full_name, 'A member') into who
       from profiles where id = new.reported_id;
@@ -27,8 +32,7 @@ begin
   select a.id,
          'moderation.reported',
          'A ' || what || ' was reported',
-         coalesce(who, 'A member') || ' \u2014 '
-           || coalesce(nullif(trim(new.reason), ''), 'no reason given'),
+         coalesce(who, 'A member') || ' \u2014 ' || coalesce(nullif(why, ''), 'no reason given'),
          target
   from profiles a
   where a.role = 'admin';

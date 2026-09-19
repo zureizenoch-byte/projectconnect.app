@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation';
+import { RichText } from '@/components/RichText';
 import { requireSession } from '@/lib/auth';
 import { createAdminClient } from '@/lib/supabase/server';
 import { Avatar } from '@/components/Avatar';
@@ -135,11 +136,11 @@ export default async function Thread({ params }: { params: { id: string } }) {
                   {(m.deleted_at || m.body) && (
                     <p style={{
                       margin: m.image_url ? '8px 10px 0' : 0,
-                      fontSize: 15.5, lineHeight: 1.6, whiteSpace: 'pre-wrap',
+                      fontSize: 15.5, lineHeight: 1.6,
                       fontStyle: m.deleted_at ? 'italic' : undefined,
                       opacity: m.deleted_at ? .6 : 1,
                     }}>
-                      {m.deleted_at ? 'Message deleted' : m.body}
+                      {m.deleted_at ? 'Message deleted' : <RichText text={m.body} />}
                     </p>
                   )}
                   <span style={{

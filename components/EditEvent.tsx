@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { editEvent } from '@/app/actions/eventLifecycle';
+import { FormatBar } from '@/components/FormatBar';
 import { utcToZonedInput, zonedToUtcIso, zoneLabel, eventDate, eventTime } from '@/lib/eventTime';
 
 /**
@@ -68,6 +69,7 @@ export function EditEvent({ event, venues = [], city }: {
       </label>
 
       <label className="fld"><span>Description</span>
+        <FormatBar targetName="description" />
         <textarea name="description" defaultValue={event.description ?? ''} maxLength={4000} />
       </label>
 

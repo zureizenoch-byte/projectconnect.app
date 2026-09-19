@@ -3,6 +3,7 @@ import { useState, useTransition } from 'react';
 import { createEvent } from '@/app/actions/events';
 import { mapsUrl } from '@/lib/matching';
 import { VenueSearch } from '@/components/VenueSearch';
+import { FormatBar } from '@/components/FormatBar';
 import { zonedToUtcIso, eventDate, eventTime, zoneLabel } from '@/lib/eventTime';
 
 export function EventForm({ kind, chapters, venues, minSeats = 12, defaultSeats = 15, submitLabel }: {
@@ -214,6 +215,7 @@ export function EventForm({ kind, chapters, venues, minSeats = 12, defaultSeats 
       )}
 
       <label className="fld"><span>Description</span>
+        <FormatBar targetName="description" />
         <textarea name="description" maxLength={4000} />
       </label>
 

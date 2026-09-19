@@ -4,6 +4,7 @@ import { useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { createPost } from '@/app/actions/feed';
 import { EmojiPicker } from '@/components/EmojiPicker';
+import { FormatBar } from '@/components/FormatBar';
 import { shrinkImage } from '@/lib/shrinkImage';
 
 export function PostForm() {
@@ -61,6 +62,7 @@ export function PostForm() {
 
       <label className="fld" style={{ marginBottom: 12 }}>
         <span>Post to the community</span>
+        <FormatBar />
         <textarea name="body" placeholder="What are you working through this week?" />
       </label>
 

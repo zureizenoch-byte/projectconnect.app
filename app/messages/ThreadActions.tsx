@@ -24,7 +24,7 @@ export function ThreadActions({
       <div className="row" style={{ gap: 6 }}>
         <button className="btn btn-quiet" disabled={pending}
           style={{ minHeight: 36, padding: '0 12px', fontSize: 13.5 }}
-          onClick={() => setOpen(open === 'report' ? 'none' : 'report')}>Report</button>
+          onClick={() => { setMsg(null); setOpen(open === 'report' ? 'none' : 'report'); }}>Report</button>
 
         {iBlocked ? (
           <button className="btn btn-out" disabled={pending}
@@ -80,9 +80,15 @@ export function ThreadActions({
               <input type="checkbox" name="also_block" defaultChecked />
               <span className="small">Also block this member</span>
             </label>
+            {msg && (
+              <p className={msg.startsWith('Reported') ? 'hint' : 'err'}
+                style={msg.startsWith('Reported') ? { color: 'var(--ok)' } : undefined}>{msg}</p>
+            )}
             <div className="row" style={{ gap: 8 }}>
               <button className="btn btn-primary" type="submit" disabled={pending}
-                style={{ minHeight: 38, padding: '0 16px', fontSize: 14 }}>Send report</button>
+                style={{ minHeight: 38, padding: '0 16px', fontSize: 14 }}>
+                {pending ? 'Sending…' : 'Send report'}
+              </button>
               <button className="btn btn-quiet" type="button" onClick={() => setOpen('none')}
                 style={{ minHeight: 38, padding: '0 12px', fontSize: 14 }}>Cancel</button>
             </div>

@@ -1,5 +1,6 @@
 'use client';
 
+import { RichText } from '@/components/RichText';
 import { useEffect, useRef, useState, useTransition } from 'react';
 import { setReaction, addComment, deleteComment } from '@/app/actions/feed';
 import { REACTIONS, MORE_REACTIONS, ALL_REACTIONS } from '@/lib/reactions';
@@ -260,7 +261,9 @@ export function PostEngagement({
                   <span className="mute small" style={{ marginLeft: 8 }}>
                     {new Date(c.created_at).toLocaleDateString('en-CA', { dateStyle: 'medium' })}
                   </span>
-                  <p style={{ fontSize: 15, lineHeight: 1.6, margin: '4px 0 0' }}>{c.body}</p>
+                  <p style={{ fontSize: 15, lineHeight: 1.6, margin: '4px 0 0' }}>
+                    <RichText text={c.body} />
+                  </p>
                 </div>
                 {(c.author_id === userId || isAdmin) && (
                   <button style={{ ...btn, minHeight: 30, padding: '0 8px', fontSize: 13 }}

@@ -6,6 +6,7 @@ import { mapsUrl } from '@/lib/matching';
 import { TAG_CATEGORIES } from '@/lib/types';
 import { PostForm } from './PostForm';
 import { Avatar } from '@/components/Avatar';
+import { RichText } from '@/components/RichText';
 import { blockedIdsFor } from '@/lib/blocks';
 import { MemberBadge } from '@/components/MemberBadge';
 import { PostActions } from './PostActions';
@@ -284,7 +285,9 @@ export default async function DashboardPage() {
                 </div>
               </header>
               {p.body && (
-                <p style={{ fontSize: 16.5, lineHeight: 1.7, margin: '18px 0 0', whiteSpace: 'pre-wrap' }}>{p.body}</p>
+                <p style={{ fontSize: 16.5, lineHeight: 1.7, margin: '18px 0 0' }}>
+                  <RichText text={p.body} />
+                </p>
               )}
               {p.image_url && (
                 <a href={p.image_url} target="_blank" rel="noopener noreferrer"

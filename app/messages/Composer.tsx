@@ -3,6 +3,7 @@ import { useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { sendMessage } from '@/app/actions/messages';
 import { EmojiPicker } from '@/components/EmojiPicker';
+import { FormatBar } from '@/components/FormatBar';
 
 export function Composer({ conversationId }: { conversationId: string }) {
   const router = useRouter();
@@ -60,6 +61,8 @@ export function Composer({ conversationId }: { conversationId: string }) {
             }}>×</button>
         </div>
       )}
+
+      <FormatBar />
 
       <textarea name="body" rows={3} maxLength={4000}
         placeholder={preview ? 'Add a note, or send the photo on its own…' : 'Write a message…'}

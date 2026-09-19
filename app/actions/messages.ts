@@ -214,7 +214,17 @@ export async function reportMessage(formData: FormData) {
     reason,
     detail,
   });
-  if (error) return { error: error.message };
+
+  if (error) {
+    const said = error.message.toLowerCase();
+    if (said.includes('duplicate') || said.includes('unique')) {
+      return { error: 'You have already reported this conversation.' };
+    }
+    if (said.includes('column') || said.includes('does not exist')) {
+      return { error: 'Reporting is not fully set up yet — run the outstanding database migration.' };
+    }
+    return { error: 'Could not file the report: ' + error.message };
+  }
 
   if (alsoBlock && reportedId) {
     await db.from('blocks').upsert({
@@ -222,37 +232,8 @@ export async function reportMessage(formData: FormData) {
     });
   }
 
-  // Tell the admins. A failure here must not lose the report itself.
-  try {
-    const { data: admins } = await db.from('profiles').select('id').eq('role', 'admin');
-
-    if (admins?.length) {
-      const [{ data: reported }, { data: reporter }] = await Promise.all([
-        reportedId
-          ? db.from('profiles').select('full_name').eq('id', reportedId).maybeSingle()
-          : Promise.resolve({ data: null }),
-        db.from('profiles').select('full_name').eq('id', user.id).maybeSingle(),
-      ]);
-
-      const trimmed = detail.trim().replace(/\s+/g, ' ').slice(0, 140);
-
-      await db.from('notifications').insert(
-        admins.map((a: { id: string }) => ({
-          profile_id: a.id,
-          kind: 'report.message',
-          title: 'A message was reported',
-          body: 'Against ' + (reported?.full_name ?? 'a member')
-            + '\nReason: ' + reason.replace(/_/g, ' ')
-            + (trimmed ? ' — "' + trimmed + '"' : '')
-            + '\nReported by ' + (reporter?.full_name ?? 'a member') + '.',
-          href: '/admin#message-reports',
-          actor_id: user.id,
-        })),
-      );
-    }
-  } catch {
-    // the report is filed; the queue will show it either way
-  }
+  // Admins are notified by a database trigger on message_reports, so the
+  // report cannot be missed even if this request dies after the insert.
 
   revalidatePath('/messages');
   revalidatePath('/admin');

@@ -7,6 +7,7 @@ import { mapsUrl } from '@/lib/matching';
 import { RsvpButton } from '@/components/RsvpButton';
 import { MatchAttendeesButton } from '@/components/MatchAttendeesButton';
 import { Avatar } from '@/components/Avatar';
+import { RichText } from '@/components/RichText';
 import { VenuePhoto } from '@/components/VenuePhoto';
 import { MemberBadge } from '@/components/MemberBadge';
 import { JoinPanel } from '@/components/JoinPanel';
@@ -197,7 +198,9 @@ export default async function EventPage({ params }: { params: { id: string } }) 
 
       <div className="surf" style={{ padding: 24, marginTop: 24 }}>
         {e.description && (
-          <p style={{ marginTop: 0, whiteSpace: 'pre-wrap', lineHeight: 1.65 }}>{e.description}</p>
+          <p style={{ marginTop: 0, lineHeight: 1.65 }}>
+            <RichText text={e.description} />
+          </p>
         )}
         <dl className="grid g2" style={{ marginTop: 8 }}>
           <div>

@@ -5,6 +5,7 @@ import { RsvpButton } from '@/components/RsvpButton';
 import { EventLifecycle } from '@/components/EventLifecycle';
 import { EditEvent } from '@/components/EditEvent';
 import { VenuePhoto } from '@/components/VenuePhoto';
+import { RichText } from '@/components/RichText';
 import { eventDate, eventTime, eventMonth, eventDay, zoneLabel } from '@/lib/eventTime';
 import { detectPlatform, PLATFORM_LABEL } from '@/lib/meeting';
 
@@ -215,7 +216,7 @@ export default async function EventsPage({ searchParams }: { searchParams: { cit
                     margin: 0, fontSize: 15, lineHeight: 1.6, whiteSpace: 'pre-line',
                     display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical',
                     overflow: 'hidden',
-                  }}>{e.description}</p>
+                  }}><RichText text={e.description} /></p>
                 )}
 
                 <div style={{
