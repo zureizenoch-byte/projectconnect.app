@@ -68,7 +68,8 @@ function inline(text: string, keyBase: string) {
   });
 }
 
-const LIST_LEAD = /^(\s*(?:[-•]|\d+[.)])\s+)?([\s\S]*)$/;
+const DASH = '[-\\u2010\\u2011\\u2012\\u2013\\u2014\\u2015*\\u2022\\u00b7]';
+const LIST_LEAD = new RegExp('^(\\s*(?:' + DASH + '|\\d+[.)])\\s+)?([\\s\\S]*)$');
 const MARKERS = ['__', '**', '*', '_'];
 
 /**
@@ -113,7 +114,7 @@ function redistribute(text: string): string {
   return out;
 }
 
-const BULLET = /^\s*[-*•]\s+(.*)$/;
+const BULLET = new RegExp('^\\s*' + DASH + '\\s+(.*)$');
 const NUMBER = /^\s*(\d+)[.)]\s+(.*)$/;
 
 type Block =

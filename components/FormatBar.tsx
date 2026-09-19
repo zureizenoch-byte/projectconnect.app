@@ -19,7 +19,8 @@ const WRAPS = [
   { key: 'u', marker: '__', label: 'Underline', hint: 'Ctrl+U', glyph: 'U', render: { textDecoration: 'underline' as const } },
 ];
 
-const BULLET = /^(\s*)([-*•])\s+/;
+const DASH = '[-\\u2010\\u2011\\u2012\\u2013\\u2014\\u2015*\\u2022\\u00b7]';
+const BULLET = new RegExp('^(\\s*)(' + DASH + ')\\s+');
 const NUMBER = /^(\s*)(\d+)[.)]\s+/;
 
 function fieldFor(name: string, from: HTMLElement | null) {
@@ -38,7 +39,7 @@ function setValue(field: HTMLTextAreaElement, next: string, from: number, to = f
   field.setSelectionRange(from, to);
 }
 
-const LIST_LEAD = /^(\s*(?:[-•]|\d+[.)])\s+)?([\s\S]*)$/;
+const LIST_LEAD = new RegExp('^(\\s*(?:' + DASH + '|\\d+[.)])\\s+)?([\\s\\S]*)$');
 
 function wrap(field: HTMLTextAreaElement, marker: string) {
   const { selectionStart: a, selectionEnd: b, value } = field;
