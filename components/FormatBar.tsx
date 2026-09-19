@@ -38,11 +38,29 @@ function setValue(field: HTMLTextAreaElement, next: string, from: number, to = f
   field.setSelectionRange(from, to);
 }
 
+const LIST_LEAD = /^(\s*(?:[-•]|\d+[.)])\s+)?([\s\S]*)$/;
+
 function wrap(field: HTMLTextAreaElement, marker: string) {
   const { selectionStart: a, selectionEnd: b, value } = field;
   const chosen = value.slice(a, b);
   const before = value.slice(0, a);
   const after = value.slice(b);
+
+  // Several lines at once: one pair per line, with any bullet or number left
+  // outside it, so the list survives and every line actually renders bold.
+  if (chosen.includes('\n')) {
+    const marked = chosen.split('\n').map((line) => {
+      const [, lead = '', body = ''] = line.match(LIST_LEAD) ?? [];
+      if (!body.trim()) return line;
+      const bare = body.startsWith(marker) && body.endsWith(marker) && body.length > marker.length * 2
+        ? body.slice(marker.length, -marker.length)
+        : null;
+      return bare !== null ? lead + bare : lead + marker + body + marker;
+    }).join('\n');
+
+    setValue(field, before + marked + after, a, a + marked.length);
+    return;
+  }
 
   // pressing the same button again unwraps, rather than doubling up
   const already = before.endsWith(marker) && after.startsWith(marker);

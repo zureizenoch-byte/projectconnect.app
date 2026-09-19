@@ -29,7 +29,9 @@ function tokenize(input: string, active: Omit<Token, 'text'> = {}): Token[] {
   let plain = '';
 
   for (let i = 0; i < input.length; i++) {
-    const rule = RULES.find((r) => input.startsWith(r.open, i));
+    const rule = RULES.find((r) =>
+      input.startsWith(r.open, i)
+      && (r.open.length > 1 || !/\s/.test(input[i + r.open.length] ?? '')));
 
     if (rule) {
       const from = i + rule.open.length;
@@ -64,6 +66,51 @@ function inline(text: string, keyBase: string) {
       }}>{t.text}</span>
     );
   });
+}
+
+const LIST_LEAD = /^(\s*(?:[-•]|\d+[.)])\s+)?([\s\S]*)$/;
+const MARKERS = ['__', '**', '*', '_'];
+
+/**
+ * Turn a marker pair that spans several lines into one pair per line, with any
+ * list prefix left outside. Selecting four bullets and pressing B writes a
+ * single span across all of them; without this the markers would render as
+ * literal asterisks, which is exactly what they did.
+ */
+function redistribute(text: string): string {
+  let out = '';
+  let i = 0;
+
+  while (i < text.length) {
+    const marker = MARKERS.find((m) => {
+      if (!text.startsWith(m, i)) return false;
+      // "* " and "_ " are a bullet and an underscore, not emphasis
+      return m.length > 1 || !/\s/.test(text[i + m.length] ?? '');
+    });
+
+    if (marker) {
+      const from = i + marker.length;
+      const end = text.indexOf(marker, from);
+      if (end > from) {
+        const inner = text.slice(from, end);
+        if (inner.includes('\n')) {
+          out += inner.split('\n').map((line) => {
+            const [, lead = '', body = ''] = line.match(LIST_LEAD) ?? [];
+            return body.trim() ? lead + marker + body + marker : line;
+          }).join('\n');
+        } else {
+          out += marker + inner + marker;
+        }
+        i = end + marker.length;
+        continue;
+      }
+    }
+
+    out += text[i];
+    i++;
+  }
+
+  return out;
 }
 
 const BULLET = /^\s*[-*•]\s+(.*)$/;
@@ -102,12 +149,13 @@ function blocks(text: string): Block[] {
 export function RichText({ text, style }: { text: string; style?: React.CSSProperties }) {
   if (!text) return null;
 
-  const parsed = blocks(text);
+  const source = redistribute(text);
+  const parsed = blocks(source);
   const hasList = parsed.some((b) => b.kind !== 'text');
 
   // Nothing but prose: keep it inline, so it can sit inside a <p> untouched.
   if (!hasList) {
-    return <span style={{ whiteSpace: 'pre-wrap', ...style }}>{inline(text, 't')}</span>;
+    return <span style={{ whiteSpace: 'pre-wrap', ...style }}>{inline(source, 't')}</span>;
   }
 
   const listStyle: React.CSSProperties = {
