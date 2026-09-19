@@ -68,8 +68,11 @@ function inline(text: string, keyBase: string) {
   });
 }
 
-const DASH = '[-\\u2010\\u2011\\u2012\\u2013\\u2014\\u2015*\\u2022\\u00b7]';
-const LIST_LEAD = new RegExp('^(\\s*(?:' + DASH + '|\\d+[.)])\\s+)?([\\s\\S]*)$');
+// Every dash a keyboard or autocorrect can produce — Unicode's dash-punctuation
+// category — plus the common bullet glyphs. Enumerating code points kept
+// missing one; the category does not.
+const DASH = '[\\p{Pd}*\\u2022\\u00b7\\u2023\\u25aa]';
+const LIST_LEAD = new RegExp('^(\\s*(?:' + DASH + '|\\d+[.)])\\s+)?([\\s\\S]*)$', 'u');
 const MARKERS = ['__', '**', '*', '_'];
 
 /**
@@ -114,7 +117,7 @@ function redistribute(text: string): string {
   return out;
 }
 
-const BULLET = new RegExp('^\\s*' + DASH + '\\s+(.*)$');
+const BULLET = new RegExp('^\\s*' + DASH + '\\s+(.*)$', 'u');
 const NUMBER = /^\s*(\d+)[.)]\s+(.*)$/;
 
 type Block =
