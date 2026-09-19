@@ -20,7 +20,8 @@ const WRAPS = [
 ];
 
 // Unicode's dash-punctuation category, plus the common bullet glyphs.
-const DASH = '[\\p{Pd}*\\u2022\\u00b7\\u2023\\u25aa]';
+const NOT_A_BULLET = '#>"\\'([{@/\\\\|';
+const DASH = '(?![' + NOT_A_BULLET + '])[\\p{P}\\p{S}]';
 const BULLET = new RegExp('^(\\s*)(' + DASH + ')\\s+', 'u');
 const NUMBER = /^(\s*)(\d+)[.)]\s+/;
 

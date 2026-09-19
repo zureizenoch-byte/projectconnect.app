@@ -71,7 +71,10 @@ function inline(text: string, keyBase: string) {
 // Every dash a keyboard or autocorrect can produce — Unicode's dash-punctuation
 // category — plus the common bullet glyphs. Enumerating code points kept
 // missing one; the category does not.
-const DASH = '[\\p{Pd}*\\u2022\\u00b7\\u2023\\u25aa]';
+// Characters that open something else at the start of a line, so they are not
+// list markers however they are spaced.
+const NOT_A_BULLET = '#>"\\'([{@/\\\\|';
+const DASH = '(?![' + NOT_A_BULLET + '])[\\p{P}\\p{S}]';
 const LIST_LEAD = new RegExp('^(\\s*(?:' + DASH + '|\\d+[.)])\\s+)?([\\s\\S]*)$', 'u');
 const MARKERS = ['__', '**', '*', '_'];
 
