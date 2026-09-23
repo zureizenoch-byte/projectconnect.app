@@ -57,7 +57,7 @@ export default async function DashboardPage() {
       ? safe(() => supabase.from('profiles').select(PERSON).in('id', authorIds))
       : Promise.resolve([] as any[]),
     postIds.length
-      ? safe(() => supabase.from('post_likes').select('post_id,profile_id').in('post_id', postIds))
+      ? safe(() => supabase.from('post_likes').select('post_id,profile_id,reaction,created_at').in('post_id', postIds))
       : Promise.resolve([] as any[]),
     postIds.length
       ? safe(() => supabase.from('post_comments').select('id,post_id,body,created_at,author_id').in('post_id', postIds))
@@ -85,8 +85,10 @@ export default async function DashboardPage() {
   const visibleComments = (comments ?? []).filter((c: any) =>
     !c.author_id || !hiddenIds.has(c.author_id));
 
-  const commenterIds = Array.from(new Set(visibleComments.map((c: any) => c.author_id)))
-    .filter((id: any) => !authorMap.has(id));
+  const commenterIds = Array.from(new Set([
+    ...visibleComments.map((c: any) => c.author_id),
+    ...(likes ?? []).map((l: any) => l.profile_id),
+  ])).filter((id: any) => id && !authorMap.has(id));
   if (commenterIds.length) {
     const extra = await safe(() => supabase.from('profiles').select(PERSON).in('id', commenterIds));
     for (const a of extra) authorMap.set(a.id, a);
@@ -316,6 +318,15 @@ export default async function DashboardPage() {
                   .map((l: any) => l.reaction ?? 'like')}
                 myReaction={(likes ?? [])
                   .find((l: any) => l.post_id === p.id && l.profile_id === user.id)?.reaction ?? null}
+                reactors={(likes ?? [])
+                  .filter((l: any) => l.post_id === p.id && !hiddenIds.has(l.profile_id))
+                  .map((l: any) => ({
+                    id: l.profile_id,
+                    reaction: l.reaction ?? 'like',
+                    name: authorMap.get(l.profile_id)?.full_name ?? 'Member',
+                    photo: authorMap.get(l.profile_id)?.photo_url ?? null,
+                    role_level: authorMap.get(l.profile_id)?.role_level ?? null,
+                  }))}
                 comments={visibleComments
                   .filter((c: any) => c.post_id === p.id)
                   .sort((a: any, b: any) => +new Date(a.created_at) - +new Date(b.created_at))

@@ -4,17 +4,19 @@ import { RichText } from '@/components/RichText';
 import { useEffect, useRef, useState, useTransition } from 'react';
 import { setReaction, addComment, deleteComment } from '@/app/actions/feed';
 import { REACTIONS, MORE_REACTIONS, ALL_REACTIONS } from '@/lib/reactions';
+import { ReactionsSheet, type Reactor } from '@/components/ReactionsSheet';
 import { EmojiPicker } from '@/components/EmojiPicker';
 
 type Comment = { id: string; body: string; created_at: string; author_id: string; commenter?: { full_name?: string | null; photo_url?: string | null; speaker_approved?: boolean; role?: string } };
 
 export function PostEngagement({
   postId, likeCount, liked, comments, userId, isAdmin,
-  reactions = [], myReaction = null,
+  reactions = [], myReaction = null, reactors = [],
 }: {
   postId: string; likeCount: number; liked: boolean;
   comments: Comment[]; userId: string; isAdmin: boolean;
   reactions?: string[]; myReaction?: string | null;
+  reactors?: Reactor[];
 }) {
   const [pending, start] = useTransition();
   const [open, setOpen] = useState(false);
@@ -27,6 +29,8 @@ export function PostEngagement({
   const [tally, setTally] = useState<string[]>(reactions);
   const [picker, setPicker] = useState(false);
   const [more, setMore] = useState(false);
+  const [people, setPeople] = useState<Reactor[]>(reactors);
+  const [whoOpen, setWhoOpen] = useState(false);
 
   // Hover-to-open needs a grace period: the bar sits above the button, so the
   // pointer briefly leaves both on the way there. Closing instantly makes the
@@ -63,10 +67,19 @@ export function PostEngagement({
       return wasMine === key ? without : [...without, key];
     });
     setMine(wasMine === key ? null : key);
+    setPeople((list) => {
+      const me = list.find((r) => r.id === userId);
+      const others = list.filter((r) => r.id !== userId);
+      if (wasMine === key) return others;
+      return [...others, {
+        id: userId, reaction: key,
+        name: me?.name ?? 'You', photo: me?.photo ?? null, role_level: me?.role_level ?? null,
+      }];
+    });
 
     start(async () => {
       const res: any = await setReaction(postId, key);
-      if (res?.error) { setMine(wasMine); setTally(reactions); }
+      if (res?.error) { setMine(wasMine); setTally(reactions); setPeople(reactors); }
     });
   };
 
@@ -92,18 +105,41 @@ export function PostEngagement({
   return (
     <div style={{ marginTop: 16, paddingTop: 12, borderTop: '1px solid var(--line)' }}>
       {count > 0 && (
-        <div className="row" style={{ gap: 8, marginBottom: 10 }}>
-          <span style={{
-            display: 'inline-flex', alignItems: 'center', gap: 2,
-            padding: '3px 9px 3px 7px', borderRadius: 999,
-            background: '#fff', border: '1px solid var(--line)', boxShadow: 'var(--sh)',
-          }}>
+        <div className="row" style={{ gap: 10, marginBottom: 10 }}>
+          <button type="button" onClick={() => setWhoOpen(true)}
+            aria-label={'See who reacted — ' + count}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 2, cursor: 'pointer',
+              padding: '3px 9px 3px 7px', borderRadius: 999, font: 'inherit',
+              background: '#fff', border: '1px solid var(--line)', boxShadow: 'var(--sh)',
+              WebkitTouchCallout: 'none', userSelect: 'none', touchAction: 'manipulation',
+            }}>
             {shown.map((emoji) => (
               <span key={emoji} aria-hidden style={{ fontSize: 15 }}>{emoji}</span>
             ))}
             <span className="mute" style={{ fontSize: 13, marginLeft: 4 }}>{count}</span>
-          </span>
+          </button>
+          {people.length > 0 && (
+            <button type="button" onClick={() => setWhoOpen(true)}
+              className="mute"
+              style={{
+                border: 0, background: 'transparent', padding: 0, cursor: 'pointer',
+                font: 'inherit', fontSize: 13.5, textAlign: 'left', minWidth: 0,
+                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+              }}>
+              {(() => {
+                const names = people.map((r) => (r.id === userId ? 'You' : r.name.split(' ')[0]));
+                if (names.length === 1) return names[0];
+                if (names.length === 2) return names[0] + ' and ' + names[1];
+                return names[0] + ', ' + names[1] + ' and ' + (names.length - 2) + ' more';
+              })()}
+            </button>
+          )}
         </div>
+      )}
+
+      {whoOpen && people.length > 0 && (
+        <ReactionsSheet reactors={people} onClose={() => setWhoOpen(false)} />
       )}
 
       <div className="row" style={{ gap: 4 }}>
